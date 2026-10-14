@@ -5,10 +5,12 @@ export type MapNode = { id: string; name: string; kind: string; host?: string; r
 export type MapEdge = { id: string; from: string; to: string; kind: string; count: number; evidence: string; confidence: string };
 export type TopologyMap = { nodes: MapNode[]; edges: MapEdge[] };
 export type MonitorTemplate = { id: string; name: string; kind: "http" | "tcp"; target: string; interval_seconds: number; timeout_seconds: number; expected_status: number; enabled: boolean; last_run: string; last_value: number; last_error: string; status: string };
-export type DataSource = { id: string; name: string; kind: "prometheus" | "json"; url: string; secret_env?: string };
+export type DataSource = { id: string; name: string; kind: "prometheus" | "json" | "loki"; url: string; secret_env?: string };
 export type DashboardPanel = { id: string; title: string; kind: string; source_id?: string; query?: string; html?: string; css?: string; js?: string };
 export type Dashboard = { id: string; title: string; panels: DashboardPanel[] };
 export type ObservaEvent = { id: string; at: string; severity: string; entity: string; summary: string; evidence: string[]; status: string };
+export type LogLine = { at:string; line:string; labels:Record<string,string> };
+export type LogQueryResult = { logs:LogLine[]; source:string; minutes:number; limit:number; storage:string; persisted_by_observa:boolean };
 export type CatalogExtension = { id:string; name:string; category:string; description:string; available:boolean; configured:boolean; integration:string; version:string };
 export type Snapshot = { generated_at: string; hosts: Host[]; service_map: TopologyMap; network_map: TopologyMap; templates: MonitorTemplate[]; datasources: DataSource[]; dashboards: Dashboard[]; events: ObservaEvent[] };
 
@@ -43,6 +45,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   snapshot: () => request<Snapshot>("/api/v1/snapshot"),
   extensions: () => request<{extensions:CatalogExtension[]}>("/api/v1/extensions"),
+  logs: (source:string,query:string,minutes=60,limit=100) =>
+    request<LogQueryResult>("/api/v1/logs?"+new URLSearchParams({source,query,minutes:String(minutes),limit:String(limit)})),
   createTemplate: (value: MonitorTemplate) => request<MonitorTemplate>("/api/v1/templates", { method: "POST", body: JSON.stringify(value) }),
   deleteTemplate: (id: string) => request<void>(`/api/v1/templates/${encodeURIComponent(id)}`, { method: "DELETE" }),
   createDataSource: (value: DataSource) => request<DataSource>("/api/v1/datasources", { method: "POST", body: JSON.stringify(value) }),

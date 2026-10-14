@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ruanmonteiro19/observa-lite/internal/discovery"
+    "github.com/ruanmonteiro19/observa-lite/internal/model"
 	"github.com/ruanmonteiro19/observa-lite/internal/server"
 	"github.com/ruanmonteiro19/observa-lite/internal/store"
 	"io"
@@ -131,7 +132,7 @@ func runAgent(args []string) error {
            d.HostGroup=*hostGroup
            d.NetworkZone=*networkZone
            d.MonitoringMode=*mode
-           if !*discoverProcesses {d.Processes=nil;d.Connections=nil}
+           if !*discoverProcesses {d.Processes=[]model.Process{};d.Connections=[]model.Connection{}}
            if *legacyPayload {d.HostGroup="";d.NetworkZone="";d.MonitoringMode=""}
 			var b []byte
 			b, e = json.Marshal(d)

@@ -41,7 +41,7 @@ jobs:
             CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w" -o "dist/observa-linux-$arch" ./cmd/observa
           done
       - name: Empacotar instalador Linux
-        run: tar -czf ../observa-lite-linux-ui.tar.gz -C .. observa-lite/README.md observa-lite/LICENSE observa-lite/scripts observa-lite/dist
+        run: tar -czf ../observa-lite-linux-ui.tar.gz -C .. observa-lite/README.md observa-lite/LICENSE observa-lite/scripts observa-lite/deploy observa-lite/dist
       - uses: actions/upload-artifact@v4
         with:
           name: observa-lite-linux-ui

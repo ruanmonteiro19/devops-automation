@@ -15,7 +15,7 @@ type extension struct {
     Integration string `json:"integration,omitempty"`
     Version string `json:"version"`
 }
-func extensionCatalog(sources []model.DataSource, templates []model.Template) []extension {
+func extensionCatalog(sources []model.DataSource, templates []model.Template, agentCount int) []extension {
     configured:=map[string]bool{}
     for _,s:=range sources {configured[s.Kind]=true}
     for _,t:=range templates {configured[t.Kind]=true}
@@ -43,13 +43,14 @@ func extensionCatalog(sources []model.DataSource, templates []model.Template) []
     }
     for i:=range defs {
         defs[i].Version="0.1"
-        if defs[i].ID=="linux-agent" {defs[i].Configured=true}
+        if defs[i].ID=="linux-agent" && agentCount>0 {defs[i].Configured=true}
         if configured[defs[i].ID] {defs[i].Configured=true}
     }
     return defs
 }
 func (s *Server) extensions(w http.ResponseWriter, r *http.Request) {
-    write(w,200,map[string]interface{}{"extensions":extensionCatalog(s.Store.Snapshot().DataSources,s.Store.Templates())})
+    snapshot:=s.Store.Snapshot()
+    write(w,200,map[string]interface{}{"extensions":extensionCatalog(snapshot.DataSources,snapshot.Templates,len(snapshot.Hosts))})
 }
 func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
     write(w,200,map[string]interface{}{

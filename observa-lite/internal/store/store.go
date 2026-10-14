@@ -87,6 +87,10 @@ func (s *Store) Ingest(d model.Discovery) error {
 	if strings.TrimSpace(d.HostID) == "" || len(d.HostID) > 128 || len(d.Processes) > 100000 || len(d.Connections) > 200000 || len(d.HostGroup)>100 || len(d.NetworkZone)>256 || len(d.MonitoringMode)>40 {
 		return fmt.Errorf("invalid or oversized discovery")
 	}
+	// Keep the wire contract stable when a host has zero processes or zero sockets.
+	if d.Processes == nil { d.Processes = []model.Process{} }
+	if d.Connections == nil { d.Connections = []model.Connection{} }
+	if d.Addresses == nil { d.Addresses = []string{} }
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// PID disappearance cannot establish an application outage. Do not synthesize APM alerts from process churn.
@@ -186,6 +190,10 @@ func (s *Store) Snapshot() model.Snapshot {
 	defer s.mu.RUnlock()
 	v := model.Snapshot{GeneratedAt: time.Now().UTC(), Hosts: []model.Host{}, Templates: []model.Template{}, DataSources: []model.DataSource{}, Dashboards: []model.Dashboard{}, Events: append([]model.Event{}, s.data.Events...)}
 	for _, h := range s.data.Hosts {
+		// Normalize legacy JSON state as well as newly ingested snapshots.
+		if h.Processes == nil { h.Processes = []model.Process{} }
+		if h.Connections == nil { h.Connections = []model.Connection{} }
+		if h.Addresses == nil { h.Addresses = []string{} }
 		v.Hosts = append(v.Hosts, h)
 	}
 	for _, t := range s.data.Templates {

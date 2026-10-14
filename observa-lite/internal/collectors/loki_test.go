@@ -20,17 +20,17 @@ func TestQueryLogsBounded(t *testing.T) {
     }))
     defer mock.Close()
     runner:=Runner{AllowPrivate:true}
-    rows,err:=runner.QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL},"{service="api"}",60,2)
+    rows,err:=runner.QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL},"{service=\"api\"}",60,2)
     if err!=nil || len(rows)!=2 {t.Fatalf("got %d rows: %v",len(rows),err)}
     if rows[0]["line"]!="hello" {t.Fatalf("wrong row: %v",rows[0])}
-    for _,limit:=range []int{0,201} {_,err=runner.QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL},"{service="api"}",60,limit);if err==nil {t.Errorf("accepted limit %d",limit)}}
-    _,err=runner.QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL}, "{service="api"}",1441,5)
+    for _,limit:=range []int{0,201} {_,err=runner.QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL},"{service=\"api\"}",60,limit);if err==nil {t.Errorf("accepted limit %d",limit)}}
+    _,err=runner.QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL}, "{service=\"api\"}",1441,5)
     if err==nil {t.Fatal("allowed unbounded window")}
     _,err=runner.QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL}, strings.Repeat("x",513),60,10)
     if err==nil {t.Fatal("allowed oversized LogQL")}
 }
 func TestQueryLogsRequiresLoki(t *testing.T) {
-   _,e:=(Runner{AllowPrivate:true}).QueryLogs(context.Background(),model.DataSource{Kind:"prometheus",URL:"http://127.0.0.1:80"},"{job="x"}",60,5)
+   _,e:=(Runner{AllowPrivate:true}).QueryLogs(context.Background(),model.DataSource{Kind:"prometheus",URL:"http://127.0.0.1:80"},"{job=\"x\"}",60,5)
    if e==nil {t.Fatal("must reject non-Loki sources")}
 }
 func TestQueryLogsPrivateBlocked(t *testing.T) {

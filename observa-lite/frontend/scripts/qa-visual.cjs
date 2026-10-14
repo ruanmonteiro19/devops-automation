@@ -17,7 +17,7 @@ const sleep=(t)=>new Promise(r=>setTimeout(r,t));
    primary:getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
    background:getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
   }));
-  if (!color.primary.includes('0.76 0.182 151')|| !color.background.includes('0.105 0.008 151')){
+  if (!(color.primary.includes('151') && /(76%|0\.76)/.test(color.primary)) || !(color.background.includes('151') && /(10\.5%|0\.105)/.test(color.background))){
    throw Error('Black-green theme not embedded in Docker: '+JSON.stringify(color));
   }
   await page.screenshot({path:path.join(dir,'01-login-black-green.png'),fullPage:true});

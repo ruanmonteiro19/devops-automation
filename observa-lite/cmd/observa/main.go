@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -12,6 +11,7 @@ import (
 	"github.com/ruanmonteiro19/observa-lite/internal/discovery"
     "github.com/ruanmonteiro19/observa-lite/internal/model"
 	"github.com/ruanmonteiro19/observa-lite/internal/server"
+ "github.com/ruanmonteiro19/observa-lite/internal/routing"
 	"github.com/ruanmonteiro19/observa-lite/internal/store"
 	"io"
 	"log"
@@ -92,6 +92,8 @@ func runAgent(args []string) error {
  clientCert := fs.String("client-cert",env("OBSERVA_CLIENT_CERT",""),"optional PEM client certificate for mTLS")
  clientKey := fs.String("client-key",env("OBSERVA_CLIENT_KEY",""),"optional PEM client private key for mTLS")
  discoverProcesses := fs.Bool("discover-processes",env("OBSERVA_DISCOVER_PROCESSES","true")=="true","include processes and TCP sockets")
+ controlPlane := fs.String("control-plane",env("OBSERVA_CONTROL_PLANE",""),"optional authenticated endpoint-discovery server; requires HTTPS remotely")
+ allowZoneFallback:=fs.Bool("allow-default-zone-fallback",env("OBSERVA_DEFAULT_ZONE_FALLBACK","false")=="true","allow explicitly configured fallback to the default zone")
  legacyPayload := fs.Bool("legacy-payload",env("OBSERVA_LEGACY_PAYLOAD","false")=="true","send old schema without group/zone, for older servers only")
 	if e := fs.Parse(args); e != nil {
 		return e
@@ -137,18 +139,13 @@ func runAgent(args []string) error {
 			var b []byte
 			b, e = json.Marshal(d)
 			if e == nil {
-				req, _ := http.NewRequestWithContext(ctx, "POST", strings.TrimRight(*endpoint, "/")+"/api/v1/ingest", bytes.NewReader(b))
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("X-API-Key", token)
-				var resp *http.Response
-				resp, e = client.Do(req)
-				if e == nil {
-					body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-					resp.Body.Close()
-					if resp.StatusCode != 202 {
-						e = fmt.Errorf("ingest: %d %s", resp.StatusCode, string(body))
-					}
-				}
+                targets:=[]string{*endpoint}
+                if *controlPlane!="" {
+                  targets,e=routing.Discover(ctx,client,*controlPlane,token,*networkZone,*allowZoneFallback)
+                }
+                if e==nil{
+                  _,e=routing.Deliver(ctx,client,targets,token,b)
+                }
 			}
 		}
 		if e != nil {

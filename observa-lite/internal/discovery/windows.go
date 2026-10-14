@@ -4,6 +4,7 @@ package discovery
 
 import (
  "context"
+ "errors"
  "encoding/json"
  "fmt"
  "net"
@@ -17,13 +18,22 @@ import (
 
 // Windows collection is read-only and uses built-in PowerShell/CIM facilities.
 // It does NOT automatically instrument IIS/.NET or discover HTTP services.
-const windowsScript = "$ErrorActionPreference='Stop'; " +
- "$OutputEncoding=[Console]::OutputEncoding=[Text.UTF8Encoding]::new(); " +
- "$id=(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' -Name MachineGuid -ErrorAction SilentlyContinue).MachineGuid; " +
- "$ps=@(Get-CimInstance Win32_Process | Select-Object ProcessId,Name,WorkingSetSize); " +
- "$cs=@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Select-Object OwningProcess,LocalAddress,LocalPort,RemoteAddress,RemotePort,@{N='State';E={$_.State.ToString()}}); " +
- "ConvertTo-Json -InputObject @{hostid=$id;processes=$ps;connections=$cs} -Depth 5 -Compress"
-
+const windowsScript = `
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+try {
+  $id = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name MachineGuid -ErrorAction Stop).MachineGuid
+} catch { $id = '' }
+try {
+  $ps = @(Get-CimInstance Win32_Process -ErrorAction Stop | Select-Object ProcessId,Name,WorkingSetSize)
+} catch {
+  $ps = @(Get-Process -ErrorAction Stop | Select-Object @{N='ProcessId';E={$_.Id}},Name,@{N='WorkingSetSize';E={$_.WorkingSet64}})
+}
+try {
+  $cs = @(Get-NetTCPConnection -ErrorAction Stop | Select-Object OwningProcess,LocalAddress,LocalPort,RemoteAddress,RemotePort,@{N='State';E={$_.State.ToString()}})
+} catch { $cs = @() }
+ConvertTo-Json -InputObject @{hostid=$id;processes=$ps;connections=$cs} -Depth 5 -Compress
+`
 type windowsSnapshot struct {
  HostID string `json:"hostid"`
  Processes []struct {
@@ -47,7 +57,15 @@ func Detect() (model.Discovery,error) {
  ctx,cancel:=context.WithTimeout(context.Background(),20*time.Second)
  defer cancel()
  output,err:=exec.CommandContext(ctx,"powershell.exe","-NoLogo","-NoProfile","-NonInteractive","-Command",windowsScript).Output()
- if err!=nil{return model.Discovery{},fmt.Errorf("Windows discovery (PowerShell/CIM): %w",err)}
+ if err!=nil{
+  var exitErr *exec.ExitError
+  if errors.As(err,&exitErr){
+   detail:=strings.TrimSpace(string(exitErr.Stderr))
+   if len(detail)>800 {detail=detail[:800]}
+   return model.Discovery{},fmt.Errorf("Windows discovery PowerShell failed: %w: %s",err,detail)
+  }
+  return model.Discovery{},fmt.Errorf("Windows discovery PowerShell failed: %w",err)
+ }
  var decoded windowsSnapshot
  if err:=json.Unmarshal(output,&decoded);err!=nil{return model.Discovery{},fmt.Errorf("decode Windows discovery: %w",err)}
  hostID:="windows:"+strings.ToLower(hostname)

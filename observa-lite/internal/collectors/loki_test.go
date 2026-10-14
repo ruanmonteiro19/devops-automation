@@ -35,6 +35,6 @@ func TestQueryLogsRequiresLoki(t *testing.T) {
 }
 func TestQueryLogsPrivateBlocked(t *testing.T) {
     mock:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) { w.WriteHeader(200) }));defer mock.Close()
-    _,err:=(Runner{}).QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL},"{job="api"}",5,5)
+    _,err:=(Runner{}).QueryLogs(context.Background(),model.DataSource{Kind:"loki",URL:mock.URL},"{job=\"api\"}",5,5)
     if err==nil {t.Fatal("expected loopback SSRF protection")}
 }

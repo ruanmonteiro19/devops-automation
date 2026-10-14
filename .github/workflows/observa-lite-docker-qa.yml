@@ -1,0 +1,118 @@
+name: Observa Lite — QA Docker Candidate
+on:
+  push:
+    branches: ['feature/agents-gateway-i18n']
+    paths:
+      - 'observa-lite/**'
+      - '.github/workflows/observa-lite-docker-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  compose-smoke:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: observa-lite
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gerar credenciais do laboratório
+        run: ./scripts/docker-init.sh
+      - name: Validar Compose
+        run: docker compose config --quiet
+      - name: Compilar imagens de servidor e agente
+        run: docker compose build server agent
+      - name: Subir servidor e agente de descoberta
+        run: docker compose up -d --no-build server agent
+      - name: Validar API, frontend e autenticação
+        run: |
+          set -eu
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8080/healthz >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/healthz
+          if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/snapshot)" != '401' ]; then
+            echo 'Snapshot sem token deveria responder 401' >&2; exit 1
+          fi
+          token=$(sed -n 's/^OBSERVA_ADMIN_TOKEN=//p' .env)
+          curl -fsS -H "X-API-Key: $token" http://127.0.0.1:8080/api/v1/snapshot > /tmp/observa-snapshot.json
+          curl -fsS -H "X-API-Key: $token" http://127.0.0.1:8080/api/v1/extensions > /tmp/observa-extensions.json
+          curl -fsS http://127.0.0.1:8080/ > /tmp/observa-index.html
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/observa-snapshot.json').read_text())
+          assert 'hosts' in d and 'service_map' in d and 'network_map' in d
+          e=json.loads(Path('/tmp/observa-extensions.json').read_text())
+          assert any(x['id']=='loki' for x in e['extensions'])
+          html=Path('/tmp/observa-index.html').read_text()
+          assert 'root' in html and '/assets/' in html
+          print('API + auth + hub + frontend React integrados')
+          PY
+      - name: Visual QA — Chromium + network + authentication
+        working-directory: observa-lite/frontend
+        run: |
+          npm install --no-save --no-audit --no-fund --legacy-peer-deps playwright
+          npx playwright install chromium
+          OBSERVA_QA_ADMIN_TOKEN=$(sed -n 's/^OBSERVA_ADMIN_TOKEN=//p' ../.env) node scripts/qa-visual.cjs
+      - name: QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observa-lite-qa-browser
+          path: observa-lite/qa/screenshots/
+          if-no-files-found: warn
+      - name: Testar inventário recebido do agente
+        run: |
+          set -eu
+          token=$(sed -n 's/^OBSERVA_ADMIN_TOKEN=//p' .env)
+          for i in $(seq 1 15); do
+            curl -fsS -H "X-API-Key: $token" http://127.0.0.1:8080/api/v1/snapshot > /tmp/observa-snapshot.json
+            if python3 -c 'import json; d=json.load(open("/tmp/observa-snapshot.json")); exit(0 if len(d.get("hosts",[])) >= 1 else 1)'; then
+              echo 'Agente detectou pelo menos um host'; exit 0
+            fi
+            sleep 3
+          done
+          echo 'O agente não enviou descoberta em tempo hábil' >&2; exit 1
+      - name: Logs dos containers em caso de falha
+        if: failure()
+        run: docker compose logs --tail 120 server agent
+      - name: Encerrar os containers
+        if: always()
+        run: docker compose down --remove-orphans
+  publish-ghcr:
+    runs-on: ubuntu-24.04
+    needs: compose-smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [server, agent]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/observa-lite-${{ matrix.target }}
+          tags: |
+            type=raw,value=qa-black-green
+            type=sha,prefix=sha-
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./observa-lite
+          file: ./observa-lite/Dockerfile
+          target: ${{ matrix.target }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=observa-${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=observa-${{ matrix.target }}

@@ -124,3 +124,18 @@ type Snapshot struct {
 	Dashboards  []Dashboard  `json:"dashboards"`
 	Events      []Event      `json:"events"`
 }
+
+ // GatewayEndpoint is configured by an administrator. Never accept destinations from untrusted agents.
+ type GatewayEndpoint struct {
+   ID string `json:"id"`
+   NetworkZone string `json:"network_zone"`
+   URL string `json:"url"`
+   Priority int `json:"priority"`
+   Enabled bool `json:"enabled"`
+ }
+ type ConnectionInfo struct {
+   NetworkZone string `json:"network_zone"`
+   Endpoints []string `json:"endpoints"`
+   DefaultZoneFallback bool `json:"default_zone_fallback"`
+   ValidForSeconds int `json:"valid_for_seconds"`
+ }

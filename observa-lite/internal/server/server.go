@@ -41,6 +41,13 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { write(w, 200, map[string]bool{"ok": true}) })
 	m.HandleFunc("GET /", s.serveUI)
 	m.HandleFunc("POST /api/v1/ingest", s.agentAuth(s.ingest))
+ m.HandleFunc("GET /api/v1/agent/connectioninfo",s.agentAuth(s.agentConnectionInfo))
+ m.HandleFunc("GET /api/v1/gateways",s.adminAuth(func(w http.ResponseWriter,r *http.Request){write(w,200,map[string]any{"gateways":s.Store.Gateways()})}))
+ m.HandleFunc("POST /api/v1/gateways",s.adminAuth(s.registerGateway))
+ m.HandleFunc("DELETE /api/v1/gateways/{id}",s.adminAuth(func(w http.ResponseWriter,r *http.Request){
+  if err:=s.Store.DeleteGateway(r.PathValue("id"));err!=nil{fail(w,500,err);return}
+  write(w,200,map[string]bool{"deleted":true})
+ }))
 	m.HandleFunc("GET /api/v1/snapshot", s.adminAuth(func(w http.ResponseWriter, r *http.Request) { write(w, 200, s.Store.Snapshot()) }))
 	m.HandleFunc("GET /api/v1/extensions", s.adminAuth(s.extensions))
 	m.HandleFunc("GET /api/v1/capabilities", s.adminAuth(s.capabilities))
@@ -280,3 +287,18 @@ func (s *Server) Listen(ctx context.Context, addr string) error {
 	return e
 }
 func AllowPrivateFromEnv() bool { return os.Getenv("OBSERVA_ALLOW_PRIVATE_TARGETS") == "true" }
+
+ func (s *Server) registerGateway(w http.ResponseWriter,r *http.Request){
+  var g model.GatewayEndpoint
+  if !decode(w,r,&g){return}
+  if err:=s.Store.UpsertGateway(g);err!=nil{fail(w,400,err);return}
+  write(w,200,map[string]bool{"saved":true})
+ }
+ func (s *Server) agentConnectionInfo(w http.ResponseWriter,r *http.Request){
+  zone:=r.URL.Query().Get("network_zone")
+  if len(zone)>120 {http.Error(w,"invalid network zone",400);return}
+  allowFallback:=r.URL.Query().Get("allow_default_fallback")=="true"
+  info:=s.Store.ConnectionInfo(zone,allowFallback)
+  if len(info.Endpoints)==0 {write(w,503,map[string]any{"error":"no eligible gateway endpoints","network_zone":info.NetworkZone});return}
+  write(w,200,info)
+ }

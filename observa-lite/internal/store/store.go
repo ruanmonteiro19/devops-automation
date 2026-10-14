@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+ "net/url"
 	"fmt"
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 type persisted struct {
 	Hosts      map[string]model.Host       `json:"hosts"`
+ Gateways map[string]model.GatewayEndpoint `json:"gateways,omitempty"`
 	Templates  map[string]model.Template   `json:"templates"`
 	Sources    map[string]model.DataSource `json:"sources"`
 	Dashboards map[string]model.Dashboard  `json:"dashboards"`
@@ -26,7 +28,7 @@ type Store struct {
 }
 
 func New(file string) (*Store, error) {
-	s := &Store{file: file, data: persisted{Hosts: map[string]model.Host{}, Templates: map[string]model.Template{}, Sources: map[string]model.DataSource{}, Dashboards: map[string]model.Dashboard{}, Events: []model.Event{}}}
+	s := &Store{file: file, data: persisted{Hosts: map[string]model.Host{}, Gateways: map[string]model.GatewayEndpoint{}, Templates: map[string]model.Template{}, Sources: map[string]model.DataSource{}, Dashboards: map[string]model.Dashboard{}, Events: []model.Event{}}}
 	if b, e := os.ReadFile(file); e == nil {
 		if err := json.Unmarshal(b, &s.data); err != nil {
 			return nil, fmt.Errorf("read database: %w", err)
@@ -34,6 +36,7 @@ func New(file string) (*Store, error) {
 	} else if !os.IsNotExist(e) {
 		return nil, e
 	}
+	if s.data.Gateways == nil {s.data.Gateways=map[string]model.GatewayEndpoint{}}
 	if s.data.Hosts == nil {
 		s.data.Hosts = map[string]model.Host{}
 	}
@@ -216,3 +219,57 @@ func (s *Store) Snapshot() model.Snapshot {
  v.ServiceMap=model.Map{Nodes:[]model.Node{},Edges:[]model.Edge{}}
 	return v
 }
+
+ // UpsertGateway registers only administrator-approved relay destinations.
+ func (s *Store) UpsertGateway(g model.GatewayEndpoint) error {
+   if len(g.ID)<1 || len(g.ID)>80 || len(g.NetworkZone)<1 || len(g.NetworkZone)>120 ||
+     g.Priority<0 || g.Priority>1000 {
+     return fmt.Errorf("invalid gateway id, zone or priority")
+   }
+   for _,v:=range []string{g.ID,g.NetworkZone}{
+     for _,c:=range v{
+       if !((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='.'||c=='_'||c=='-'){
+         return fmt.Errorf("invalid gateway or zone identifier")
+       }
+     }
+   }
+   u,err:=url.Parse(g.URL)
+   if err!=nil || u.Scheme!="https" || u.Hostname()=="" || u.User!=nil ||
+     u.RawQuery!="" || u.Fragment!="" || (u.Path!="" && u.Path!="/") || len(g.URL)>512 {
+     return fmt.Errorf("gateway URL must be an HTTPS origin without path, query or credentials")
+   }
+   g.URL="https://"+u.Host
+   s.mu.Lock();defer s.mu.Unlock()
+   s.data.Gateways[g.ID]=g
+   return s.persist()
+ }
+ func (s *Store) DeleteGateway(id string) error {
+   s.mu.Lock();defer s.mu.Unlock()
+   delete(s.data.Gateways,id);return s.persist()
+ }
+ func (s *Store) Gateways() []model.GatewayEndpoint {
+   s.mu.RLock();defer s.mu.RUnlock()
+   res:=make([]model.GatewayEndpoint,0,len(s.data.Gateways))
+   for _,v:=range s.data.Gateways {res=append(res,v)}
+   sort.Slice(res,func(i,j int)bool {if res[i].Priority==res[j].Priority{return res[i].ID<res[j].ID};return res[i].Priority<res[j].Priority})
+   return res
+ }
+ func (s *Store) ConnectionInfo(zone string,allowFallback bool) model.ConnectionInfo {
+   if zone=="" {zone="default"}
+   result:=model.ConnectionInfo{NetworkZone:zone,Endpoints:[]string{},ValidForSeconds:60}
+   seen:=map[string]bool{}
+   for _,g:=range s.Gateways(){
+     if !g.Enabled || g.NetworkZone!=zone || seen[g.URL]{continue}
+     result.Endpoints=append(result.Endpoints,g.URL)
+     seen[g.URL]=true
+   }
+   if zone!="default"&&allowFallback{
+     for _,g:=range s.Gateways(){
+       if !g.Enabled || g.NetworkZone!="default"||seen[g.URL]{continue}
+       result.Endpoints=append(result.Endpoints,g.URL)
+       seen[g.URL]=true
+       result.DefaultZoneFallback=true
+     }
+   }
+   return result
+ }

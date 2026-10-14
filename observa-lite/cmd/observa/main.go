@@ -123,7 +123,7 @@ func runAgent(args []string) error {
   cert,err:=tls.LoadX509KeyPair(*clientCert,*clientKey);if err!=nil{return err}
   tr.TLSClientConfig.Certificates=[]tls.Certificate{cert}
  }
- client := &http.Client{Timeout: 15 * time.Second,Transport:tr}
+ client := &http.Client{Timeout: 15 * time.Second,Transport:tr,CheckRedirect:func(*http.Request,[]*http.Request)error{return fmt.Errorf("agent ingestion redirects are forbidden")}}
 	for {
 		d, e := discovery.Detect()
 		if e == nil {

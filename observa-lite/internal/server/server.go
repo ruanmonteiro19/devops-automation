@@ -11,6 +11,8 @@ import (
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
 	"github.com/ruanmonteiro19/observa-lite/internal/store"
 	"io"
+	"mime"
+	"path"
 	"log"
 	"net/http"
 	"os"
@@ -36,16 +38,7 @@ func New(st *store.Store, admin, agent string, allowPrivate bool) *Server {
 func (s *Server) Handler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { write(w, 200, map[string]bool{"ok": true}) })
-	m.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		b, _ := public.ReadFile("public/index.html")
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
-		w.Write(b)
-	})
+	m.HandleFunc("GET /", s.serveUI)
 	m.HandleFunc("POST /api/v1/ingest", s.agentAuth(s.ingest))
 	m.HandleFunc("GET /api/v1/snapshot", s.adminAuth(func(w http.ResponseWriter, r *http.Request) { write(w, 200, s.Store.Snapshot()) }))
 	m.HandleFunc("GET /api/v1/extensions", s.adminAuth(s.extensions))
@@ -63,6 +56,35 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("GET /api/v1/query", s.adminAuth(s.query))
 	m.HandleFunc("POST /mcp", s.adminAuth(s.mcp))
 	return m
+}
+// serveUI embeds the compiled Lovable React SPA when available.
+// During source-only development, the original HTML page remains the fallback.
+func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
+    requested:=path.Clean("/"+r.URL.Path)
+    index:=requested=="/" || requested=="/index.html" || !strings.Contains(path.Base(requested), ".")
+    name:="public/app"+requested
+    if index { name="public/app/index.html" }
+    body,err:=public.ReadFile(name)
+    modern:=err==nil
+    if err!=nil {
+        if !index {http.NotFound(w,r);return}
+        body,err=public.ReadFile("public/index.html")
+        if err!=nil {http.Error(w,"frontend indisponível",http.StatusServiceUnavailable);return}
+        name="public/index.html"
+    }
+    typ:=mime.TypeByExtension(path.Ext(name))
+    if typ=="" {typ="application/octet-stream"}
+    if path.Ext(name)==".html" {typ="text/html; charset=utf-8"}
+    w.Header().Set("Content-Type",typ)
+    w.Header().Set("X-Content-Type-Options","nosniff")
+    w.Header().Set("Referrer-Policy","same-origin")
+    if strings.HasPrefix(name,"public/app/assets/") {w.Header().Set("Cache-Control","public, max-age=31536000, immutable")} else {w.Header().Set("Cache-Control","no-store")}
+    if modern {
+        w.Header().Set("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'")
+    } else {
+        w.Header().Set("Content-Security-Policy","default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+    }
+    w.WriteHeader(200);_,_=w.Write(body)
 }
 func (s *Server) checkToken(r *http.Request, expected string) bool {
 	value := r.Header.Get("X-API-Key")

@@ -1,0 +1,49 @@
+name: Observa Lite — Linux integrado
+on:
+  push:
+    branches: ["feature/observa-lite-mvp"]
+    paths:
+      - "observa-lite/**"
+      - ".github/workflows/observa-lite-ci.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: observa-lite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Instalar dependências da interface React
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+        working-directory: observa-lite/frontend
+      - name: Compilar interface Lovable (SPA)
+        run: npm run build
+        working-directory: observa-lite/frontend
+      - name: Copiar frontend compilado para o backend
+        run: mkdir -p internal/server/public/app && cp -a frontend/dist/. internal/server/public/app/
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: observa-lite/go.mod
+      - name: Testes Go + race
+        run: go test -race ./...
+      - name: Verificação Go
+        run: go vet ./...
+      - name: Compilar Linux AMD64 e ARM64
+        run: |
+          mkdir -p dist
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w" -o "dist/observa-linux-$arch" ./cmd/observa
+          done
+      - name: Empacotar instalador Linux
+        run: tar -czf ../observa-lite-linux-ui.tar.gz -C .. observa-lite/README.md observa-lite/LICENSE observa-lite/scripts observa-lite/dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: observa-lite-linux-ui
+          path: observa-lite-linux-ui.tar.gz
+          retention-days: 14

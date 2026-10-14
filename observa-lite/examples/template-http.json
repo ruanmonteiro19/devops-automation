@@ -1,0 +1,9 @@
+{
+  "name": "Saude API",
+  "kind": "http",
+  "target": "https://example.org/health",
+  "interval_seconds": 30,
+  "timeout_seconds": 5,
+  "expected_status": 200,
+  "enabled": true
+}

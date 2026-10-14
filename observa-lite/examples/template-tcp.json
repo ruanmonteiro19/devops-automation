@@ -1,0 +1,8 @@
+{
+  "name": "Conexao PostgreSQL",
+  "kind": "tcp",
+  "target": "db.example.org:5432",
+  "interval_seconds": 30,
+  "timeout_seconds": 5,
+  "enabled": true
+}

@@ -1,0 +1,7 @@
+{
+ "title":"Operacoes",
+ "panels":[
+  {"id":"p1","title":"Servicos no ambiente","kind":"stat"},
+  {"id":"p2","title":"Custom HTML","kind":"html","html":"<h2>Observa Lite</h2><div id='live'>Aguardando</div>","css":"body { margin: 18px; color: #dbeafe; background: #102039; font: 15px sans-serif; }","js":"document.getElementById('live').textContent = new Date().toLocaleString('pt-BR');"}
+ ]
+}

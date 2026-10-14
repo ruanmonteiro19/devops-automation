@@ -1,0 +1,7 @@
+/dist/
+/observa-data/
+*.log
+*.tar.gz
+.env
+*.pem
+*.key

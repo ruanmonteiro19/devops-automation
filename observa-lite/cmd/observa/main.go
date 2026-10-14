@@ -1,0 +1,119 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"github.com/ruanmonteiro19/observa-lite/internal/discovery"
+	"github.com/ruanmonteiro19/observa-lite/internal/server"
+	"github.com/ruanmonteiro19/observa-lite/internal/store"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+)
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "usage: observa server|agent|once")
+		os.Exit(2)
+	}
+	var err error
+	switch os.Args[1] {
+	case "server":
+		err = runServer(os.Args[2:])
+	case "agent":
+		err = runAgent(os.Args[2:])
+	case "once":
+		d, e := discovery.Detect()
+		if e != nil {
+			err = e
+		} else {
+			err = json.NewEncoder(os.Stdout).Encode(d)
+		}
+	default:
+		err = fmt.Errorf("unknown command %q", os.Args[1])
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func runServer(args []string) error {
+	fs := flag.NewFlagSet("server", flag.ContinueOnError)
+	addr := fs.String("listen", env("OBSERVA_LISTEN", "127.0.0.1:8080"), "HTTP listen address (use a reverse proxy for TLS)")
+	data := fs.String("data", env("OBSERVA_DB", "./observa-data/state.json"), "state JSON path")
+	if e := fs.Parse(args); e != nil {
+		return e
+	}
+	st, e := store.New(*data)
+	if e != nil {
+		return e
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	return server.New(st, os.Getenv("OBSERVA_ADMIN_TOKEN"), os.Getenv("OBSERVA_AGENT_TOKEN"), server.AllowPrivateFromEnv()).Listen(ctx, *addr)
+}
+func runAgent(args []string) error {
+	fs := flag.NewFlagSet("agent", flag.ContinueOnError)
+	endpoint := fs.String("server", env("OBSERVA_SERVER", "http://127.0.0.1:8080"), "Observa server root URL")
+	interval := fs.Duration("interval", 30*time.Second, "discovery interval; minimum 10s")
+	if e := fs.Parse(args); e != nil {
+		return e
+	}
+	if *interval < 10*time.Second {
+		return fmt.Errorf("minimum interval 10s")
+	}
+	token := os.Getenv("OBSERVA_AGENT_TOKEN")
+	if len(token) < 24 {
+		return fmt.Errorf("OBSERVA_AGENT_TOKEN must be at least 24 characters")
+	}
+	if !(strings.HasPrefix(*endpoint, "https://") || strings.HasPrefix(*endpoint, "http://127.0.0.1:") || strings.HasPrefix(*endpoint, "http://localhost:")) {
+		return fmt.Errorf("agent requires HTTPS for remote ingestion")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	client := &http.Client{Timeout: 15 * time.Second}
+	for {
+		d, e := discovery.Detect()
+		if e == nil {
+			var b []byte
+			b, e = json.Marshal(d)
+			if e == nil {
+				req, _ := http.NewRequestWithContext(ctx, "POST", strings.TrimRight(*endpoint, "/")+"/api/v1/ingest", bytes.NewReader(b))
+				req.Header.Set("Content-Type", "application/json")
+				req.Header.Set("X-API-Key", token)
+				var resp *http.Response
+				resp, e = client.Do(req)
+				if e == nil {
+					body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+					resp.Body.Close()
+					if resp.StatusCode != 202 {
+						e = fmt.Errorf("ingest: %d %s", resp.StatusCode, string(body))
+					}
+				}
+			}
+		}
+		if e != nil {
+			log.Printf("agent: %v", e)
+		} else {
+			log.Printf("sent %d processes and %d sockets", len(d.Processes), len(d.Connections))
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(*interval):
+		}
+	}
+}
+func env(k, fallback string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return fallback
+}

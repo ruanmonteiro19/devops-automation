@@ -17,7 +17,7 @@ else
 fi
 mkdir -p /etc/observa /var/lib/observa
 chmod 700 /etc/observa /var/lib/observa
-randhex(){od -An -N32 -tx1 /dev/urandom | tr -d ' \n';}
+randhex(){ od -An -N32 -tx1 /dev/urandom | tr -d ' \n'; }
 if [ "$MODE" = all ] || [ "$MODE" = server ];then
  ADMIN_TOKEN=${OBSERVA_ADMIN_TOKEN:-$(randhex)}
  AGENT_TOKEN=${OBSERVA_AGENT_TOKEN:-$(randhex)}

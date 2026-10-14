@@ -40,7 +40,7 @@ const navGroups: NavGroup[] = [
   { label: "Visualização", items: [["Dashboards", "dashboards", LayoutDashboard, true], ["Editor de painéis", "editor-paineis", PanelRight], ["HTML Graphics", "html-graphics", Code2], ["Modo TV", "modo-tv", Play]].map(toNav) },
   { label: "Automação", items: [["IA & RCA", "ia-rca", Bot], ["MCP Hub", "mcp-hub", Bot], ["Integrações", "integracoes", Workflow], ["Webhooks", "webhooks", Radio]].map(toNav) },
   { label: "Extensões", items: [["Hub de Extensões", "extensoes", Boxes, true], ["Minhas extensões", "minhas-extensoes", Star]].map(toNav) },
-  { label: "Administração", items: [["Usuários & acesso", "usuarios-acesso", Users, true], ["Autenticação (SSO/MFA)", "autenticacao", ShieldCheck], ["Chaves de API", "chaves-api", KeyRound], ["Agentes", "agentes", Radio], ["Configurações", "configuracoes", Settings], ["Auditoria", "auditoria", ListFilter], ["Ajuda", "ajuda", CircleHelp]].map(toNav) },
+  { label: "Administração", items: [["Usuários & acesso", "usuarios-acesso", Users, true], ["Autenticação (SSO/MFA)", "autenticacao", ShieldCheck], ["Chaves de API", "chaves-api", KeyRound], ["Agentes", "agentes", Radio], ["Gateways", "gateways", Network], ["Host Groups", "host-groups", Server], ["Network Zones", "network-zones", Network], ["Configurações", "configuracoes", Settings], ["Auditoria", "auditoria", ListFilter], ["Ajuda", "ajuda", CircleHelp]].map(toNav) },
 ];
 
 function toNav(tuple: [string, string, LucideIcon, boolean?]): NavItem { return { label: tuple[0], path: tuple[1], icon: tuple[2], favorite: tuple[3] }; }
@@ -162,9 +162,34 @@ function PageRouter({ path, snapshot, demo, globalSearch }: { path: string; snap
   if (["dashboards", "editor-paineis", "html-graphics"].includes(path)) return <DashboardBuilder items={snapshot.dashboards} demo={demo} />;
   if (["incidentes", "prioridades", "alertas", "erros"].includes(path)) return <IncidentList events={snapshot.events} />;
   if (path === "servicos" || path === "aplicacoes") return <ServicesPage snapshot={snapshot} filter={globalSearch} />;
+  if (["agentes","gateways","host-groups","network-zones"].includes(path)) return <AgentRoutingPage snapshot={snapshot} path={path} />;
   if (path === "hosts" || path === "processos" || path === "containers" || path === "kubernetes") return <InfrastructurePage snapshot={snapshot} path={path} />;
   if (!path || path === "saude") return <Overview snapshot={snapshot} demo={demo} />;
   return <FuturePage title={labels.get(path) ?? "Área operacional"} />;
+}
+
+
+function AgentRoutingPage({snapshot,path}:{snapshot:Snapshot;path:string}) {
+ const hosts=snapshot.hosts;
+ const groups=new Map<string,number>();
+ const zones=new Map<string,number>();
+ hosts.forEach(h=>{const g=h.host_group||"Sem grupo"; const z=h.network_zone||"default";groups.set(g,(groups.get(g)||0)+1); zones.set(z,(zones.get(z)||0)+1)});
+ const title=path==="agentes"?"Agentes":path==="gateways"?"Gateways":path==="host-groups"?"Host Groups":"Network Zones";
+ const description=path==="gateways"?"Relay HTTPS com validação de certificados. O registro de gateways conectados ainda não está disponível no backend.":"Inventário observado a partir de agentes autenticados; grupos e zonas são informados na configuração da instalação.";
+ if(path==="gateways")return <><PageHeader eyebrow="Administração / Conectividade" title={title} description={description}/>
+ <section className="rounded-lg border border-border bg-surface p-6"><h2 className="text-sm font-semibold">Gateway HTTPS</h2>
+ <p className="mt-2 max-w-3xl text-sm text-muted-foreground">O Gateway encaminha apenas ingestão autenticada. O backend atual não monitora heartbeat nem rota ativa por gateway; não é possível confirmar sua disponibilidade por esta tela.</p>
+ <p className="mt-3 text-xs text-muted-foreground">Para usar certificados corporativos, configure CA, SAN, TLS e opcionalmente mTLS no processo de instalação do Gateway.</p></section></>;
+ const rows=path==="host-groups"?Array.from(groups).map(([name,count])=>[name,count]):
+ path==="network-zones"?Array.from(zones).map(([name,count])=>[name,count]):
+ hosts.map(h=>[h.name,h.os,h.host_group||"Sem grupo",h.network_zone||"default",h.monitoring_mode||"legacy-discovery",new Date(h.last_seen).toLocaleString("pt-BR")]);
+ return <><PageHeader eyebrow="Administração / Conectividade" title={title} description={description}/>
+ <div className="overflow-auto rounded-lg border border-border bg-surface">
+ <table className="w-full min-w-[550px] text-left text-sm"><thead className="border-b border-border bg-muted/30 text-xs text-muted-foreground"><tr>
+ {(path==="agentes"?["Host","Sistema","Host Group","Network Zone","Modo","Última observação"]:[path==="host-groups"?"Host Group":"Network Zone","Hosts"]).map(t=><th className="px-4 py-3 font-medium" key={t}>{t}</th>)}</tr></thead>
+ <tbody>{rows.length?rows.map((row,n)=><tr key={n} className="border-b border-border/70">{row.map((cell,j)=><td key={j} className="px-4 py-3">{String(cell)}</td>)}</tr>):
+ <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Nenhum host observado neste escopo.</td></tr>}</tbody></table></div>
+ <p className="mt-4 text-xs text-muted-foreground">Network Zone é o agrupamento da conexão, não prova de roteamento por Gateway. Modos mais profundos ainda não estão disponíveis nesta versão.</p></>;
 }
 
 function PageHeader({ eyebrow, title, description, actions }: { eyebrow?: string; title: string; description: string; actions?: ReactNode }) { return <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div>{eyebrow && <div className="mb-1 text-[11px] font-semibold uppercase text-primary">{eyebrow}</div>}<h1 className="text-2xl font-semibold tracking-normal">{title}</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p></div>{actions && <div className="flex shrink-0 gap-2">{actions}</div>}</div>; }

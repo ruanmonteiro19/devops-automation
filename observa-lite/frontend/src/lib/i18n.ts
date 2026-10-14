@@ -16,6 +16,7 @@ const english:Dict={
  "Administração":"Administration","Usuários & acesso":"Users & access","Autenticação (SSO/MFA)":"Authentication (SSO/MFA)",
  "Chaves de API":"API keys","Agentes":"Agents","Configurações":"Settings","Auditoria":"Audit","Ajuda":"Help",
  "Filtrar navegação":"Filter navigation","Pesquisar host, serviço, PID ou evento":"Search host, service, PID or event",
+ "Gateways":"Gateways","Host Groups":"Host groups","Network Zones":"Network zones",
  "Produção":"Production","Homologação":"Staging"};
 const spanish:Dict={
  "Início":"Inicio","Visão geral":"Visión general","Prioridades agora":"Prioridades","Saúde do ambiente":"Salud del entorno",
@@ -31,6 +32,7 @@ const spanish:Dict={
  "Autenticação (SSO/MFA)":"Autenticación (SSO/MFA)","Chaves de API":"Claves de API",
  "Agentes":"Agentes","Configurações":"Configuración","Auditoria":"Auditoría","Ajuda":"Ayuda",
  "Filtrar navegação":"Filtrar navegación","Pesquisar host, serviço, PID ou evento":"Buscar host, servicio, PID o evento",
+ "Gateways":"Gateways","Host Groups":"Grupos de hosts","Network Zones":"Zonas de red",
  "Produção":"Producción","Homologação":"Homologación"};
 export function navText(text:string,lang:ObservaLanguage):string{
  return lang==="en-US"?(english[text]??text):lang==="es-ES"?(spanish[text]??text):text;

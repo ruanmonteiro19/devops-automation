@@ -89,21 +89,7 @@ func (s *Store) Ingest(d model.Discovery) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	prev, exists := s.data.Hosts[d.HostID]
-	p := map[string]bool{}
-	for _, pr := range d.Processes {
-		p[pr.Service] = true
-	}
-	if exists && time.Since(prev.LastSeen) < 10*time.Minute {
-		for _, pr := range prev.Processes {
-			if !p[pr.Service] {
-				s.AddEventLocked("svc:"+d.HostID+":"+pr.Service, "warning", "Serviço não observado no novo inventário", "processo anterior: "+pr.Name)
-			}
-		}
-	}
-	for _, pr := range d.Processes {
-		s.ResolveLocked("svc:"+d.HostID+":"+pr.Service, "Serviço não observado no novo inventário")
-	}
+	// PID disappearance cannot establish an application outage. Do not synthesize APM alerts from process churn.
 	s.data.Hosts[d.HostID] = model.Host{ID: d.HostID, Name: d.Hostname, OS: d.OS, Addresses: d.Addresses, LastSeen: time.Now().UTC(), Processes: d.Processes, Connections: d.Connections,HostGroup:d.HostGroup,NetworkZone:d.NetworkZone,MonitoringMode:d.MonitoringMode}
 	return s.persist()
 }
@@ -214,6 +200,11 @@ func (s *Store) Snapshot() model.Snapshot {
 	}
 	sort.Slice(v.Hosts, func(i, j int) bool { return v.Hosts[i].Name < v.Hosts[j].Name })
 	sort.Slice(v.Templates, func(i, j int) bool { return v.Templates[i].Name < v.Templates[j].Name })
-	v.ServiceMap, v.NetworkMap = BuildMaps(v.Hosts)
+	v.ProcessMap, v.NetworkMap = BuildMaps(v.Hosts)
+ for i:=range v.ProcessMap.Nodes{
+  if v.ProcessMap.Nodes[i].Kind=="service"{v.ProcessMap.Nodes[i].Kind="process-group"}
+ }
+ // Passive OS observations never become confirmed APM service entities.
+ v.ServiceMap=model.Map{Nodes:[]model.Node{},Edges:[]model.Edge{}}
 	return v
 }

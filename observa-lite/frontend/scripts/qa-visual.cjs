@@ -31,10 +31,11 @@ const sleep=(t)=>new Promise(r=>setTimeout(r,t));
   await page.getByRole('button',{name:'Conectar',exact:true}).click();
   await page.getByRole('link',{name:'Visão geral'}).waitFor({timeout:15000});
   await page.screenshot({path:path.join(dir,'02-authenticated-overview.png'),fullPage:true});
-  for(const route of ['agentes','host-groups','network-zones','gateways']){
+  for(const route of ['agentes','host-groups','network-zones','gateways','process-mapping','service-mapping']){
    await page.goto(base+'/'+route,{waitUntil:'networkidle',timeout:15000});
-   const title=route==='agentes'?'Agentes':route==='host-groups'?'Host Groups':route==='network-zones'?'Network Zones':'Gateways';
+   const title=route==='agentes'?'Agentes':route==='host-groups'?'Host Groups':route==='network-zones'?'Network Zones':route==='process-mapping'?'Process Mapping':route==='service-mapping'?'Service Mapping':'Gateways';
    await page.getByRole('heading',{name:title,exact:true}).waitFor({timeout:15000});
+   if (route==='service-mapping') await page.getByText('Nenhum serviço APM instrumentado').waitFor({timeout:15000});
    await page.screenshot({path:path.join(dir,'03-'+route+'.png'),fullPage:true});
   }
   console.log('BROWSER_QA_OK',color);

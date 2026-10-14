@@ -12,7 +12,7 @@ export type ObservaEvent = { id: string; at: string; severity: string; entity: s
 export type LogLine = { at:string; line:string; labels:Record<string,string> };
 export type LogQueryResult = { logs:LogLine[]; source:string; minutes:number; limit:number; storage:string; persisted_by_observa:boolean };
 export type CatalogExtension = { id:string; name:string; category:string; description:string; available:boolean; configured:boolean; integration:string; version:string };
-export type Snapshot = { generated_at: string; hosts: Host[]; service_map: TopologyMap; network_map: TopologyMap; templates: MonitorTemplate[]; datasources: DataSource[]; dashboards: Dashboard[]; events: ObservaEvent[] };
+export type Snapshot = { generated_at: string; hosts: Host[]; service_map: TopologyMap; process_map?: TopologyMap; network_map: TopologyMap; templates: MonitorTemplate[]; datasources: DataSource[]; dashboards: Dashboard[]; events: ObservaEvent[] };
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

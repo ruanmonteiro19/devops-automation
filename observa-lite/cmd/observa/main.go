@@ -90,6 +90,7 @@ func runAgent(args []string) error {
  caFile := fs.String("ca-file",env("OBSERVA_CA_FILE",""),"PEM CA bundle for trusted gateway")
  clientCert := fs.String("client-cert",env("OBSERVA_CLIENT_CERT",""),"optional PEM client certificate for mTLS")
  clientKey := fs.String("client-key",env("OBSERVA_CLIENT_KEY",""),"optional PEM client private key for mTLS")
+ discoverProcesses := fs.Bool("discover-processes",env("OBSERVA_DISCOVER_PROCESSES","true")=="true","include processes and TCP sockets")
  legacyPayload := fs.Bool("legacy-payload",env("OBSERVA_LEGACY_PAYLOAD","false")=="true","send old schema without group/zone, for older servers only")
 	if e := fs.Parse(args); e != nil {
 		return e
@@ -130,6 +131,7 @@ func runAgent(args []string) error {
            d.HostGroup=*hostGroup
            d.NetworkZone=*networkZone
            d.MonitoringMode=*mode
+           if !*discoverProcesses {d.Processes=nil;d.Connections=nil}
            if *legacyPayload {d.HostGroup="";d.NetworkZone="";d.MonitoringMode=""}
 			var b []byte
 			b, e = json.Marshal(d)

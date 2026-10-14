@@ -57,6 +57,7 @@ services:
       - no-new-privileges:true
     environment:
       OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Execute ./scripts/docker-init.sh primeiro}
+      OBSERVA_DISCOVER_PROCESSES: ${OBSERVA_DISCOVER_PROCESSES:-true}
     volumes:
       - /etc/machine-id:/etc/machine-id:ro
       - /etc/os-release:/etc/os-release:ro

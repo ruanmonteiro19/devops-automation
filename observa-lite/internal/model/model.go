@@ -117,6 +117,7 @@ type Snapshot struct {
 	GeneratedAt time.Time    `json:"generated_at"`
 	Hosts       []Host       `json:"hosts"`
 	ServiceMap  Map          `json:"service_map"`
+	ProcessMap  Map          `json:"process_map"`
 	NetworkMap  Map          `json:"network_map"`
 	Templates   []Template   `json:"templates"`
 	DataSources []DataSource `json:"datasources"`

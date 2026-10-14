@@ -76,6 +76,39 @@ jobs:
             sleep 3
           done
           echo 'O agente não enviou descoberta em tempo hábil' >&2; exit 1
+      - name: Validar contratos APM, processos e persistência do estado
+        run: |
+          set -eu
+          token=$(sed -n 's/^OBSERVA_ADMIN_TOKEN=//p' .env)
+          curl -fsS -H "X-API-Key: $token" http://127.0.0.1:8080/api/v1/snapshot > /tmp/observa-before.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/observa-before.json'))
+          assert len(d['hosts'])>=1, 'Agente nao registrou host'
+          assert len(d['process_map']['nodes'])>=1, 'Process Mapping deve conter os processos reais'
+          assert len(d['service_map']['nodes'])==0, 'Processos nao podem virar servicos APM instrumentados'
+          assert isinstance(d['network_map']['nodes'],list)
+          for host in d['hosts']:
+            assert isinstance(host['processes'],list)
+            assert isinstance(host['connections'],list)
+          print('Process Mapping separado de Service Mapping; contrato JSON coerente')
+          PY
+          docker compose restart server
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8080/healthz >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS -H "X-API-Key: $token" http://127.0.0.1:8080/api/v1/snapshot > /tmp/observa-after.json
+          python3 - <<'PY'
+          import json
+          before=json.load(open('/tmp/observa-before.json'))
+          after=json.load(open('/tmp/observa-after.json'))
+          previous={h['id'] for h in before['hosts']}
+          current={h['id'] for h in after['hosts']}
+          assert previous <= current, 'Hosts nao persistiram apos reinicio'
+          assert len(after['process_map']['nodes'])>=1, 'Process Mapping ausente apos reinicio'
+          print('Persistencia do inventario e do mapa validada apos restart')
+          PY
       - name: Logs dos containers em caso de falha
         if: failure()
         run: docker compose logs --tail 120 server agent

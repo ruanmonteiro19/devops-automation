@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { api, ApiError, readToken, saveToken, type Dashboard, type DataSource, type MapNode, type MonitorTemplate, type Snapshot, type TopologyMap } from "@/lib/api";
+import { api, ApiError, readToken, saveToken, type Dashboard, type DataSource, type GatewayEndpoint, type MapNode, type MonitorTemplate, type Snapshot, type TopologyMap } from "@/lib/api";
 import { createDemoSnapshot } from "@/lib/demo-data";
 import { LogsPage } from "@/components/logs-page";
 import { navText, validLanguage, type ObservaLanguage } from "@/lib/i18n";
@@ -170,16 +170,37 @@ function PageRouter({ path, snapshot, demo, globalSearch }: { path: string; snap
 
 
 function AgentRoutingPage({snapshot,path}:{snapshot:Snapshot;path:string}) {
+ const qc=useQueryClient();
+ const gatewayQuery=useQuery({queryKey:["gateways"],queryFn:api.gateways,enabled:path==="gateways",retry:false});
+ const [gatewayDraft,setGatewayDraft]=useState<GatewayEndpoint>({id:"",network_zone:"default",url:"",priority:10,enabled:true});
+ const saveGateway=useMutation({mutationFn:api.saveGateway,onSuccess:()=>{toast.success("Gateway registrado");void qc.invalidateQueries({queryKey:["gateways"]})},onError:(e)=>toast.error(String(e))});
+ const removeGateway=useMutation({mutationFn:api.removeGateway,onSuccess:()=>{toast.success("Gateway removido");void qc.invalidateQueries({queryKey:["gateways"]})},onError:(e)=>toast.error(String(e))});
  const hosts=snapshot.hosts;
  const groups=new Map<string,number>();
  const zones=new Map<string,number>();
  hosts.forEach(h=>{const g=h.host_group||"Sem grupo"; const z=h.network_zone||"default";groups.set(g,(groups.get(g)||0)+1); zones.set(z,(zones.get(z)||0)+1)});
  const title=path==="agentes"?"Agentes":path==="gateways"?"Gateways":path==="host-groups"?"Host Groups":"Network Zones";
- const description=path==="gateways"?"Relay HTTPS com validação de certificados. O registro de gateways conectados ainda não está disponível no backend.":"Inventário observado a partir de agentes autenticados; grupos e zonas são informados na configuração da instalação.";
+ const description=path==="gateways"?"Endpoints HTTPS autorizados por zona, com prioridade e fallback opcional. Um registro não comprova conectividade ou saúde.":"Inventário observado a partir de agentes autenticados; grupos e zonas são informados na configuração da instalação.";
  if(path==="gateways")return <><PageHeader eyebrow="Administração / Conectividade" title={title} description={description}/>
- <section className="rounded-lg border border-border bg-surface p-6"><h2 className="text-sm font-semibold">Gateway HTTPS</h2>
- <p className="mt-2 max-w-3xl text-sm text-muted-foreground">O Gateway encaminha apenas ingestão autenticada. O backend atual não monitora heartbeat nem rota ativa por gateway; não é possível confirmar sua disponibilidade por esta tela.</p>
- <p className="mt-3 text-xs text-muted-foreground">Para usar certificados corporativos, configure CA, SAN, TLS e opcionalmente mTLS no processo de instalação do Gateway.</p></section></>;
+ <section className="rounded-lg border border-border bg-surface p-5">
+  <h2 className="text-sm font-semibold">Cadastrar Gateway HTTPS</h2>
+  <p className="mt-2 text-xs text-muted-foreground">Esta tela autoriza os destinos que o Agent pode utilizar. O Agent precisa habilitar o modo control-plane para consultar as rotas; o heartbeat dos Gateways não está implementado.</p>
+  <form className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5" onSubmit={e=>{e.preventDefault();saveGateway.mutate(gatewayDraft)}}>
+   <label className="space-y-1 text-xs">Identificador<Input required value={gatewayDraft.id} placeholder="gate-a" onChange={e=>setGatewayDraft(v=>({...v,id:e.target.value}))}/></label>
+   <label className="space-y-1 text-xs">Network Zone<Input required value={gatewayDraft.network_zone} placeholder="zone-a" onChange={e=>setGatewayDraft(v=>({...v,network_zone:e.target.value}))}/></label>
+   <label className="space-y-1 text-xs xl:col-span-2">URL HTTPS<Input required type="url" value={gatewayDraft.url} placeholder="https://gateway.example:18443" onChange={e=>setGatewayDraft(v=>({...v,url:e.target.value}))}/></label>
+   <label className="space-y-1 text-xs">Prioridade (menor = primeira)<Input required type="number" min={0} max={1000} value={gatewayDraft.priority} onChange={e=>setGatewayDraft(v=>({...v,priority:Number(e.target.value)}))}/></label>
+   <label className="flex items-center gap-2 text-xs"><Switch checked={gatewayDraft.enabled} onCheckedChange={enabled=>setGatewayDraft(v=>({...v,enabled}))}/> Rota habilitada</label>
+   <Button className="max-w-52" type="submit" disabled={saveGateway.isPending}><Plus className="mr-2 size-4"/>Cadastrar</Button>
+  </form>
+ </section>
+ <section className="mt-4 overflow-auto rounded-lg border border-border bg-surface">
+ <div className="border-b border-border p-4 text-sm font-medium">Rotas cadastradas</div>
+ {gatewayQuery.isError?<p className="p-5 text-sm text-destructive">Não foi possível consultar os Gateways autorizados.</p>:gatewayQuery.isLoading?<p className="p-5 text-sm text-muted-foreground">Carregando configuração...</p>:
+ <table className="w-full min-w-[650px] text-left text-sm"><thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="p-3">ID</th><th className="p-3">Network Zone</th><th className="p-3">URL</th><th className="p-3">Prioridade</th><th className="p-3">Estado</th><th className="p-3">Ações</th></tr></thead><tbody>{gatewayQuery.data?.gateways.map(g=><tr key={g.id} className="border-b border-border/60"><td className="p-3">{g.id}</td><td className="p-3">{g.network_zone}</td><td className="p-3 font-mono text-xs">{g.url}</td><td className="p-3">{g.priority}</td><td className="p-3">{g.enabled?"Autorizado":"Desativado"}</td><td className="p-3"><Button size="sm" variant="outline" disabled={removeGateway.isPending} onClick={()=>{if(window.confirm("Excluir a rota de Gateway "+g.id+"?"))removeGateway.mutate(g.id)}}>Excluir</Button></td></tr>)}
+ {!gatewayQuery.data?.gateways.length&&<tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhum Gateway configurado</td></tr>}</tbody></table>}
+ </section>
+ <p className="mt-4 text-xs text-muted-foreground">Disponibilidade: não verificada. Configure o Gateway com TLS válido e faça os testes de conectividade antes de habilitar roteamento nos Agents.</p></>;
  const rows=path==="host-groups"?Array.from(groups).map(([name,count])=>[name,count]):
  path==="network-zones"?Array.from(zones).map(([name,count])=>[name,count]):
  hosts.map(h=>[h.name,h.os,h.host_group||"Sem grupo",h.network_zone||"default",h.monitoring_mode||"legacy-discovery",new Date(h.last_seen).toLocaleString("pt-BR")]);

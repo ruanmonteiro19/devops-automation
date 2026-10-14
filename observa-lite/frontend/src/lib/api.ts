@@ -12,6 +12,7 @@ export type ObservaEvent = { id: string; at: string; severity: string; entity: s
 export type LogLine = { at:string; line:string; labels:Record<string,string> };
 export type LogQueryResult = { logs:LogLine[]; source:string; minutes:number; limit:number; storage:string; persisted_by_observa:boolean };
 export type CatalogExtension = { id:string; name:string; category:string; description:string; available:boolean; configured:boolean; integration:string; version:string };
+export type GatewayEndpoint = { id: string; network_zone: string; url: string; priority: number; enabled: boolean };
 export type Snapshot = { generated_at: string; hosts: Host[]; service_map: TopologyMap; process_map?: TopologyMap; network_map: TopologyMap; templates: MonitorTemplate[]; datasources: DataSource[]; dashboards: Dashboard[]; events: ObservaEvent[] };
 
 export class ApiError extends Error {
@@ -44,6 +45,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   snapshot: () => request<Snapshot>("/api/v1/snapshot"),
+  gateways: () => request<{gateways: GatewayEndpoint[]}>("/api/v1/gateways"),
+  saveGateway: (value: GatewayEndpoint) => request<{saved:boolean}>("/api/v1/gateways", {method:"POST",body:JSON.stringify(value)}),
+  removeGateway: (id:string) => request<{deleted:boolean}>("/api/v1/gateways/"+encodeURIComponent(id),{method:"DELETE"}),
   extensions: () => request<{extensions:CatalogExtension[]}>("/api/v1/extensions"),
   logs: (source:string,query:string,minutes=60,limit=100) =>
     request<LogQueryResult>("/api/v1/logs?"+new URLSearchParams({source,query,minutes:String(minutes),limit:String(limit)})),

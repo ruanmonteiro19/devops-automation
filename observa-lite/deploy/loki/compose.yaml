@@ -1,0 +1,17 @@
+# Optional component: NOT started by Observa Lite installer.
+# Single-node Loki for trusted lab use, not publicly accessible.
+services:
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: observa-loki
+    command: ["-config.file=/etc/loki/local.yaml"]
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./config.yaml:/etc/loki/local.yaml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  loki-data:

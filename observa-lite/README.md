@@ -147,3 +147,8 @@ https://lovable.dev/projects/5ff82d39-2280-4b5e-99d9-634272c8e9d1
 
 A integração da UI React ao binário Go ainda não foi realizada. O backend atual continua servido por HTML embarcado. Após a geração dos arquivos no Lovable, integrar build estático na pasta `internal/server/public` preservando os contratos REST existentes e os testes.
 
+
+
+## Armazenamento leve e logs Loki (integração experimental)
+
+A API GET /api/v1/logs consulta fontes Loki por LogQL, com autenticação administrativa e limites estritos (máx. 200 linhas; período máx. 24h; resposta limitada a 2 MiB). Os logs NÃO são copiados para o estado JSON do Observa Lite. Cadastro de Loki disponível em Data Sources, exploração em Logs. Coleta de logs não está implementada no agente Linux; é necessário enviar logs a Loki por um coletor externo apropriado. Experimente o Loki local SOMENTE em laboratório com o arquivo deploy/loki/compose.yaml. Retenção Loki configurada para 7 dias no exemplo, sem quota de tamanho em disco. Consulte deploy/storage/ARCHITECTURE.md para separação atual e proposta de SQLite/VictoriaMetrics/Tempo, ainda não implementados.

@@ -36,6 +36,17 @@ const sleep=(t)=>new Promise(r=>setTimeout(r,t));
    const title=route==='agentes'?'Agentes':route==='host-groups'?'Host Groups':route==='network-zones'?'Network Zones':route==='process-mapping'?'Process Mapping':route==='service-mapping'?'Service Mapping':'Gateways';
    await page.getByRole('heading',{name:title,exact:true}).waitFor({timeout:15000});
    if (route==='service-mapping') await page.getByText('Nenhum serviço APM instrumentado').waitFor({timeout:15000});
+   if (route==='gateways') {
+    await page.getByPlaceholder('gate-a').fill('gateway-ci');
+    await page.getByPlaceholder('zone-a').fill('qa-zone');
+    await page.getByPlaceholder('https://gateway.example:18443').fill('https://gateway-ci.example:18443');
+    await page.getByRole('button',{name:'Cadastrar'}).click();
+    await page.getByRole('cell',{name:'gateway-ci',exact:true}).waitFor({timeout:15000});
+    await page.screenshot({path:path.join(dir,'04-gateway-registered.png'),fullPage:true});
+    page.once('dialog',d=>d.accept());
+    await page.getByRole('button',{name:'Excluir'}).click();
+    await page.getByRole('cell',{name:'gateway-ci',exact:true}).waitFor({state:'detached',timeout:15000});
+   }
    await page.screenshot({path:path.join(dir,'03-'+route+'.png'),fullPage:true});
   }
   console.log('BROWSER_QA_OK',color);

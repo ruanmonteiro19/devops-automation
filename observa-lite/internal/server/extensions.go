@@ -34,7 +34,7 @@ func extensionCatalog(sources []model.DataSource, templates []model.Template, ag
         {ID:"postgresql",Name:"PostgreSQL",Category:"Banco de dados",Description:"Métricas SQL e saúde do PostgreSQL",Integration:"future"},
         {ID:"sqlserver",Name:"SQL Server",Category:"Banco de dados",Description:"Métricas e desempenho do SQL Server",Integration:"future"},
         {ID:"elastic",Name:"Elasticsearch / OpenSearch",Category:"Logs",Description:"Consultas e correlação de logs",Integration:"future"},
-        {ID:"loki",Name:"Grafana Loki",Category:"Logs",Description:"Consulta a logs Loki",Integration:"future"},
+        {ID:"loki",Name:"Grafana Loki",Category:"Logs",Description:"Consultar LogQL no Loki com janela e volume limitados",Available:true,Integration:"datasource"},
         {ID:"tempo",Name:"Grafana Tempo",Category:"Traces",Description:"Investigação de distributed traces",Integration:"future"},
         {ID:"jenkins",Name:"Jenkins",Category:"DevOps",Description:"Pipelines, builds e dados operacionais",Integration:"future"},
         {ID:"aws",Name:"AWS",Category:"Cloud",Description:"Telemetria de serviços AWS",Integration:"future"},

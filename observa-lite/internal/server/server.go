@@ -54,6 +54,7 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("POST /api/v1/datasources", s.adminAuth(s.upsertSource))
 	m.HandleFunc("POST /api/v1/dashboards", s.adminAuth(s.upsertDashboard))
 	m.HandleFunc("GET /api/v1/query", s.adminAuth(s.query))
+	m.HandleFunc("GET /api/v1/logs", s.adminAuth(s.logs))
 	m.HandleFunc("POST /mcp", s.adminAuth(s.mcp))
 	return m
 }
@@ -161,8 +162,8 @@ func (s *Server) upsertSource(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &v) {
 		return
 	}
-	if v.Kind != "prometheus" && v.Kind != "json" || len(v.URL) > 2048 || v.Name == "" {
-		fail(w, 400, errors.New("datasource must be prometheus or json with name/URL"))
+	if v.Kind != "prometheus" && v.Kind != "json" && v.Kind != "loki" || len(v.URL) > 2048 || v.Name == "" {
+		fail(w, 400, errors.New("datasource must be prometheus, json or loki with name/URL"))
 		return
 	}
 	if strings.ContainsAny(v.SecretEnv, " /\\:\n\t") || len(v.SecretEnv) > 100 {

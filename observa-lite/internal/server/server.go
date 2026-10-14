@@ -48,6 +48,8 @@ func (s *Server) Handler() http.Handler {
 	})
 	m.HandleFunc("POST /api/v1/ingest", s.agentAuth(s.ingest))
 	m.HandleFunc("GET /api/v1/snapshot", s.adminAuth(func(w http.ResponseWriter, r *http.Request) { write(w, 200, s.Store.Snapshot()) }))
+	m.HandleFunc("GET /api/v1/extensions", s.adminAuth(s.extensions))
+	m.HandleFunc("GET /api/v1/capabilities", s.adminAuth(s.capabilities))
 	m.HandleFunc("POST /api/v1/templates", s.adminAuth(s.upsertTemplate))
 	m.HandleFunc("DELETE /api/v1/templates/{id}", s.adminAuth(func(w http.ResponseWriter, r *http.Request) {
 		if e := s.Store.DeleteTemplate(r.PathValue("id")); e != nil {

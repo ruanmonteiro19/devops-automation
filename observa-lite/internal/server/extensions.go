@@ -56,6 +56,28 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
     write(w,200,map[string]interface{}{
         "version":"0.2.0",
         "authentication":map[string]interface{}{"mode":"api_token","sso":false,"mfa":false,"rbac":false,"description":"Autenticação administrativa por token. SSO e MFA dependem de implementação de backend e provedor de identidade."},
-        "features":map[string]bool{"service_map":true,"network_ip_flows":true,"template_http_tcp":true,"datasource_prometheus_json":true,"dashboard_html_sandbox":true,"mcp_read_only":true,"oidc_sso":false,"mfa":false,"snmp_network_discovery":false,"traces":false,"deep_apm":false,"ai_rca":false},
+        "features":map[string]bool{
+ "service_map":false, // Reserved for real instrumented APM graph; previously overstated.
+ "service_map_api":true,
+ "process_mapping":true,
+ "network_ip_flows":true,
+ "network_physical_map":false,
+ "template_http_tcp":true,
+ "zabbix_lld":false,
+ "datasource_prometheus_json":true,
+ "datasource_loki_read":true,
+ "dashboard_html_sandbox":true,
+ "grafana_dashboard_import":false,
+ "gateway_manual_routes":true,
+ "gateway_heartbeat":false,
+ "mcp_read_only":true,
+ "oidc_sso":false,
+ "mfa":false,
+ "rbac":false,
+ "snmp_network_discovery":false,
+ "traces":false,
+ "deep_apm":false,
+ "ai_rca":false,
+ },
     })
 }

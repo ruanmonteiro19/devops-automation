@@ -19,3 +19,5 @@ Nunca enviar tokens ao chat, não desabilitar validação TLS e não instalar em
 Para instalar como serviço/tarefa, auditar antes os scripts incluídos no pacote.
 Tema preto/verde, seletor de idiomas PT/EN/ES com tradução parcial inicial.
 Skills utilizadas: Vercel React Best Practices / Verification. Skills.sh de terceiros só após auditoria de scripts e permissões.
+
+Compatibilidade: servidor da branch antiga ainda não aceita host_group, network_zone ou monitoring_mode. Atualize PRIMEIRO o backend num teste controlado. Enquanto isso, para coletar somente inventário no backend antigo, defina OBSERVA_LEGACY_PAYLOAD=true no agente; grupos e zonas NÃO serão transmitidos nesse modo.

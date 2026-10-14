@@ -1,6 +1,6 @@
 export type ProcessInfo = { pid: number; name: string; service: string; runtime: string; rss_bytes: number };
 export type ConnectionInfo = { pid: number; local_ip: string; local_port: number; remote_ip: string; remote_port: number; state: string };
-export type Host = { id: string; name: string; os: string; addresses: string[]; last_seen: string; processes: ProcessInfo[]; connections: ConnectionInfo[] };
+export type Host = { id: string; name: string; os: string; addresses: string[]; last_seen: string; host_group?: string; network_zone?: string; monitoring_mode?: string; processes: ProcessInfo[]; connections: ConnectionInfo[] };
 export type MapNode = { id: string; name: string; kind: string; host?: string; runtime?: string; status: string; rss_bytes?: number; instances?: number };
 export type MapEdge = { id: string; from: string; to: string; kind: string; count: number; evidence: string; confidence: string };
 export type TopologyMap = { nodes: MapNode[]; edges: MapEdge[] };

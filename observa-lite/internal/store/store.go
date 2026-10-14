@@ -84,7 +84,7 @@ func (s *Store) ResolveLocked(entity, summary string) {
 	}
 }
 func (s *Store) Ingest(d model.Discovery) error {
-	if strings.TrimSpace(d.HostID) == "" || len(d.HostID) > 128 || len(d.Processes) > 100000 || len(d.Connections) > 200000 {
+	if strings.TrimSpace(d.HostID) == "" || len(d.HostID) > 128 || len(d.Processes) > 100000 || len(d.Connections) > 200000 || len(d.HostGroup)>100 || len(d.NetworkZone)>256 || len(d.MonitoringMode)>40 {
 		return fmt.Errorf("invalid or oversized discovery")
 	}
 	s.mu.Lock()
@@ -104,7 +104,7 @@ func (s *Store) Ingest(d model.Discovery) error {
 	for _, pr := range d.Processes {
 		s.ResolveLocked("svc:"+d.HostID+":"+pr.Service, "Serviço não observado no novo inventário")
 	}
-	s.data.Hosts[d.HostID] = model.Host{ID: d.HostID, Name: d.Hostname, OS: d.OS, Addresses: d.Addresses, LastSeen: time.Now().UTC(), Processes: d.Processes, Connections: d.Connections}
+	s.data.Hosts[d.HostID] = model.Host{ID: d.HostID, Name: d.Hostname, OS: d.OS, Addresses: d.Addresses, LastSeen: time.Now().UTC(), Processes: d.Processes, Connections: d.Connections,HostGroup:d.HostGroup,NetworkZone:d.NetworkZone,MonitoringMode:d.MonitoringMode}
 	return s.persist()
 }
 func (s *Store) PutTemplate(v model.Template) error {

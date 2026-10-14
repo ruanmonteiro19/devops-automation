@@ -176,3 +176,46 @@ html { color-scheme: dark; }
 .react-flow__edge-path { stroke: var(--primary); }
 .react-flow__edge-text { fill: var(--muted-foreground); }
 .react-flow__edge-textbg { fill: var(--surface); }
+/* Observa Enterprise — black/green, authoritative theme tokens */
+:root, .dark {
+  --background: oklch(0.105 0.008 151);
+  --foreground: oklch(0.96 0.009 157);
+  --card: oklch(0.17 0.012 153);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.19 0.014 153);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.76 0.182 151);
+  --primary-foreground: oklch(0.12 0.022 157);
+  --secondary: oklch(0.24 0.018 151);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.235 0.013 150);
+  --muted-foreground: oklch(0.73 0.013 150);
+  --accent: oklch(0.275 0.038 149);
+  --accent-foreground: var(--foreground);
+  --border: oklch(0.31 0.015 150);
+  --input: oklch(0.34 0.016 150);
+  --ring: var(--primary);
+  --sidebar: oklch(0.124 0.009 153);
+  --sidebar-foreground: oklch(0.87 0.012 150);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.225 0.034 152);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: oklch(0.255 0.018 150);
+  --sidebar-ring: var(--primary);
+  --surface: oklch(0.165 0.012 154);
+  --surface-raised: oklch(0.215 0.016 151);
+  --success: oklch(0.78 0.17 149);
+  --nav-section: oklch(0.64 0.055 150);
+  --map-node: oklch(0.22 0.018 155);
+  --map-node-border: oklch(0.57 0.09 151);
+  --shadow-color: oklch(0.04 0.004 150 / 55%);
+  --chart-1: oklch(0.73 0.18 150);
+  --chart-2: oklch(0.71 0.13 170);
+  --chart-3: oklch(0.66 0.12 110);
+  --chart-4: oklch(0.80 0.13 90);
+  --chart-5: oklch(0.68 0.12 205);
+}
+.react-flow__node { transition: filter 160ms ease; }
+.react-flow__node:hover { filter: brightness(1.13); }
+::selection { background: oklch(0.45 0.11 151); color: white; }

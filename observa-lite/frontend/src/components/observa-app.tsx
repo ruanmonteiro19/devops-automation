@@ -24,6 +24,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { api, ApiError, readToken, saveToken, type Dashboard, type DataSource, type MapNode, type MonitorTemplate, type Snapshot, type TopologyMap } from "@/lib/api";
 import { createDemoSnapshot } from "@/lib/demo-data";
 import { LogsPage } from "@/components/logs-page";
+import { navText, validLanguage, type ObservaLanguage } from "@/lib/i18n";
 import { extensionManifest, type ExtensionCategory, type ExtensionManifest } from "@/lib/extensions";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +59,8 @@ export function ObservaApp() {
   const [demo, setDemo] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [polling, setPolling] = useState(30_000);
+  const [language, setLanguage] = useState<ObservaLanguage>(()=>validLanguage(typeof window==="undefined"?null:window.localStorage.getItem("observa-ui-language")));
+  const changeLanguage=(next:ObservaLanguage)=>{setLanguage(next);window.localStorage.setItem("observa-ui-language",next);document.documentElement.lang=next};
 
   useEffect(() => { setHydrated(true); }, []);
   const snapshotQuery = useQuery({ queryKey: ["snapshot", demo], queryFn: () => demo ? Promise.resolve(createDemoSnapshot()) : api.snapshot(), enabled: hydrated, retry: false, refetchInterval: demo ? false : polling });
@@ -72,10 +75,10 @@ export function ObservaApp() {
       {demo && <DemoBanner onExit={exitDemo} />}
       <div className={cn("flex min-h-screen", demo && "pt-9")}>
         <aside className={cn("fixed inset-y-0 left-0 z-40 hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:flex md:flex-col", demo && "top-9", collapsed ? "w-16" : "w-[248px]")}>
-          <SidebarNav collapsed={collapsed} search={navSearch} setSearch={setNavSearch} current={path} />
+          <SidebarNav collapsed={collapsed} search={navSearch} setSearch={setNavSearch} current={path} language={language} />
         </aside>
         <div className={cn("min-w-0 flex-1 transition-[margin] duration-200", collapsed ? "md:ml-16" : "md:ml-[248px]")}>
-          <Topbar current={path} collapsed={collapsed} onCollapse={() => setCollapsed((value) => !value)} onMobile={() => setMobileNav(true)} search={globalSearch} setSearch={setGlobalSearch} polling={polling} setPolling={setPolling} onRefresh={() => void snapshotQuery.refetch()} isRefreshing={snapshotQuery.isFetching} />
+          <Topbar current={path} collapsed={collapsed} onCollapse={() => setCollapsed((value) => !value)} onMobile={() => setMobileNav(true)} search={globalSearch} setSearch={setGlobalSearch} polling={polling} setPolling={setPolling} onRefresh={() => void snapshotQuery.refetch()} isRefreshing={snapshotQuery.isFetching} language={language} onLanguage={changeLanguage} />
           <main className="min-h-[calc(100vh-56px)] p-4 lg:p-6 xl:p-7">
             {!hydrated || snapshotQuery.isLoading ? <LoadingState /> : snapshotQuery.data ? <PageRouter path={path} snapshot={snapshotQuery.data} demo={demo} globalSearch={globalSearch} /> : <ConnectionGate unauthorized={unauthorized} unreachable={unreachable} error={snapshotQuery.error} onDemo={enterDemo} onRetry={() => void snapshotQuery.refetch()} />}
           </main>
@@ -84,7 +87,7 @@ export function ObservaApp() {
       <Sheet open={mobileNav} onOpenChange={setMobileNav}>
         <SheetContent side="left" className="w-[88vw] max-w-[320px] border-sidebar-border bg-sidebar p-0">
           <SheetHeader className="sr-only"><SheetTitle>Navegação</SheetTitle><SheetDescription>Menu principal</SheetDescription></SheetHeader>
-          <SidebarNav collapsed={false} search={navSearch} setSearch={setNavSearch} current={path} onNavigate={() => setMobileNav(false)} />
+          <SidebarNav collapsed={false} search={navSearch} setSearch={setNavSearch} current={path} onNavigate={() => setMobileNav(false)} language={language} />
         </SheetContent>
       </Sheet>
     </div>
@@ -95,37 +98,38 @@ function DemoBanner({ onExit }: { onExit: () => void }) {
   return <div className="fixed inset-x-0 top-0 z-[60] flex h-9 items-center justify-center gap-3 bg-demo px-3 text-xs font-semibold text-demo-foreground"><span className="rounded-sm border border-current px-1.5 py-0.5 text-[10px]">DEMO</span><span className="truncate">Dados ilustrativos — nenhuma telemetria real está sendo exibida.</span><Button variant="ghost" size="sm" className="h-7 text-demo-foreground hover:bg-demo-foreground/10" onClick={onExit}>Sair</Button></div>;
 }
 
-function SidebarNav({ collapsed, search, setSearch, current, onNavigate }: { collapsed: boolean; search: string; setSearch: (value: string) => void; current: string; onNavigate?: () => void }) {
+function SidebarNav({ collapsed, search, setSearch, current, onNavigate, language }: { collapsed: boolean; search: string; setSearch: (value: string) => void; current: string; onNavigate?: () => void; language:ObservaLanguage }) {
   const filtered = navGroups.map((group) => ({ ...group, items: group.items.filter((item) => item.label.toLowerCase().includes(search.toLowerCase())) })).filter((group) => group.items.length);
   return <>
     <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-4">
       <div className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground"><Activity className="size-5" /></div>
       {!collapsed && <div><div className="font-semibold leading-tight">Observa Lite</div><div className="text-[10px] font-medium uppercase text-muted-foreground">Linux Observability</div></div>}
     </div>
-    {!collapsed && <div className="p-3"><div className="relative"><Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Filtrar navegação" className="h-9 border-sidebar-border bg-sidebar-accent pl-8 text-xs" /></div></div>}
+    {!collapsed && <div className="p-3"><div className="relative"><Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={navText("Filtrar navegação",language)} className="h-9 border-sidebar-border bg-sidebar-accent pl-8 text-xs" /></div></div>}
     <nav className="observa-scrollbar flex-1 overflow-y-auto px-2 pb-4">
       {filtered.map((group) => <div key={group.label} className="mt-3">
-        {!collapsed && <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase text-nav-section">{group.label}</div>}
-        <div className="space-y-0.5">{group.items.map((item) => <NavLink key={item.path || "home"} item={item} active={current === item.path} collapsed={collapsed} onNavigate={onNavigate} />)}</div>
+        {!collapsed && <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase text-nav-section">{navText(group.label,language)}</div>}
+        <div className="space-y-0.5">{group.items.map((item) => <NavLink key={item.path || "home"} item={item} active={current === item.path} collapsed={collapsed} onNavigate={onNavigate} language={language} />)}</div>
       </div>)}
     </nav>
     <div className="border-t border-sidebar-border p-2"><div className={cn("flex items-center gap-2 rounded-md bg-sidebar-accent p-2", collapsed && "justify-center")}><span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-40" /><span className="relative inline-flex size-2 rounded-full bg-success" /></span>{!collapsed && <span className="text-xs text-muted-foreground">Interface pronta para o servidor</span>}</div></div>
   </>;
 }
 
-function NavLink({ item, active, collapsed, onNavigate }: { item: NavItem; active: boolean; collapsed: boolean; onNavigate?: () => void }) {
-  const content = <Link to="/$" params={{ _splat: item.path }} onClick={onNavigate} className={cn("group flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground", active && "bg-sidebar-accent text-primary", collapsed && "justify-center px-0")}><item.icon className="size-4 shrink-0" />{!collapsed && <><span className="min-w-0 flex-1 truncate">{item.label}</span>{item.favorite && <Star className="size-3 fill-current opacity-0 group-hover:opacity-60" />}</>}</Link>;
-  return collapsed ? <Tooltip><TooltipTrigger asChild>{content}</TooltipTrigger><TooltipContent side="right">{item.label}</TooltipContent></Tooltip> : content;
+function NavLink({ item, active, collapsed, onNavigate, language }: { item: NavItem; active: boolean; collapsed: boolean; onNavigate?: () => void; language:ObservaLanguage }) {
+  const content = <Link to="/$" params={{ _splat: item.path }} onClick={onNavigate} className={cn("group flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground", active && "bg-sidebar-accent text-primary", collapsed && "justify-center px-0")}><item.icon className="size-4 shrink-0" />{!collapsed && <><span className="min-w-0 flex-1 truncate">{navText(item.label,language)}</span>{item.favorite && <Star className="size-3 fill-current opacity-0 group-hover:opacity-60" />}</>}</Link>;
+  return collapsed ? <Tooltip><TooltipTrigger asChild>{content}</TooltipTrigger><TooltipContent side="right">{navText(item.label,language)}</TooltipContent></Tooltip> : content;
 }
 
-function Topbar({ current, collapsed, onCollapse, onMobile, search, setSearch, polling, setPolling, onRefresh, isRefreshing }: { current: string; collapsed: boolean; onCollapse: () => void; onMobile: () => void; search: string; setSearch: (v: string) => void; polling: number; setPolling: (v: number) => void; onRefresh: () => void; isRefreshing: boolean }) {
+function Topbar({ current, collapsed, onCollapse, onMobile, search, setSearch, polling, setPolling, onRefresh, isRefreshing, language, onLanguage }: { current: string; collapsed: boolean; onCollapse: () => void; onMobile: () => void; search: string; setSearch: (v: string) => void; polling: number; setPolling: (v: number) => void; onRefresh: () => void; isRefreshing: boolean; language:ObservaLanguage; onLanguage:(v:ObservaLanguage)=>void }) {
   return <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur lg:px-5">
     <Button variant="ghost" size="icon" className="md:hidden" onClick={onMobile} aria-label="Abrir menu"><Menu /></Button>
     <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={onCollapse} aria-label={collapsed ? "Expandir menu" : "Recolher menu"}><PanelLeftClose className={cn("transition-transform", collapsed && "rotate-180")} /></Button>
-    <div className="hidden items-center gap-1 text-xs text-muted-foreground lg:flex"><span>Observa Lite</span><ChevronRight className="size-3" /><span className="font-medium text-foreground">{labels.get(current) ?? "Visão geral"}</span></div>
-    <div className="mx-auto hidden w-full max-w-md md:block"><div className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} className="h-9 bg-surface pl-9 text-xs" placeholder="Pesquisar host, serviço, PID ou evento" /></div></div>
+    <div className="hidden items-center gap-1 text-xs text-muted-foreground lg:flex"><span>Observa Lite</span><ChevronRight className="size-3" /><span className="font-medium text-foreground">{navText(labels.get(current) ?? "Visão geral",language)}</span></div>
+    <div className="mx-auto hidden w-full max-w-md md:block"><div className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} className="h-9 bg-surface pl-9 text-xs" placeholder={navText("Pesquisar host, serviço, PID ou evento",language)} /></div></div>
     <Select defaultValue="producao"><SelectTrigger className="hidden h-8 w-[126px] bg-surface text-xs xl:flex"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="producao">Produção</SelectItem><SelectItem value="homologacao">Homologação</SelectItem></SelectContent></Select>
     <Select value={String(polling)} onValueChange={(value) => setPolling(Number(value))}><SelectTrigger className="hidden h-8 w-[114px] bg-surface text-xs lg:flex"><Clock3 className="size-3" /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="15000">15 s</SelectItem><SelectItem value="30000">30 s</SelectItem><SelectItem value="60000">1 min</SelectItem><SelectItem value="0">Manual</SelectItem></SelectContent></Select>
+    <Select value={language} onValueChange={(v)=>onLanguage(validLanguage(v))}><SelectTrigger className="h-8 w-[100px] bg-surface text-xs" aria-label="Interface language"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="pt-BR">PT-BR</SelectItem><SelectItem value="en-US">English</SelectItem><SelectItem value="es-ES">Español</SelectItem></SelectContent></Select>
     <Button variant="ghost" size="icon" className="size-8" onClick={onRefresh} aria-label="Atualizar"><RefreshCw className={cn(isRefreshing && "animate-spin")} /></Button>
     <Button variant="ghost" size="icon" className="relative size-8" aria-label="Notificações"><Bell /><span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-danger" /></Button>
     <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold">OP</div>

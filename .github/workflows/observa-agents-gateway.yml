@@ -1,0 +1,60 @@
+name: Observa Agents Gateway Linux Windows
+on:
+  push:
+    branches: [feature/agents-gateway-i18n]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: observa-lite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: observa-lite/go.mod
+      - run: go test -race ./... && go vet ./...
+      - name: Build native binaries
+        run: |
+          mkdir -p dist
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -o "dist/observa-linux-$arch" ./cmd/observa
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -o "dist/observa-gateway-linux-$arch" ./cmd/observa-gateway
+            CGO_ENABLED=0 GOOS=windows GOARCH="$arch" go build -o "dist/observa-windows-$arch.exe" ./cmd/observa
+          done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build UI
+        working-directory: observa-lite/frontend
+        run: npm install --no-audit --no-fund --legacy-peer-deps && npm run build
+      - name: Prepare artifacts
+        run: |
+          cp deploy/agents/* dist/
+          cd dist
+          sha256sum observa-* > SHA256SUMS.txt
+          tar -czf ../../observa-agent-bundle.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: observa-agent-linux-windows-gateway
+          path: observa-agent-bundle.tar.gz
+          retention-days: 21
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: observa-lite/go.mod
+      - name: Native Windows agent smoke test
+        shell: pwsh
+        working-directory: observa-lite
+        run: |
+          go build -o observa.exe ./cmd/observa
+          .\observa.exe once | Set-Content "$env:TEMP\obs.json"
+          $d = Get-Content "$env:TEMP\obs.json" -Raw | ConvertFrom-Json
+          if ($d.os -ne 'Windows' -or @($d.processes).Count -eq 0) { throw "Windows discovery failed" }
+          Write-Host "Windows processes: $(@($d.processes).Count)"

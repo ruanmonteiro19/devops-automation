@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/subtle"
+	"crypto/tls"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -266,7 +267,13 @@ func (s *Server) Listen(ctx context.Context, addr string) error {
 		_ = srv.Shutdown(shutdownCtx)
 	}()
 	log.Printf("observa server listening on %s (HTTPS termination required for remote access)", addr)
-	e := srv.ListenAndServe()
+	var e error
+ certFile,keyFile:=os.Getenv("OBSERVA_TLS_CERT_FILE"),os.Getenv("OBSERVA_TLS_KEY_FILE")
+ if (certFile=="")!=(keyFile=="") {return fmt.Errorf("TLS certificate and key must both be configured")}
+ if certFile!="" {
+  srv.TLSConfig=&tls.Config{MinVersion:tls.VersionTLS12}
+  e=srv.ListenAndServeTLS(certFile,keyFile)
+ }else{e=srv.ListenAndServe()}
 	if e == http.ErrServerClosed {
 		return nil
 	}

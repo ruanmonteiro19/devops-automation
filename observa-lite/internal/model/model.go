@@ -10,6 +10,9 @@ type Discovery struct {
 	OS          string       `json:"os"`
 	Addresses   []string     `json:"addresses"`
 	CapturedAt  time.Time    `json:"captured_at"`
+	HostGroup string `json:"host_group,omitempty"`
+	NetworkZone string `json:"network_zone,omitempty"`
+	MonitoringMode string `json:"monitoring_mode,omitempty"`
 	Processes   []Process    `json:"processes"`
 	Connections []Connection `json:"connections"`
 }
@@ -34,6 +37,9 @@ type Host struct {
 	OS          string       `json:"os"`
 	Addresses   []string     `json:"addresses"`
 	LastSeen    time.Time    `json:"last_seen"`
+	HostGroup string `json:"host_group,omitempty"`
+	NetworkZone string `json:"network_zone,omitempty"`
+	MonitoringMode string `json:"monitoring_mode,omitempty"`
 	Processes   []Process    `json:"processes"`
 	Connections []Connection `json:"connections"`
 }

@@ -19,7 +19,7 @@ import (
 // It does NOT automatically instrument IIS/.NET or discover HTTP services.
 const windowsScript = "$ErrorActionPreference='Stop'; " +
  "$OutputEncoding=[Console]::OutputEncoding=[Text.UTF8Encoding]::new(); " +
- "$id=(Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name MachineGuid -ErrorAction SilentlyContinue).MachineGuid; " +
+ "$id=(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' -Name MachineGuid -ErrorAction SilentlyContinue).MachineGuid; " +
  "$ps=@(Get-CimInstance Win32_Process | Select-Object ProcessId,Name,WorkingSetSize); " +
  "$cs=@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Select-Object OwningProcess,LocalAddress,LocalPort,RemoteAddress,RemotePort,@{N='State';E={$_.State.ToString()}}); " +
  "ConvertTo-Json -InputObject @{hostid=$id;processes=$ps;connections=$cs} -Depth 5 -Compress"

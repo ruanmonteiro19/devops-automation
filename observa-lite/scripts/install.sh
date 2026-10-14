@@ -51,7 +51,8 @@ PrivateTmp=true
 WantedBy=multi-user.target
 UNIT
   systemctl daemon-reload
-  systemctl enable --now observa-server
+  systemctl enable observa-server
+  systemctl restart observa-server
  else echo "Sem systemd. Inicie manualmente: . /etc/observa/server.env; export OBSERVA_ADMIN_TOKEN OBSERVA_AGENT_TOKEN OBSERVA_DB; observa server";fi
 fi
 if [ "$MODE" = all ] || [ "$MODE" = agent ];then
@@ -88,7 +89,8 @@ PrivateTmp=true
 WantedBy=multi-user.target
 UNIT
   systemctl daemon-reload
-  systemctl enable --now observa-agent
+  systemctl enable observa-agent
+  systemctl restart observa-agent
  else echo "Sem systemd. Inicie manualmente: . /etc/observa/agent.env; export OBSERVA_AGENT_TOKEN OBSERVA_SERVER; observa agent";fi
 fi
 echo "Instalação concluída. A interface local: http://127.0.0.1:8080"

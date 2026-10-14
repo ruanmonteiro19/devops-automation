@@ -9,6 +9,7 @@ export type DataSource = { id: string; name: string; kind: "prometheus" | "json"
 export type DashboardPanel = { id: string; title: string; kind: string; source_id?: string; query?: string; html?: string; css?: string; js?: string };
 export type Dashboard = { id: string; title: string; panels: DashboardPanel[] };
 export type ObservaEvent = { id: string; at: string; severity: string; entity: string; summary: string; evidence: string[]; status: string };
+export type CatalogExtension = { id:string; name:string; category:string; description:string; available:boolean; configured:boolean; integration:string; version:string };
 export type Snapshot = { generated_at: string; hosts: Host[]; service_map: TopologyMap; network_map: TopologyMap; templates: MonitorTemplate[]; datasources: DataSource[]; dashboards: Dashboard[]; events: ObservaEvent[] };
 
 export class ApiError extends Error {
@@ -41,6 +42,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   snapshot: () => request<Snapshot>("/api/v1/snapshot"),
+  extensions: () => request<{extensions:CatalogExtension[]}>("/api/v1/extensions"),
   createTemplate: (value: MonitorTemplate) => request<MonitorTemplate>("/api/v1/templates", { method: "POST", body: JSON.stringify(value) }),
   deleteTemplate: (id: string) => request<void>(`/api/v1/templates/${encodeURIComponent(id)}`, { method: "DELETE" }),
   createDataSource: (value: DataSource) => request<DataSource>("/api/v1/datasources", { method: "POST", body: JSON.stringify(value) }),

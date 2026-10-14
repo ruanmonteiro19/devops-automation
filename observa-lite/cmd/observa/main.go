@@ -28,6 +28,8 @@ func main() {
 	switch os.Args[1] {
 	case "server":
 		err = runServer(os.Args[2:])
+	case "health":
+		err = runHealth(os.Args[2:])
 	case "agent":
 		err = runAgent(os.Args[2:])
 	case "once":
@@ -59,6 +61,22 @@ func runServer(args []string) error {
 	defer stop()
 	return server.New(st, os.Getenv("OBSERVA_ADMIN_TOKEN"), os.Getenv("OBSERVA_AGENT_TOKEN"), server.AllowPrivateFromEnv()).Listen(ctx, *addr)
 }
+// runHealth is a shell-free health check for distroless Docker images.
+func runHealth(args []string) error {
+    fs := flag.NewFlagSet("health", flag.ContinueOnError)
+    endpoint := fs.String("url", env("OBSERVA_HEALTH_URL", "http://127.0.0.1:8080/healthz"), "healthcheck URL")
+    if err := fs.Parse(args); err != nil { return err }
+    client := &http.Client{Timeout: 3 * time.Second}
+    resp, err := client.Get(*endpoint)
+    if err != nil { return err }
+    defer resp.Body.Close()
+    _, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("healthcheck failed: HTTP %d", resp.StatusCode)
+    }
+    return nil
+}
+
 func runAgent(args []string) error {
 	fs := flag.NewFlagSet("agent", flag.ContinueOnError)
 	endpoint := fs.String("server", env("OBSERVA_SERVER", "http://127.0.0.1:8080"), "Observa server root URL")

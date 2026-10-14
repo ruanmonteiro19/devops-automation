@@ -1,0 +1,94 @@
+name: observa-lite
+services:
+  server:
+    image: ${OBSERVA_SERVER_IMAGE:-observa-lite/server:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: server
+    restart: unless-stopped
+    init: true
+    read_only: true
+    environment:
+      OBSERVA_ADMIN_TOKEN: ${OBSERVA_ADMIN_TOKEN:?Execute ./scripts/docker-init.sh primeiro}
+      OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Execute ./scripts/docker-init.sh primeiro}
+      OBSERVA_LISTEN: 0.0.0.0:8080
+      OBSERVA_DB: /var/lib/observa/state.json
+      OBSERVA_ALLOW_PRIVATE_TARGETS: ${OBSERVA_ALLOW_PRIVATE_TARGETS:-false}
+    ports:
+      - '${OBSERVA_BIND_ADDR:-127.0.0.1}:${OBSERVA_PORT:-8080}:8080'
+    volumes:
+      - observa-data:/var/lib/observa
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 384m
+    cpus: '1.0'
+    healthcheck:
+      test: [CMD, /usr/local/bin/observa, health]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # Host discovery works on Linux only. PID + network + UTS host namespaces.
+  # The elevated capabilities can read process details of other users.
+  agent:
+    image: ${OBSERVA_AGENT_IMAGE:-observa-lite/agent:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: agent
+    restart: unless-stopped
+    init: true
+    read_only: true
+    network_mode: host
+    pid: host
+    uts: host
+    user: '0:0'
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_PTRACE
+      - DAC_READ_SEARCH
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Execute ./scripts/docker-init.sh primeiro}
+    volumes:
+      - /etc/machine-id:/etc/machine-id:ro
+      - /etc/os-release:/etc/os-release:ro
+    command:
+      - agent
+      - --server
+      - 'http://127.0.0.1:${OBSERVA_PORT:-8080}'
+      - --interval
+      - ${OBSERVA_AGENT_INTERVAL:-30s}
+    depends_on:
+      server:
+        condition: service_healthy
+    pids_limit: 256
+    mem_limit: 256m
+    cpus: '0.5'
+
+  loki:
+    profiles: [logs]
+    image: grafana/loki:3.5.0
+    command: ['-config.file=/etc/loki/local.yaml']
+    ports:
+      - '127.0.0.1:${OBSERVA_LOKI_PORT:-3100}:3100'
+    volumes:
+      - ./deploy/loki/config.yaml:/etc/loki/local.yaml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 768m
+    cpus: '1.0'
+
+volumes:
+  observa-data: {}
+  loki-data: {}

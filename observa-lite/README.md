@@ -152,3 +152,23 @@ A integração da UI React ao binário Go ainda não foi realizada. O backend at
 ## Armazenamento leve e logs Loki (integração experimental)
 
 A API GET /api/v1/logs consulta fontes Loki por LogQL, com autenticação administrativa e limites estritos (máx. 200 linhas; período máx. 24h; resposta limitada a 2 MiB). Os logs NÃO são copiados para o estado JSON do Observa Lite. Cadastro de Loki disponível em Data Sources, exploração em Logs. Coleta de logs não está implementada no agente Linux; é necessário enviar logs a Loki por um coletor externo apropriado. Experimente o Loki local SOMENTE em laboratório com o arquivo deploy/loki/compose.yaml. Retenção Loki configurada para 7 dias no exemplo, sem quota de tamanho em disco. Consulte deploy/storage/ARCHITECTURE.md para separação atual e proposta de SQLite/VictoriaMetrics/Tempo, ainda não implementados.
+
+
+## Implantação por Docker Compose (Linux)
+
+O projeto agora inclui **Dockerfile multi-stage** para React/Go, **Compose** para servidor+agente, e **Loki opcional** via profile, com volumes persistentes e limites de consumo.
+
+```bash
+cd observa-lite
+./scripts/docker-init.sh
+docker compose up -d --build server agent
+docker compose ps
+```
+
+Interface no host Linux: http://127.0.0.1:8080 (binding de loopback por padrão).
+Token de administração: `sed -n 's/^OBSERVA_ADMIN_TOKEN=//p' .env`.
+Para Loki: `docker compose --profile logs up -d loki`. Não há coleta automática de mensagens ainda; é necessária uma integração externa de coleta.
+
+O agente Docker usa namespace de PID/rede/UTS do host, executando como root com permissões de inspeção restritas, sem `privileged: true` e sem socket Docker. Esta configuração destina-se **exclusivamente a hosts Linux autorizados**, não ao Docker Desktop do Windows/macOS. SSO/MFA ainda não são suportados. Os metadados continuam em JSON local; **não** foram migrados para SQLite.
+
+Veja o tutorial: [deploy/docker/README.md](deploy/docker/README.md). Build/testes e publicação experimental multiarch para GHCR em `.github/workflows/observa-lite-docker.yml` (na raiz do repositório).

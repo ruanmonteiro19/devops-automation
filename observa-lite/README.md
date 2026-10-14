@@ -126,3 +126,24 @@ curl -s http://127.0.0.1:8080/mcp -H "X-API-Key: $OBSERVA_ADMIN_TOKEN" \
 ## Licença
 
 Código original deste repositório: MIT (ver `LICENSE`). Referências de terceiros possuem licenças próprias e **não** foram vendorizadas.
+
+
+## Interface e Hub de Extensões (0.2.0 — branch de desenvolvimento)
+
+A interface HTML embarcada ganhou uma barra lateral com **42 opções de navegação** agrupadas por área, incluindo APM, infraestrutura, monitoramento, dashboards, IA/MCP, extensões e administração. Os menus não suportados pelo backend indicam explicitamente que são recursos futuros.
+
+Endpoints administrativos novos (exigem `X-API-Key`):
+- `GET /api/v1/extensions`: catálogo de 20 extensões, distinguindo disponibilidade, configuração existente e recursos planejados.
+- `GET /api/v1/capabilities`: capacidades reais, versão e estado atual da autenticação.
+
+O Hub direciona extensões já suportadas aos formulários reais (Prometheus/JSON, checks HTTP/TCP, MCP e agentes), sem instalar executáveis arbitrários. Os conectores não implementados não podem ser ativados.
+
+**Autenticação:** somente token administrativo. **SSO, MFA, RBAC e controle de usuários NÃO estão implementados nem protegendo esta versão.** A interface de segurança informa essa limitação. Não implantar este MVP exposto diretamente à internet.
+
+### Redesign Lovable
+
+Projeto de redesign em React/TypeScript (precisa de aprovação do plano no editor Lovable):
+https://lovable.dev/projects/5ff82d39-2280-4b5e-99d9-634272c8e9d1
+
+A integração da UI React ao binário Go ainda não foi realizada. O backend atual continua servido por HTML embarcado. Após a geração dos arquivos no Lovable, integrar build estático na pasta `internal/server/public` preservando os contratos REST existentes e os testes.
+

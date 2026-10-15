@@ -2463,6 +2463,11 @@ function MappingView({
               <p className="mt-2 break-all font-mono text-[10px] text-muted-foreground">
                 {selected.id}
               </p>
+              {collapsed.parents.has(selected.id) && (
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => setSelectedID(collapsed.parents.get(selected.id)!)}>
+                  Voltar ao equipamento
+                </Button>
+              )}
               <div className="mt-4 space-y-2 text-xs">
                 <label htmlFor="map-focus-depth">Destacar conexões</label>
                 <select
@@ -2504,7 +2509,7 @@ function MappingView({
                       : "Expandir no mapa"}
                   </Button>
                   <ul className="mt-3 space-y-2">
-                    {map.nodes
+                    {Array.from(new Map([...map.nodes, ...Object.values(map.interface_inventory || {}).flat()].map((node) => [node.id, node])).values())
                       .filter(
                         (node) =>
                           collapsed.parents.get(node.id) === selected.id,
@@ -2563,6 +2568,9 @@ function MappingView({
                       key={edge.id}
                       className="mt-3 rounded border border-border bg-muted/30 p-3"
                     >
+                      <button type="button" className="mb-2 text-left text-xs font-semibold text-primary" onClick={() => setSelectedID(edge.from === selected.id ? edge.to : edge.from)}>
+                        {filtered.nodes.find((node) => node.id === (edge.from === selected.id ? edge.to : edge.from))?.name || "Ver entidade relacionada"} →
+                      </button>
                       <p className="text-xs font-medium">
                         {edge.kind} · {edge.count} observações
                       </p>

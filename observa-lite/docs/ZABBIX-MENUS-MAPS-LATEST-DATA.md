@@ -4,7 +4,7 @@
 
 A navegação separa Painéis, Monitoramento, APM e experiência, Inventário, Coleta de dados, Análise e relatórios e Administração. Monitoramento oferece Problemas, Hosts, Equipamentos de rede, Dados recentes, Mapas, Gráficos e Eventos de monitores. Templates de rede têm página própria em Coleta de dados. As rotas anteriores continuam disponíveis.
 
-O mapa de rede abre sem agrupamento e com portas recolhidas no equipamento. O botão Portas e o painel lateral expandem as interfaces. Selecionar um equipamento destaca sua vizinhança e reduz a opacidade das demais entidades; o seletor permite um, dois ou três saltos. A ligação equipamento–interface não consome um salto, portanto expandir portas não altera as aplicações relacionadas. A visão agrupada resume entidades; para drill-down individual, use Sem agrupamento.
+O mapa de rede abre sem agrupamento e com portas recolhidas no equipamento. O botão Portas e o painel lateral expandem as interfaces. A lista lateral inclui interfaces do inventário mesmo quando elas ultrapassam o limite inicial de nós. Ao selecionar uma interface, Voltar ao equipamento retorna ao pai. As evidências LLDP mostram DNS, IP, nome anunciado e portas local/remota, com navegação para a entidade relacionada. Selecionar um equipamento destaca sua vizinhança e reduz a opacidade das demais entidades; o seletor permite um, dois ou três saltos. A ligação equipamento–interface não consome um salto, portanto expandir portas não altera as aplicações relacionadas. A visão agrupada resume entidades; para drill-down individual, use Sem agrupamento.
 
 As relações vêm de evidências distintas:
 

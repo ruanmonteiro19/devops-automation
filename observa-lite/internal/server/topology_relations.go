@@ -155,7 +155,7 @@ func (s *Server) topologyRelations(view string, from, to time.Time, snapshot mod
 					node(model.Node{ID: local, Name: neighbor.LocalPort, Kind: "network.interface", Status: "observed"})
 					edge(model.Edge{ID: source + "/contains/" + local, From: source, To: local, Kind: "contains", Count: 1, Evidence: "LLDP local port identity; not assumed to be IF-MIB index"})
 				}
-				edge(model.Edge{ID: local + "/lldp/" + target, From: local, To: target, Kind: "lldp", Count: 1, Evidence: fmt.Sprintf("LLDP advertisement: local %s; remote %s", neighbor.LocalPort, neighbor.RemotePort), Confidence: "advertised"})
+				edge(model.Edge{ID: local + "/lldp/" + target, From: local, To: target, Kind: "lldp", Count: 1, Evidence: fmt.Sprintf("LLDP: porta local %s; porta remota %s; DNS %s; IP %s; nome anunciado %s", neighbor.LocalPort, neighbor.RemotePort, neighbor.DNSName, neighbor.RemoteIP, neighbor.RemoteName), Confidence: "advertised"})
 			}
 		}
 	}

@@ -1,5 +1,5 @@
 import type { TopologyMap } from "./api";
-export type TopologyLayout = "grid" | "horizontal" | "vertical";
+export type TopologyLayout = "grid" | "horizontal" | "vertical" | "radial";
 export type TopologyOptions = {
   search?: string;
   kind?: string;
@@ -47,6 +47,27 @@ export function layoutTopology(
 ): Map<string, { x: number; y: number }> {
   const sorted = [...map.nodes].sort((a, b) => a.id.localeCompare(b.id));
   const positions = new Map<string, { x: number; y: number }>();
+  if (layout === "radial") {
+    const degree = new Map(sorted.map((n) => [n.id, 0]));
+    for (const e of map.edges) {
+      degree.set(e.from, (degree.get(e.from) ?? 0) + 1);
+      degree.set(e.to, (degree.get(e.to) ?? 0) + 1);
+    }
+    const radial = [...sorted].sort(
+      (a, b) =>
+        (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) ||
+        a.id.localeCompare(b.id),
+    );
+    radial.forEach((node, index) => {
+      const angle = index * Math.PI * (3 - Math.sqrt(5));
+      const radius = index === 0 ? 0 : 180 + Math.sqrt(index) * 65;
+      positions.set(node.id, {
+        x: 900 + Math.cos(angle) * radius,
+        y: 900 + Math.sin(angle) * radius,
+      });
+    });
+    return positions;
+  }
   if (layout === "grid") {
     const columns = Math.max(1, Math.ceil(Math.sqrt(sorted.length)));
     sorted.forEach((node, i) =>

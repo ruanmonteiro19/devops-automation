@@ -16,7 +16,10 @@ import (
 	"time"
 )
 
-type Runner struct{ AllowPrivate bool }
+type Runner struct {
+	AllowPrivate      bool
+	integrationClient func() *http.Client
+}
 
 func (r Runner) dial(ctx context.Context, network, address string) (net.Conn, error) {
 	host, port, e := net.SplitHostPort(address)

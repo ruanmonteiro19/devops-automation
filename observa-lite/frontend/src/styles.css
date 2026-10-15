@@ -636,3 +636,90 @@ input[type="checkbox"],
 input[type="radio"] {
   accent-color: var(--primary);
 }
+/* Layered side navigation and topology controls, within the solid palette. */
+aside nav {
+  padding-inline: 10px;
+}
+aside nav details > summary {
+  margin: 14px 2px 8px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+.nav-menu-item {
+  border-color: transparent;
+  border-left: 3px solid transparent;
+  margin-bottom: 5px;
+  background: var(--surface);
+}
+.nav-menu-item > a {
+  min-height: 40px;
+}
+.nav-menu-item[data-active="true"] {
+  background: oklch(0.3 0.055 155);
+  border-color: oklch(0.39 0.07 155);
+  border-left: 3px solid var(--primary);
+}
+.nav-menu-item > a > svg:first-child {
+  padding: 3px;
+  width: 24px;
+  height: 24px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+[role="combobox"] {
+  background: var(--surface);
+  border: 1px solid var(--input);
+  box-shadow: none;
+  min-height: 38px;
+}
+[role="listbox"] {
+  border: 1px solid var(--input);
+  background: var(--popover);
+  box-shadow: 0 12px 28px oklch(0.05 0.005 155);
+  padding: 5px;
+}
+[role="option"] {
+  margin-block: 3px;
+  min-height: 34px;
+  border: 1px solid transparent;
+  background: var(--surface);
+}
+[role="option"][data-highlighted],
+[role="option"][data-state="checked"] {
+  background: oklch(0.3 0.055 155);
+  border-color: oklch(0.43 0.075 155);
+}
+select {
+  appearance: auto;
+  border: 1px solid var(--input);
+  background: var(--surface);
+  padding: 8px 30px 8px 10px;
+  min-height: 36px;
+}
+.topology-icon-tile {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid oklch(0.43 0.07 155);
+  background: oklch(0.22 0.035 155);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.topology-entity-node {
+  box-shadow: 0 3px 0 var(--background);
+}
+.topology-entity-node > div.flex {
+  flex-direction: column;
+  text-align: center;
+  gap: 8px;
+}
+.react-flow__node.selected .topology-entity-node {
+  border: 2px solid var(--primary);
+  background: oklch(0.23 0.04 155);
+}
+.topology-view-card:hover {
+  background: var(--surface-raised);
+}

@@ -12,3 +12,4 @@
 **/coverage
 **/tmp
 observa-data
+deploy/snmp/snmp.yml*

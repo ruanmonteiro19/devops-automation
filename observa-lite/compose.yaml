@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     init: true
     read_only: true
+    env_file:
+      - .env
     environment:
       OBSERVA_ADMIN_TOKEN: ${OBSERVA_ADMIN_TOKEN:?Execute ./scripts/docker-init.sh primeiro}
       OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Execute ./scripts/docker-init.sh primeiro}
@@ -89,6 +91,26 @@ services:
     pids_limit: 256
     mem_limit: 768m
     cpus: '1.0'
+
+  snmp-exporter:
+    profiles: [network]
+    image: prom/snmp-exporter:v0.30.1
+    user: '65534:65534'
+    command: ['--config.file=/etc/snmp_exporter/snmp.yml']
+    restart: unless-stopped
+    read_only: true
+    volumes:
+      - type: bind
+        source: ./deploy/snmp/snmp.yml
+        target: /etc/snmp_exporter/snmp.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: '0.5'
 
 volumes:
   observa-data: {}

@@ -14,18 +14,20 @@ import (
 )
 
 type persisted struct {
-	APMRules     map[string]model.APMRule         `json:"apm_rules,omitempty"`
-	Problems     []model.RuleProblem              `json:"rule_problems,omitempty"`
-	SLOs         map[string]model.SLOPolicy       `json:"slos,omitempty"`
-	Logs         []model.LogRecord                `json:"logs,omitempty"`
-	MetricPoints []model.MetricPoint              `json:"metric_points,omitempty"`
-	Spans        []model.Span                     `json:"spans,omitempty"`
-	Hosts        map[string]model.Host            `json:"hosts"`
-	Gateways     map[string]model.GatewayEndpoint `json:"gateways,omitempty"`
-	Templates    map[string]model.Template        `json:"templates"`
-	Sources      map[string]model.DataSource      `json:"sources"`
-	Dashboards   map[string]model.Dashboard       `json:"dashboards"`
-	Events       []model.Event                    `json:"events"`
+	Integrations       map[string]model.Integration       `json:"integrations,omitempty"`
+	IntegrationResults map[string]model.IntegrationResult `json:"integration_results,omitempty"`
+	APMRules           map[string]model.APMRule           `json:"apm_rules,omitempty"`
+	Problems           []model.RuleProblem                `json:"rule_problems,omitempty"`
+	SLOs               map[string]model.SLOPolicy         `json:"slos,omitempty"`
+	Logs               []model.LogRecord                  `json:"logs,omitempty"`
+	MetricPoints       []model.MetricPoint                `json:"metric_points,omitempty"`
+	Spans              []model.Span                       `json:"spans,omitempty"`
+	Hosts              map[string]model.Host              `json:"hosts"`
+	Gateways           map[string]model.GatewayEndpoint   `json:"gateways,omitempty"`
+	Templates          map[string]model.Template          `json:"templates"`
+	Sources            map[string]model.DataSource        `json:"sources"`
+	Dashboards         map[string]model.Dashboard         `json:"dashboards"`
+	Events             []model.Event                      `json:"events"`
 }
 type Store struct {
 	mu   sync.RWMutex
@@ -41,6 +43,12 @@ func New(file string) (*Store, error) {
 		}
 	} else if !os.IsNotExist(e) {
 		return nil, e
+	}
+	if s.data.Integrations == nil {
+		s.data.Integrations = map[string]model.Integration{}
+	}
+	if s.data.IntegrationResults == nil {
+		s.data.IntegrationResults = map[string]model.IntegrationResult{}
 	}
 	if s.data.APMRules == nil {
 		s.data.APMRules = map[string]model.APMRule{}

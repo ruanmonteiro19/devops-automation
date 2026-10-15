@@ -39,6 +39,19 @@ export function downloadJSON(filename: string, data: unknown) {
 }
 export const quickActions = [
   {
+    title: "Conectar cloud",
+    description: "Inventário AWS, Azure ou GCP",
+    path: "clouds/novo",
+    category: "Integração",
+  },
+  {
+    title: "Adicionar equipamento de rede",
+    description: "Sistema e interfaces via SNMP Exporter",
+    path: "dispositivos-rede/novo",
+    category: "Integração",
+  },
+
+  {
     title: "Criar dashboard",
     description: "Indicadores e gráficos por serviço",
     path: "dashboards/novo",
@@ -76,6 +89,22 @@ export const quickActions = [
   },
 ];
 export const workspaceDestinations = [
+  {
+    title: "Visões de topologia",
+    path: "topologia",
+    description: "Catálogo de mapas do ambiente",
+  },
+  {
+    title: "Cloud providers",
+    path: "clouds",
+    description: "Configuração e inventário cloud",
+  },
+  {
+    title: "Network devices",
+    path: "dispositivos-rede",
+    description: "Equipamentos e interfaces de rede",
+  },
+
   { title: "Visão geral", path: "", description: "Hosts, serviços e eventos" },
   {
     title: "Serviços",

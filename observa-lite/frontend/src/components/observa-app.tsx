@@ -1,3 +1,5 @@
+import { IntegrationManager } from "@/components/integration-manager";
+import { TopologyWorkspace } from "@/components/topology-workspace";
 import { ProcessExplorer } from "@/components/process-explorer";
 import { applicationProcesses } from "@/lib/processes";
 import { MonitorManager } from "@/components/monitor-manager";
@@ -164,6 +166,7 @@ const navGroups: NavGroup[] = [
     items: (
       [
         ["Serviços", "servicos", Boxes],
+        ["Visões do ambiente", "topologia", Boxes],
         ["Mapa de serviços", "service-mapping", Workflow],
         ["Traces distribuídos", "traces", Activity],
         ["Erros & exceções", "erros", AlertTriangle],
@@ -179,6 +182,8 @@ const navGroups: NavGroup[] = [
         ["Processos", "processos", Activity],
         ["Mapa de processos", "process-mapping", GitBranch],
         ["Mapa de rede", "network-mapping", Network],
+        ["Cloud providers", "clouds", Cloud],
+        ["Network devices", "dispositivos-rede", Network],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
@@ -691,7 +696,12 @@ function Topbar({
         <span>Observa Lite</span>
         <ChevronRight className="size-3" />
         <span className="font-medium text-foreground">
-          {navText(labels.get(current) ?? "Visão geral", language)}
+          {navText(
+            labels.get(current) ??
+              labels.get(current.split("/")[0] || "") ??
+              "Visão geral",
+            language,
+          )}
         </span>
       </div>
       <div className="mx-auto hidden w-full max-w-md md:block">
@@ -922,6 +932,33 @@ function PageRouter({
 }) {
   const initialCreate = rawPath.endsWith("/novo");
   const path = initialCreate ? rawPath.slice(0, -5) : rawPath;
+  if (path === "clouds" || path === "dispositivos-rede")
+    return (
+      <IntegrationManager
+        key={rawPath}
+        demo={demo}
+        devices={path === "dispositivos-rede"}
+        initialCreate={initialCreate}
+      />
+    );
+  if (path === "topologia" || path.startsWith("topologia/"))
+    return (
+      <TopologyWorkspace
+        key={path}
+        path={path}
+        demo={demo}
+        snapshot={snapshot}
+        renderMap={(map, expand) => (
+          <MappingView
+            kind="service"
+            map={map}
+            demo={demo}
+            hideHeader
+            onExpandGroup={expand}
+          />
+        )}
+      />
+    );
   if (path === "processos") return <ProcessExplorer snapshot={snapshot} />;
   if (path === "chaves-api") return <WorkspaceAccess />;
   if (path === "configuracoes") return <WorkspacePreferences />;
@@ -1940,25 +1977,38 @@ function Status({ value }: { value: string }) {
   );
 }
 
-type FlowData = MapNode & Record<string, unknown> & { layout?: TopologyLayout };
+type FlowData = MapNode &
+  Record<string, unknown> & { layout?: TopologyLayout; onExpand?: () => void };
 const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => {
   const Icon =
-    data.kind === "database"
-      ? Database
-      : data.kind === "messaging"
-        ? Radio
-        : data.kind === "external"
-          ? Globe2
-          : Server;
+    data.kind === "group" || data.kind.startsWith("k8s.")
+      ? Boxes
+      : data.kind === "problem"
+        ? AlertTriangle
+        : data.kind.startsWith("ai.")
+          ? Bot
+          : data.kind.startsWith("network.")
+            ? Network
+            : /^(aws|gcp|Microsoft)/.test(data.kind)
+              ? Cloud
+              : data.kind === "database"
+                ? Database
+                : data.kind === "messaging"
+                  ? Radio
+                  : data.kind === "external"
+                    ? Globe2
+                    : Server;
   return (
-    <div className="min-w-44 max-w-60 rounded-md border border-map-node-border bg-map-node p-3 shadow-map">
+    <div className="topology-entity-node w-36 border border-map-node-border bg-map-node p-3">
       <Handle
         type="target"
         position={data.layout === "vertical" ? Position.Top : Position.Left}
         className="!bg-primary"
       />
       <div className="flex items-center gap-2">
-        <Icon className="size-4 shrink-0 text-primary" />
+        <span className="topology-icon-tile">
+          <Icon className="size-5 shrink-0 text-primary" />
+        </span>
         <span
           title={data.status === "unknown" ? "Saúde não avaliada" : data.status}
           className={cn(
@@ -1978,6 +2028,17 @@ const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => {
         {data.kind}
         {data.runtime ? ` · ${data.runtime}` : ""}
       </div>
+      {data.kind === "group" && data.onExpand && (
+        <button
+          className="mt-2 w-full border border-primary/40 bg-background px-2 py-1 text-[9px] text-primary"
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onExpand?.();
+          }}
+        >
+          EXPANDIR GRUPO
+        </button>
+      )}
       <Handle
         type="source"
         position={data.layout === "vertical" ? Position.Bottom : Position.Right}
@@ -1992,13 +2053,19 @@ function MappingView({
   kind,
   map,
   demo,
+  hideHeader = false,
+  onExpandGroup,
 }: {
   kind: "service" | "network" | "process";
   map: TopologyMap;
   demo: boolean;
+  hideHeader?: boolean;
+  onExpandGroup?: ((id: string) => void) | undefined;
 }) {
   const [selectedID, setSelectedID] = useState(""),
-    [layout, setLayout] = useState<TopologyLayout>("horizontal"),
+    [layout, setLayout] = useState<TopologyLayout>(
+      hideHeader ? "radial" : "horizontal",
+    ),
     [search, setSearch] = useState(""),
     [nodeKind, setNodeKind] = useState(""),
     [hideIsolated, setHideIsolated] = useState(false);
@@ -2016,9 +2083,15 @@ function MappingView({
       id: node.id,
       type: "topology",
       position: positions.get(node.id)!,
-      data: { ...node, layout },
+      data: {
+        ...node,
+        layout,
+        ...(node.kind === "group" && onExpandGroup
+          ? { onExpand: () => onExpandGroup(node.id) }
+          : {}),
+      },
     }));
-  }, [filtered, layout]);
+  }, [filtered, layout, onExpandGroup]);
   const edges: Edge[] = useMemo(
     () =>
       filtered.edges.map((edge) => ({
@@ -2039,23 +2112,25 @@ function MappingView({
     : [];
   return (
     <>
-      <PageHeader
-        eyebrow={kind === "service" ? "Aplicações / APM" : "Infraestrutura"}
-        title={
-          kind === "service"
-            ? "Service Mapping"
-            : kind === "process"
-              ? "Process Mapping"
-              : "Network Mapping"
-        }
-        description={
-          kind === "service"
-            ? "Serviços e dependências observados em spans OpenTelemetry. A topologia não determina a saúde nem a causa raiz."
-            : kind === "process"
-              ? "Agrupamentos inferidos de processos Linux/Windows, sem garantia de vínculo APM."
-              : "Fluxos IP observados; topologia física SNMP não disponível."
-        }
-      />
+      {!hideHeader && (
+        <PageHeader
+          eyebrow={kind === "service" ? "Aplicações / APM" : "Infraestrutura"}
+          title={
+            kind === "service"
+              ? "Service Mapping"
+              : kind === "process"
+                ? "Process Mapping"
+                : "Network Mapping"
+          }
+          description={
+            kind === "service"
+              ? "Serviços e dependências observados em spans OpenTelemetry. A topologia não determina a saúde nem a causa raiz."
+              : kind === "process"
+                ? "Agrupamentos inferidos de processos Linux/Windows, sem garantia de vínculo APM."
+                : "Fluxos IP observados; topologia física SNMP não disponível."
+          }
+        />
+      )}
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded border border-border bg-surface p-4">
         <label className="grid flex-1 gap-2 text-xs">
           Pesquisar nó
@@ -2089,6 +2164,7 @@ function MappingView({
               setLayout(event.target.value as TopologyLayout)
             }
           >
+            <option value="radial">Radial</option>
             <option value="grid">Grade</option>
             <option value="horizontal">Horizontal</option>
             <option value="vertical">Vertical</option>
@@ -2696,15 +2772,19 @@ function ExtensionDetail({
 }) {
   const navigate = useNavigate();
   const destination =
-    item?.integration === "datasource"
-      ? "data-sources"
-      : item?.integration === "template"
-        ? "templates"
-        : item?.integration === "mcp"
-          ? "mcp-hub"
-          : item?.integration === "otlp"
-            ? "servicos"
-            : "agentes";
+    item?.integration === "cloud"
+      ? "clouds"
+      : item?.integration === "devices"
+        ? "dispositivos-rede"
+        : item?.integration === "datasource"
+          ? "data-sources"
+          : item?.integration === "template"
+            ? "templates"
+            : item?.integration === "mcp"
+              ? "mcp-hub"
+              : item?.integration === "otlp"
+                ? "servicos"
+                : "agentes";
   return (
     <Sheet
       open={Boolean(item)}

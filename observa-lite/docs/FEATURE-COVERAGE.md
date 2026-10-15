@@ -37,9 +37,9 @@ Smartscape novo: vistas Smartscape on Grail, infra, problemas, dependências de 
 | Área | Módulos inventariados | Estado no projeto |
 |---|---|---|
 | Observe/explore | Notebooks, Investigations, Anomaly Detection, Reports, Data Explorer, Metrics Classic, Logs & Events Classic | Não equivalentes; apenas queries externas anteriores e regras explícitas novas |
-| Infraestrutura | Clouds, Databases, Extensions, Kubernetes, AWS/Azure/GCP Classic, Cloud Foundry, Containers, Host Networking, Technologies/Processes, VMware | Conectores/full-stack dedicados ausentes; inventário passivo anterior permanece |
+| Infraestrutura | Clouds, Databases, Extensions, Kubernetes, AWS/Azure/GCP Classic, Cloud Foundry, Containers, Host Networking, Technologies/Processes, VMware | Inventários AWS EC2/Azure ARM/GCP Compute e leitura SNMP Exporter agora disponíveis; sem full stack de todos os serviços cloud ou descoberta Kubernetes por API. Veja CLOUD-NETWORK-INTEGRATIONS.md |
 | Software delivery | Workflows, Site Reliability Guardian | Ausentes; SLO é somente o módulo descrito acima |
-| APM avançado | AI Observability, Live Debugger, Multidimensional Analysis, Profiling & Optimization, Message Queues | Ausentes; spans e agrupamentos não substituem sensores desses módulos |
+| APM avançado | AI Observability, Live Debugger, Multidimensional Analysis, Profiling & Optimization, Message Queues | A visão AI mostra atributos gen_ai recebidos; os sensores avançados permanecem ausentes. Spans e agrupamentos não substituem esses módulos. |
 | Application Security | Vulnerabilities, Security Posture Management, Threats & Exploits | Ausentes |
 | Digital Experience | Experience Vitals, Users & Sessions, Error Inspector, Synthetic, Opportunity Insights, Session Segmentation, Query User Sessions, Frontend/Web/Mobile, Session Replay, Custom Applications | Ausentes; checks HTTP/TCP anteriores não equivalem a browser/RUM/mobile |
 | Business Observability | Business Flow, Compliance Assistant, Cost & Carbon Optimization, Explore Business Events | Ausentes |
@@ -55,3 +55,7 @@ Links são evidências explícitas, inclusive entre traces distintos. A interfac
 ## Experiência do workspace
 
 Reformulação de navegação, aparência, criação, ajuda e ações operacionais documentada em [WORKSPACE-EXPERIENCE.md](WORKSPACE-EXPERIENCE.md). Recursos sem implementação saíram do menu principal; isso não representa implementação dessas áreas.
+
+## Topologia, clouds e rede
+
+Catálogo de dez visões, agrupamento/expansão e layout radial; conectores de inventário cloud e equipamentos SNMP via exporter documentados em [CLOUD-NETWORK-INTEGRATIONS.md](CLOUD-NETWORK-INTEGRATIONS.md). Não há equivalência integral ao Smartscape, nem monitoramento de todos os serviços de cloud ou de todos os MIBs de equipamentos.

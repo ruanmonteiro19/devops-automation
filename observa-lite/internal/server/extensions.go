@@ -31,7 +31,7 @@ func extensionCatalog(sources []model.DataSource, templates []model.Template, ag
 		{ID: "http", Name: "HTTP Monitor", Category: "Monitoramento", Description: "Verificações ativas HTTP", Available: true, Integration: "template"},
 		{ID: "tcp", Name: "TCP Monitor", Category: "Monitoramento", Description: "Verificações de conectividade TCP", Available: true, Integration: "template"},
 		{ID: "mcp", Name: "MCP Server", Category: "IA e Integrações", Description: "Ferramentas MCP somente leitura", Available: true, Configured: true, Integration: "mcp"},
-		{ID: "snmp", Name: "SNMP / IF-MIB", Category: "Rede", Description: "Descoberta de interfaces e dispositivos", Integration: "future"},
+		{ID: "snmp", Name: "SNMP Exporter / IF-MIB", Category: "Rede", Description: "Leitura de equipamentos e interfaces via SNMP Exporter", Available: true, Integration: "devices"},
 		{ID: "zabbix", Name: "Zabbix", Category: "Integrações", Description: "Importação de itens, eventos e triggers", Integration: "future"},
 		{ID: "opentelemetry", Name: "OpenTelemetry", Category: "APM", Description: "Traces, logs e métricas OTLP HTTP com limites locais", Available: true, Integration: "otlp"},
 		{ID: "kubernetes", Name: "Kubernetes / OpenShift", Category: "Cloud", Description: "Descoberta de workloads, namespaces e serviços", Integration: "future"},
@@ -42,8 +42,9 @@ func extensionCatalog(sources []model.DataSource, templates []model.Template, ag
 		{ID: "loki", Name: "Grafana Loki", Category: "Logs", Description: "Consultar LogQL no Loki com janela e volume limitados", Available: true, Integration: "datasource"},
 		{ID: "tempo", Name: "Grafana Tempo", Category: "Traces", Description: "Investigação de distributed traces", Integration: "future"},
 		{ID: "jenkins", Name: "Jenkins", Category: "DevOps", Description: "Pipelines, builds e dados operacionais", Integration: "future"},
-		{ID: "aws", Name: "AWS", Category: "Cloud", Description: "Telemetria de serviços AWS", Integration: "future"},
-		{ID: "azure", Name: "Microsoft Azure", Category: "Cloud", Description: "Telemetria de recursos Azure", Integration: "future"},
+		{ID: "aws", Name: "AWS", Category: "Cloud", Description: "Inventário EC2 por região via API assinada", Available: true, Integration: "cloud"},
+		{ID: "azure", Name: "Microsoft Azure", Category: "Cloud", Description: "Inventário Resource Manager por subscription", Available: true, Integration: "cloud"},
+		{ID: "gcp", Name: "Google Cloud", Category: "Cloud", Description: "Inventário Compute Engine por projeto", Available: true, Integration: "cloud"},
 		{ID: "oci", Name: "Oracle Cloud", Category: "Cloud", Description: "Telemetria de serviços OCI", Integration: "future"},
 	}
 	for i := range defs {
@@ -65,6 +66,19 @@ func (s *Server) extensions(w http.ResponseWriter, r *http.Request) {
 			catalog[i].Configured = len(snapshot.ServiceMap.Nodes) > 0
 		}
 	}
+	profiles := s.Store.Integrations()
+	results := s.Store.IntegrationResults()
+	for i := range catalog {
+		for _, profile := range profiles {
+			kind := profile.Kind
+			if kind == "snmp_exporter" {
+				kind = "snmp"
+			}
+			if catalog[i].ID == kind && !results[profile.ID].SuccessAt.IsZero() {
+				catalog[i].Configured = true
+			}
+		}
+	}
 	write(w, 200, map[string]interface{}{"extensions": catalog})
 }
 func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +86,11 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		"version":        "0.2.0",
 		"authentication": map[string]interface{}{"mode": "api_token", "sso": false, "mfa": false, "rbac": false, "description": "Autenticação administrativa por token. SSO e MFA dependem de implementação de backend e provedor de identidade."},
 		"features": map[string]bool{
+			"cloud_inventory_aws_ec2":          true,
+			"cloud_inventory_azure_arm":        true,
+			"cloud_inventory_gcp_compute":      true,
+			"snmp_exporter_read":               true,
+			"topology_views":                   true,
 			"service_map":                      true, // Instrumented parent-child span relationships.
 			"service_map_api":                  true,
 			"process_mapping":                  true,

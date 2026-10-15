@@ -45,7 +45,7 @@ export type MapEdge = {
   evidence: string;
   confidence: string;
 };
-export type TopologyMap = { nodes: MapNode[]; edges: MapEdge[] };
+export type TopologyMap = { nodes: MapNode[]; edges: MapEdge[];interface_inventory?:Record<string,MapNode[]> };
 export type MonitorTemplate = {
   id: string;
   name: string;

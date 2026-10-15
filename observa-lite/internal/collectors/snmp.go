@@ -182,6 +182,11 @@ func (r Runner) nativeDeviceInventory(ctx context.Context, p model.Integration) 
 		resource.Interfaces = append(resource.Interfaces, *iface)
 	}
 	sort.Slice(resource.Interfaces, func(i, j int) bool { return resource.Interfaces[i].Index < resource.Interfaces[j].Index })
+	if p.NeighborDiscovery {
+		var limited bool
+		resource.Neighbors, limited = lldpNeighbors(s, resource.Interfaces)
+		truncated = truncated || limited
+	}
 	if p.TemplateID != "generic-snmp" && r.NetworkTemplate != nil {
 		t, ok := r.NetworkTemplate(p.TemplateID)
 		if !ok {
@@ -234,6 +239,11 @@ func (r Runner) nativeDeviceInventory(ctx context.Context, p model.Integration) 
 			if !d.Supported {
 				continue
 			}
+			matches, filterError := networkmodel.CompileDiscoveryFilter(d)
+			if filterError != nil {
+				warnings = append(warnings, "Filtro LLD inválido: "+d.Name)
+				continue
+			}
 			rows := map[string]map[string]string{}
 			for macro, base := range d.Columns {
 				count := 0
@@ -268,6 +278,9 @@ func (r Runner) nativeDeviceInventory(ctx context.Context, p model.Integration) 
 				}
 			}
 			for _, row := range rows {
+				if !matches(row) {
+					continue
+				}
 				if attempts >= 1000 || ctx.Err() != nil {
 					truncated = true
 					break

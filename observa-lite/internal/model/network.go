@@ -21,12 +21,19 @@ type NetworkItem struct {
 	Supported  bool    `json:"supported"`
 	Reason     string  `json:"reason,omitempty"`
 }
+type NetworkCondition struct {
+	Macro   string `json:"macro"`
+	Pattern string `json:"pattern"`
+	Negate  bool   `json:"negate"`
+}
 type NetworkDiscovery struct {
-	Name      string            `json:"name"`
-	Columns   map[string]string `json:"columns"`
-	Items     []NetworkItem     `json:"items"`
-	Supported bool              `json:"supported"`
-	Reason    string            `json:"reason,omitempty"`
+	FilterMode string             `json:"filter_mode,omitempty"`
+	Conditions []NetworkCondition `json:"conditions,omitempty"`
+	Name       string             `json:"name"`
+	Columns    map[string]string  `json:"columns"`
+	Items      []NetworkItem      `json:"items"`
+	Supported  bool               `json:"supported"`
+	Reason     string             `json:"reason,omitempty"`
 }
 type NetworkTemplate struct {
 	ID          string             `json:"id"`

@@ -11,7 +11,7 @@ import (
 
 func (s *Server) topologyViews(w http.ResponseWriter, r *http.Request) {
 	view := r.URL.Query().Get("view")
-	allowed := map[string]bool{"all": true, "infrastructure": true, "services": true, "problems": true, "kubernetes": true, "aws": true, "azure": true, "gcp": true, "ai": true, "devices": true}
+	allowed := map[string]bool{"network": true, "all": true, "infrastructure": true, "services": true, "problems": true, "kubernetes": true, "aws": true, "azure": true, "gcp": true, "ai": true, "devices": true}
 	if !allowed[view] {
 		http.Error(w, "unsupported topology view", 400)
 		return
@@ -25,7 +25,19 @@ func (s *Server) topologyViews(w http.ResponseWriter, r *http.Request) {
 	nodes := map[string]bool{}
 	edges := map[string]bool{}
 	truncated := false
+	interfaceInventory := map[string][]model.Node{}
+	interfaceIDs := map[string]bool{}
+	var interfaceEdges []model.Edge
 	node := func(v model.Node) {
+		if v.Kind == "network.interface" {
+			if !interfaceIDs[v.ID] {
+				parent := strings.Split(v.ID, "/interface:")[0]
+				parent = strings.Split(parent, "/lldp-port:")[0]
+				interfaceInventory[parent] = append(interfaceInventory[parent], v)
+				interfaceIDs[v.ID] = true
+			}
+			return
+		}
 		if nodes[v.ID] {
 			return
 		}
@@ -37,7 +49,11 @@ func (s *Server) topologyViews(w http.ResponseWriter, r *http.Request) {
 		graph.Nodes = append(graph.Nodes, v)
 	}
 	edge := func(v model.Edge) {
-		if edges[v.ID] || !nodes[v.From] || !nodes[v.To] {
+		if v.Kind == "contains" && interfaceIDs[v.To] {
+			interfaceEdges = append(interfaceEdges, v)
+			return
+		}
+		if edges[v.ID] {
 			return
 		}
 		if len(graph.Edges) >= 2000 {
@@ -57,7 +73,7 @@ func (s *Server) topologyViews(w http.ResponseWriter, r *http.Request) {
 			edge(e)
 		}
 	}
-	if view == "all" || view == "infrastructure" {
+	if view == "all" || view == "network" || view == "infrastructure" {
 		for _, h := range snapshot.Hosts {
 			node(model.Node{ID: "host:" + h.ID, Name: h.Name, Kind: "host", Status: "observed"})
 		}
@@ -133,7 +149,7 @@ func (s *Server) topologyViews(w http.ResponseWriter, r *http.Request) {
 	profiles := s.Store.Integrations()
 	results := s.Store.IntegrationResults()
 	for _, p := range profiles {
-		if view != "all" && view != p.Kind && !(view == "devices" && (p.Kind == "snmp_exporter" || p.Kind == "snmp")) {
+		if view != "all" && !(view == "network" && (p.Kind == "snmp" || p.Kind == "snmp_exporter")) && view != p.Kind && !(view == "devices" && (p.Kind == "snmp_exporter" || p.Kind == "snmp")) {
 			continue
 		}
 		result, ok := results[p.ID]
@@ -164,6 +180,31 @@ func (s *Server) topologyViews(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	s.topologyRelations(view, from, to, snapshot, node, edge)
+	// Interfaces are an owned drill-down inventory, not part of the overview node budget.
+	for _, items := range interfaceInventory {
+		for _, n := range items {
+			if len(graph.Nodes) < 500 {
+				graph.Nodes = append(graph.Nodes, n)
+				nodes[n.ID] = true
+			}
+		}
+	}
+	for _, e := range interfaceEdges {
+		if len(graph.Edges) < 2000 {
+			graph.Edges = append(graph.Edges, e)
+		} else {
+			truncated = true
+		}
+	}
+	validEdges := graph.Edges[:0]
+	for _, e := range graph.Edges {
+		if (nodes[e.From] || interfaceIDs[e.From]) && (nodes[e.To] || interfaceIDs[e.To]) {
+			validEdges = append(validEdges, e)
+		}
+	}
+	graph.Edges = validEdges
+
 	sort.Slice(graph.Nodes, func(i, j int) bool { return graph.Nodes[i].ID < graph.Nodes[j].ID })
-	write(w, 200, map[string]any{"nodes": graph.Nodes, "edges": graph.Edges, "view": view, "truncated": truncated, "node_limit": 500, "edge_limit": 2000, "basis": fmt.Sprintf("observed inventory and retained OTLP; view=%s", view)})
+	write(w, 200, map[string]any{"interface_inventory": interfaceInventory, "nodes": graph.Nodes, "edges": graph.Edges, "view": view, "truncated": truncated, "node_limit": 500, "edge_limit": 2000, "basis": fmt.Sprintf("observed inventory and retained OTLP; view=%s", view)})
 }

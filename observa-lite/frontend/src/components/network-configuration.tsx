@@ -266,6 +266,16 @@ export function NetworkTemplateFields({
           }
         />
       </ConfigField>
+      <ConfigField className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={!!draft.neighbor_discovery}
+          onChange={(event) =>
+            onChange({ ...draft, neighbor_discovery: event.target.checked })
+          }
+        />
+        Descobrir vizinhos LLDP
+      </ConfigField>
       <ConfigField>
         Tipo de equipamento
         <select
@@ -334,7 +344,13 @@ export function NetworkTemplateFields({
     </>
   );
 }
-export function NetworkTemplatesPanel({ demo }: { demo: boolean }) {
+export function NetworkTemplatesPanel({
+  demo,
+  standalone = false,
+}: {
+  demo: boolean;
+  standalone?: boolean;
+}) {
   const client = useQueryClient();
   const query = useQuery({
     queryKey: ["network-templates"],
@@ -389,7 +405,10 @@ export function NetworkTemplatesPanel({ demo }: { demo: boolean }) {
     }
   }
   return (
-    <details className="border border-border bg-surface p-4">
+    <details
+      open={standalone || undefined}
+      className="border border-border bg-surface p-4"
+    >
       <summary className="cursor-pointer text-sm font-semibold text-primary">
         Templates de rede · Importar do Zabbix
       </summary>

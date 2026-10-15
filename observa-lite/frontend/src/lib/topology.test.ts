@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { filterTopology, layoutTopology } from "./topology";
+import {
+  filterTopology,
+  layoutTopology,
+  collapseDeviceInterfaces,
+  topologyNeighborhood,
+} from "./topology";
 import type { TopologyMap, MapNode, MapEdge } from "./api";
 const node = (id: string, kind = "service"): MapNode => ({
   id,
@@ -35,16 +40,16 @@ describe("observed topology filtering", () => {
     expect(result.nodes.map((n) => n.id)).toEqual(["a", "b", "c"]);
     expect(result.edges.length).toBe(2);
   });
-  it("bounds nodes to200 and returns exact truncation metadata and valid edges", () => {
+  it("bounds nodes to500 and returns exact truncation metadata and valid edges", () => {
     const large = {
-      nodes: Array.from({ length: 230 }, (_, i) =>
+      nodes: Array.from({ length: 530 }, (_, i) =>
         node(String(i).padStart(3, "0")),
       ),
-      edges: [edge("000", "229"), edge("000", "001")],
+      edges: [edge("000", "529"), edge("000", "001")],
     };
     const result = filterTopology(large);
-    expect(result.nodes.length).toBe(200);
-    expect(result.matchedNodes).toBe(230);
+    expect(result.nodes.length).toBe(500);
+    expect(result.matchedNodes).toBe(530);
     expect(result.truncated).toBe(true);
     expect(result.edges.map((e) => e.id)).toEqual(["000001"]);
     expect(filterTopology(large, { search: "Node 22" }).truncated).toBe(false);
@@ -79,5 +84,107 @@ describe("deterministic layered layout", () => {
     );
     expect([...first]).toEqual([...reverse]);
     expect(layoutTopology({ nodes: [], edges: [] }, "vertical").size).toBe(0);
+  });
+});
+
+describe("Device port drill-down", () => {
+  it("hides interfaces and duplicate collection wrappers while retaining their connections", () => {
+    const graph: TopologyMap = {
+      nodes: [
+        { id: "collector", kind: "snmp", name: "Profile", status: "observed" },
+        {
+          id: "device",
+          kind: "network.device",
+          name: "Core",
+          status: "observed",
+        },
+        { id: "host", kind: "host", name: "App", status: "observed" },
+      ],
+      edges: [
+        {
+          id: "wrapper",
+          from: "collector",
+          to: "device",
+          kind: "contains",
+          count: 1,
+          evidence: "inventory",
+          confidence: "observed",
+        },
+        {
+          id: "link",
+          from: "port",
+          to: "host",
+          kind: "lldp",
+          count: 1,
+          evidence: "LLDP",
+          confidence: "advertised",
+        },
+      ],
+      interface_inventory: {
+        device: [
+          {
+            id: "port",
+            kind: "network.interface",
+            name: "Gi1",
+            status: "observed",
+          },
+        ],
+      },
+    };
+    const folded = collapseDeviceInterfaces(graph);
+    expect(folded.graph.nodes.map((node) => node.id)).toEqual([
+      "device",
+      "host",
+    ]);
+    expect(folded.counts.get("device")).toBe(1);
+    expect(folded.graph.edges.find((edge) => edge.kind === "lldp")?.from).toBe(
+      "device",
+    );
+    const opened = collapseDeviceInterfaces(graph, ["device"]);
+    expect(opened.graph.nodes.some((node) => node.id === "port")).toBe(true);
+    expect(opened.graph.edges.find((edge) => edge.kind === "lldp")?.from).toBe(
+      "port",
+    );
+    expect(graph.nodes).toHaveLength(3);
+  });
+  it("highlights only the selected neighborhood at the chosen depth", () => {
+    const graph: TopologyMap = {
+      nodes: ["device", "host", "apm", "other"].map((id) => ({
+        id,
+        name: id,
+        kind: "host",
+        status: "observed",
+      })),
+      edges: [
+        {
+          id: "dh",
+          from: "device",
+          to: "host",
+          kind: "lldp",
+          count: 1,
+          evidence: "LLDP",
+          confidence: "advertised",
+        },
+        {
+          id: "ha",
+          from: "host",
+          to: "apm",
+          kind: "runs-service",
+          count: 1,
+          evidence: "host.id",
+          confidence: "resource-identity",
+        },
+      ],
+    };
+    expect([...topologyNeighborhood(graph, "device", 1).nodes]).toEqual([
+      "device",
+      "host",
+    ]);
+    expect(topologyNeighborhood(graph, "device", 2).nodes.has("apm")).toBe(
+      true,
+    );
+    expect(topologyNeighborhood(graph, "device", 3).nodes.has("other")).toBe(
+      false,
+    );
   });
 });

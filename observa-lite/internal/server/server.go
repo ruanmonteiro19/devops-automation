@@ -64,6 +64,8 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("GET /api/v1/storage", s.adminAuth(func(w http.ResponseWriter, r *http.Request) { write(w, 200, s.Store.StorageInfo()) }))
 	s.rumRoutes(m)
 	s.workspaceRoutes(m)
+	m.HandleFunc("GET /api/v1/latest-data", s.adminAuth(s.latestData))
+	m.HandleFunc("GET /api/v1/latest-data/{id}/history", s.adminAuth(s.latestHistory))
 	m.HandleFunc("GET /api/v1/network/templates", s.adminAuth(s.networkTemplateList))
 	m.HandleFunc("DELETE /api/v1/network/templates/{id}", s.adminAuth(s.networkTemplateDelete))
 	m.HandleFunc("POST /api/v1/network/templates/import", s.adminAuth(s.networkTemplateImport))

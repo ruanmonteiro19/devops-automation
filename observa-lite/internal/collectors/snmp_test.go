@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gosnmp/gosnmp"
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
+	networkmodel "github.com/ruanmonteiro19/observa-lite/internal/network"
 	"net"
 	"sort"
 	"strconv"
@@ -24,7 +25,12 @@ func TestNativeSNMPWire(t *testing.T) {
 			var wg sync.WaitGroup
 			wg.Add(1)
 			t.Cleanup(func() { conn.Close(); wg.Wait() })
-			data := []gosnmp.SnmpPDU{{Name: ".1.3.6.1.2.1.1.1.0", Type: gosnmp.OctetString, Value: "Controlled switch"}, {Name: ".1.3.6.1.2.1.1.2.0", Type: gosnmp.ObjectIdentifier, Value: ".1.3.6.1.4.1.9"}, {Name: ".1.3.6.1.2.1.1.3.0", Type: gosnmp.TimeTicks, Value: uint32(12345)}, {Name: ".1.3.6.1.2.1.1.5.0", Type: gosnmp.OctetString, Value: "Fixture switch"}, {Name: ".1.3.6.1.2.1.2.2.1.8.1", Type: gosnmp.Integer, Value: 1}, {Name: ".1.3.6.1.2.1.31.1.1.1.1.1", Type: gosnmp.OctetString, Value: "Gi1/0/1"}, {Name: ".1.3.6.1.2.1.31.1.1.1.6.1", Type: gosnmp.Counter64, Value: uint64(123456789)}, {Name: ".1.3.6.1.2.1.31.1.1.1.15.1", Type: gosnmp.Gauge32, Value: uint32(1000)}}
+			data := []gosnmp.SnmpPDU{
+				{Name: ".1.0.8802.1.1.2.1.3.7.1.3.99", Type: gosnmp.OctetString, Value: "Gi1/0/1"},
+				{Name: ".1.0.8802.1.1.2.1.4.1.1.5.0.99.1", Type: gosnmp.OctetString, Value: []byte{0, 1, 2, 3, 4, 5}},
+				{Name: ".1.0.8802.1.1.2.1.4.1.1.7.0.99.1", Type: gosnmp.OctetString, Value: "eth0"},
+				{Name: ".1.0.8802.1.1.2.1.4.1.1.9.0.99.1", Type: gosnmp.OctetString, Value: "Application host"},
+				{Name: ".1.0.8802.1.1.2.1.4.2.1.3.0.99.1.1.4.10.0.0.20", Type: gosnmp.Integer, Value: 2}, {Name: ".1.3.6.1.2.1.1.1.0", Type: gosnmp.OctetString, Value: "Controlled switch"}, {Name: ".1.3.6.1.2.1.1.2.0", Type: gosnmp.ObjectIdentifier, Value: ".1.3.6.1.4.1.9"}, {Name: ".1.3.6.1.2.1.1.3.0", Type: gosnmp.TimeTicks, Value: uint32(12345)}, {Name: ".1.3.6.1.2.1.1.5.0", Type: gosnmp.OctetString, Value: "Fixture switch"}, {Name: ".1.3.6.1.2.1.2.2.1.8.1", Type: gosnmp.Integer, Value: 1}, {Name: ".1.3.6.1.2.1.31.1.1.1.1.1", Type: gosnmp.OctetString, Value: "Gi1/0/1"}, {Name: ".1.3.6.1.2.1.31.1.1.1.6.1", Type: gosnmp.Counter64, Value: uint64(123456789)}, {Name: ".1.3.6.1.2.1.31.1.1.1.15.1", Type: gosnmp.Gauge32, Value: uint32(1000)}}
 			less := func(a, b string) bool {
 				aa, bb := strings.Split(strings.TrimPrefix(a, "."), "."), strings.Split(strings.TrimPrefix(b, "."), ".")
 				for i := 0; i < len(aa) && i < len(bb); i++ {
@@ -79,11 +85,15 @@ func TestNativeSNMPWire(t *testing.T) {
 				return model.SNMPCredentials{Community: "fixture-community"}, nil
 			}}
 			runner.NetworkTemplate = func(string) (model.NetworkTemplate, bool) {
-				return model.NetworkTemplate{ID: "fixture-template", Items: []model.NetworkItem{{Name: "Uptime", Key: "uptime.seconds", OID: "1.3.6.1.2.1.1.3.0", Multiplier: .01, Supported: true}}, Discovery: []model.NetworkDiscovery{{Name: "Interfaces", Supported: true, Columns: map[string]string{"{#IFNAME}": "1.3.6.1.2.1.31.1.1.1.1"}, Items: []model.NetworkItem{{Name: "Status", Key: "interface[{#SNMPINDEX}]", OID: "1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}", Multiplier: 1, Supported: true}}}}}, true
+				templates, e := networkmodel.ParseTemplates([]byte(`{"zabbix_export":{"version":"7.0","templates":[{"template":"Modern","name":"Modern switch","items":[{"name":"Uptime","key":"uptime.seconds","type":"SNMP_AGENT","snmp_oid":"get[1.3.6.1.2.1.1.3.0]","preprocessing":[{"type":"MULTIPLIER","parameters":["0.01"]}]},{"name":"Walk","key":"interfaces.walk","type":"SNMP_AGENT","snmp_oid":"walk[1.3.6.1.2.1.31.1.1.1.1,1.3.6.1.2.1.2.2.1.8]"}],"discovery_rules":[{"name":"Interfaces","type":"DEPENDENT","master_item":{"key":"interfaces.walk"},"preprocessing":[{"type":"SNMP_WALK_TO_JSON","parameters":["{#IFNAME}","1.3.6.1.2.1.31.1.1.1.1","0"]}],"filter":{"evaltype":"AND","conditions":[{"macro":"{#IFNAME}","value":"^Gi"}]},"item_prototypes":[{"name":"Status","key":"interface[{#SNMPINDEX}]","type":"DEPENDENT","master_item":{"key":"interfaces.walk"},"preprocessing":[{"type":"SNMP_WALK_VALUE","parameters":["1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}","0"]}]}]}]}]}}`))
+				if e != nil {
+					t.Fatal(e)
+				}
+				return templates[0], true
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			result, e := runner.CollectIntegration(ctx, model.Integration{ID: "switch", Name: "Switch", Kind: "snmp", Target: "127.0.0.1", SNMPVersion: version, SNMPPort: uint16(conn.LocalAddr().(*net.UDPAddr).Port), TemplateID: "fixture-template"})
+			result, e := runner.CollectIntegration(ctx, model.Integration{ID: "switch", Name: "Switch", Kind: "snmp", Target: "127.0.0.1", SNMPVersion: version, SNMPPort: uint16(conn.LocalAddr().(*net.UDPAddr).Port), TemplateID: "fixture-template", NeighborDiscovery: true})
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -92,6 +102,9 @@ func TestNativeSNMPWire(t *testing.T) {
 			}
 			if result.Resources[0].Metrics["uptime.seconds"] != 123.45 || result.Resources[0].Metrics["interface[1]"] != 1 {
 				t.Fatalf("template/LLD not executed: %+v", result.Resources[0].Metrics)
+			}
+			if len(result.Resources[0].Neighbors) != 1 || result.Resources[0].Neighbors[0].LocalIfIndex != "1" || result.Resources[0].Neighbors[0].RemoteIP != "10.0.0.20" {
+				t.Fatalf("invalid LLDP neighbor: %+v", result.Resources[0].Neighbors)
 			}
 			// Same literal private target must be refused before any UDP request.
 			runner.AllowPrivate = false

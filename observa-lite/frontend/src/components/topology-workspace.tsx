@@ -1,3 +1,4 @@
+import { collapseDeviceInterfaces } from "@/lib/topology";
 import { isSystemProcess } from "@/lib/processes";
 import { Input } from "@/components/ui/input";
 import { useState, type ReactNode } from "react";
@@ -28,6 +29,12 @@ import {
 import { request, type TopologyMap, type Snapshot } from "@/lib/api";
 import { downloadJSON } from "@/lib/workspace";
 const views = [
+  {
+    id: "network",
+    title: "Mapa de rede",
+    description: "Equipamentos, hosts, aplicações e vizinhos LLDP observados",
+    icon: Network,
+  },
   {
     id: "all",
     title: "Visão unificada",
@@ -162,7 +169,7 @@ export function TopologyWorkspace({
   const navigate = useNavigate();
   const id = path.split("/")[1] || "";
   const selected = views.find((v) => v.id === id);
-  const [groupBy, setGroupBy] = useState<"none" | "kind" | "host">("kind");
+  const [groupBy, setGroupBy] = useState<"none" | "kind" | "host">("none");
   const [expanded, setExpanded] = useState<string[]>([]);
   const [entitySearch, setEntitySearch] = useState("");
   const [showSystem, setShowSystem] = useState(false);
@@ -200,11 +207,28 @@ export function TopologyWorkspace({
         .includes(entitySearch.toLowerCase()),
   );
   const ids = new Set(visibleNodes.map((node) => node.id));
+  const visibleIDs = new Set(ids);
+  for (const [parent, items] of Object.entries(map.interface_inventory ?? {})) {
+    if (ids.has(parent)) for (const item of items) visibleIDs.add(item.id);
+  }
   const visibleMap = {
+    interface_inventory: Object.fromEntries(
+      Object.entries(map.interface_inventory ?? {}).filter(([parent]) =>
+        ids.has(parent),
+      ),
+    ),
     nodes: visibleNodes,
-    edges: map.edges.filter((edge) => ids.has(edge.from) && ids.has(edge.to)),
+    edges: map.edges.filter(
+      (edge) => visibleIDs.has(edge.from) && visibleIDs.has(edge.to),
+    ),
   };
-  const grouped = groupTopology(visibleMap, groupBy, expanded);
+  const grouped = groupTopology(
+    groupBy === "none"
+      ? visibleMap
+      : collapseDeviceInterfaces(visibleMap).graph,
+    groupBy,
+    expanded,
+  );
   return (
     <div
       className={

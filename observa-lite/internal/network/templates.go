@@ -18,10 +18,15 @@ import (
 )
 
 type rawStep struct {
-	Type       string   `yaml:"type" xml:"type"`
-	Parameters []string `yaml:"parameters" xml:"parameters>parameter"`
+	ErrorHandler string   `yaml:"error_handler" xml:"error_handler"`
+	Type         string   `yaml:"type" xml:"type"`
+	Parameters   []string `yaml:"parameters" xml:"parameters>parameter"`
+}
+type rawMaster struct {
+	Key string `yaml:"key" xml:"key"`
 }
 type rawItem struct {
+	Master        rawMaster  `yaml:"master_item" xml:"master_item"`
 	Name          string     `yaml:"name" xml:"name"`
 	Key           string     `yaml:"key" xml:"key"`
 	Type          string     `yaml:"type" xml:"type"`
@@ -30,7 +35,14 @@ type rawItem struct {
 	Preprocessing []rawStep  `yaml:"preprocessing" xml:"preprocessing>step"`
 	Triggers      []struct{} `yaml:"triggers" xml:"triggers>trigger"`
 }
+type rawCondition struct {
+	Macro    string `yaml:"macro" xml:"macro"`
+	Value    string `yaml:"value" xml:"value"`
+	Operator string `yaml:"operator" xml:"operator"`
+}
 type rawDiscovery struct {
+	Master            rawMaster  `yaml:"master_item" xml:"master_item"`
+	Preprocessing     []rawStep  `yaml:"preprocessing" xml:"preprocessing>step"`
 	TriggerPrototypes []struct{} `yaml:"trigger_prototypes" xml:"trigger_prototypes>trigger_prototype"`
 	GraphPrototypes   []struct{} `yaml:"graph_prototypes" xml:"graph_prototypes>graph_prototype"`
 	HostPrototypes    []struct{} `yaml:"host_prototypes" xml:"host_prototypes>host_prototype"`
@@ -39,7 +51,8 @@ type rawDiscovery struct {
 	OID               string     `yaml:"snmp_oid" xml:"snmp_oid"`
 	Items             []rawItem  `yaml:"item_prototypes" xml:"item_prototypes>item_prototype"`
 	Filter            struct {
-		Conditions []struct{} `yaml:"conditions" xml:"conditions>condition"`
+		Conditions []rawCondition `yaml:"conditions" xml:"conditions>condition"`
+		EvalType   string         `yaml:"evaltype" xml:"evaltype"`
 	} `yaml:"filter" xml:"filter"`
 }
 type rawTemplate struct {
@@ -94,12 +107,15 @@ func item(v rawItem, macros map[string]string, prototype bool) model.NetworkItem
 	}
 	testOID := out.OID
 	if prototype {
-		testOID = strings.ReplaceAll(testOID, "{#SNMPINDEX}", "1")
+		testOID = regexp.MustCompile(`\{#[A-Z0-9_.]+\}`).ReplaceAllString(testOID, "1")
 	}
 	if !NumericOID(testOID) {
 		out.Reason = "OID precisa ser numérico e escalar; walk/get, MIB simbólica ou macro não resolvida"
 	}
 	for _, step := range v.Preprocessing {
+		if step.ErrorHandler != "" && step.ErrorHandler != "DISCARD_VALUE" && step.ErrorHandler != "1" {
+			out.Reason = "Tratamento de erro não suportado: " + step.ErrorHandler
+		}
 		switch step.Type {
 		case "CHANGE_PER_SECOND", "10", "SIMPLE_CHANGE", "9":
 			if out.Change != "" {
@@ -212,9 +228,26 @@ func ParseTemplates(data []byte) ([]model.NetworkTemplate, error) {
 		if len(raw.Items) > 2000 || len(raw.Discovery) > 100 {
 			return nil, errors.New("template excede 2000 itens ou 100 descobertas")
 		}
+		masters := map[string]bool{}
+		for _, candidate := range raw.Items {
+			oid := expand(candidate.OID, macros)
+			if (candidate.Type == "SNMP_AGENT" || candidate.Type == "20") && strings.HasPrefix(oid, "walk[") && strings.HasSuffix(oid, "]") {
+				valid := true
+				parts := strings.Split(strings.TrimSuffix(strings.TrimPrefix(oid, "walk["), "]"), ",")
+				if len(parts) > 32 {
+					valid = false
+				}
+				for _, base := range parts {
+					if !NumericOID(strings.TrimSpace(base)) {
+						valid = false
+					}
+				}
+				masters[candidate.Key] = valid
+			}
+		}
 		triggers := len(raw.Triggers) + len(doc.Triggers)
 		for _, v := range raw.Items {
-			t.Items = append(t.Items, item(v, macros, false))
+			t.Items = append(t.Items, compileDependentItem(v, macros, false, masters))
 			triggers += len(v.Triggers)
 		}
 		for _, r := range raw.Discovery {
@@ -225,32 +258,22 @@ func ParseTemplates(data []byte) ([]model.NetworkTemplate, error) {
 			if len(r.HostPrototypes) > 0 {
 				t.Warnings = append(t.Warnings, "Protótipos de host não executados: "+r.Name)
 			}
-			d := model.NetworkDiscovery{Name: r.Name, Columns: map[string]string{}, Items: []model.NetworkItem{}, Supported: true}
-			oid := expand(r.OID, macros)
-			if (r.Type != "SNMP_AGENT" && r.Type != "20" && r.Type != "4") || !strings.HasPrefix(oid, "discovery[") || !strings.HasSuffix(oid, "]") {
-				d.Reason = "Descoberta exige discovery[macro,OID,...] SNMP numérica"
-			} else {
-				parts := strings.Split(strings.TrimSuffix(strings.TrimPrefix(oid, "discovery["), "]"), ",")
-				if len(parts)%2 != 0 || len(parts) > 32 {
-					d.Reason = "Colunas de descoberta inválidas"
-				} else {
-					for i := 0; i < len(parts); i += 2 {
-						macro, base := strings.TrimSpace(parts[i]), strings.TrimSpace(parts[i+1])
-						if !strings.HasPrefix(macro, "{#") || !strings.HasSuffix(macro, "}") || !NumericOID(base) {
-							d.Reason = "Macro/OID de descoberta inválida"
-						}
-						d.Columns[macro] = base
-					}
-				}
-			}
-			if len(r.Filter.Conditions) > 0 {
-				d.Reason = "Filtros LLD ainda não executáveis"
-			}
+			d := compileDiscovery(r, macros, masters)
+
 			if len(r.Items) > 500 {
 				return nil, errors.New("limite de 500 protótipos por descoberta")
 			}
 			for _, v := range r.Items {
-				d.Items = append(d.Items, item(v, macros, true))
+				compiled := compileDependentItem(v, macros, true, masters)
+				for _, macro := range regexp.MustCompile(`\{#[A-Z0-9_.]+\}`).FindAllString(compiled.OID, -1) {
+					if macro != "{#SNMPINDEX}" {
+						if _, ok := d.Columns[macro]; !ok {
+							compiled.Supported = false
+							compiled.Reason = "Macro LLD sem coluna de origem: " + macro
+						}
+					}
+				}
+				d.Items = append(d.Items, compiled)
 				triggers += len(v.Triggers)
 			}
 			d.Supported = d.Reason == ""

@@ -42,6 +42,7 @@ import {
 import { request } from "@/lib/api";
 import { downloadJSON } from "@/lib/workspace";
 export type Integration = {
+  neighbor_discovery?: boolean;
   interval_seconds?: number;
   snmp_version?: string;
   snmp_port?: number;
@@ -102,6 +103,7 @@ const blank = (devices: boolean): Integration => ({
   kind: devices ? "snmp" : "aws",
   ...(devices
     ? {
+        neighbor_discovery: true,
         snmp_version: "2c",
         snmp_port: 161,
         template_id: "generic-snmp",

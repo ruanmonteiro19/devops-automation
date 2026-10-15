@@ -27,7 +27,7 @@ export function filterTopology(
     nodes = nodes.filter((node) => connected.has(node.id));
   }
   const matchedNodes = nodes.length;
-  const limit = Math.max(1, Math.min(200, Math.floor(options.limit ?? 200)));
+  const limit = Math.max(1, Math.min(500, Math.floor(options.limit ?? 500)));
   nodes = nodes.slice(0, limit);
   ids = new Set(nodes.map((node) => node.id));
   edges = edges
@@ -127,4 +127,134 @@ export function layoutTopology(
     );
   }
   return positions;
+}
+
+/** Collapse device interfaces while preserving their observed external relationships. */
+export function collapseDeviceInterfaces(
+  map: TopologyMap,
+  expanded: string[] = [],
+) {
+  const core = [...map.nodes];
+  const relations = [...map.edges];
+  const existing = new Set(core.map((node) => node.id));
+  const contains = new Set(
+    relations
+      .filter((edge) => edge.kind === "contains")
+      .map((edge) => JSON.stringify([edge.from, edge.to])),
+  );
+  for (const [parent, items] of Object.entries(map.interface_inventory ?? {})) {
+    for (const item of items) {
+      if (!existing.has(item.id)) {
+        core.push(item);
+        existing.add(item.id);
+      }
+      const key = JSON.stringify([parent, item.id]);
+      if (!contains.has(key)) {
+        relations.push({
+          id: "interface-inventory:" + item.id,
+          from: parent,
+          to: item.id,
+          kind: "contains",
+          count: 1,
+          evidence: "SNMP interface inventory",
+          confidence: "observed",
+        });
+        contains.add(key);
+      }
+    }
+  }
+  map = { ...map, nodes: core, edges: relations };
+  const byID = new Map(map.nodes.map((node) => [node.id, node]));
+  const wrappers = new Map<string, string>();
+  for (const node of map.nodes) {
+    if (!["snmp", "snmp_exporter"].includes(node.kind)) continue;
+    const children = map.edges.filter(
+      (edge) =>
+        edge.from === node.id &&
+        edge.kind === "contains" &&
+        byID.get(edge.to)?.kind === "network.device",
+    );
+    if (children.length === 1) wrappers.set(node.id, children[0]!.to);
+  }
+  const parents = new Map<string, string>();
+  const counts = new Map<string, number>();
+  for (const edge of map.edges) {
+    if (
+      edge.kind !== "contains" ||
+      byID.get(edge.to)?.kind !== "network.interface"
+    )
+      continue;
+    parents.set(edge.to, edge.from);
+    counts.set(edge.from, (counts.get(edge.from) || 0) + 1);
+  }
+  const hidden = new Set(
+    [...parents]
+      .filter(([, parent]) => !expanded.includes(parent))
+      .map(([id]) => id),
+  );
+  const project = (id: string) =>
+    wrappers.get(id) ?? (hidden.has(id) ? parents.get(id)! : id);
+  const edges = new Map<string, TopologyMap["edges"][number]>();
+  for (const edge of map.edges) {
+    const from = project(edge.from),
+      to = project(edge.to);
+    if (from === to) continue;
+    const id = JSON.stringify([from, to, edge.kind]);
+    const prior = edges.get(id);
+    if (prior) prior.count += edge.count;
+    else edges.set(id, { ...edge, id, from, to });
+  }
+  return {
+    graph: {
+      nodes: map.nodes.filter(
+        (node) => !hidden.has(node.id) && !wrappers.has(node.id),
+      ),
+      edges: [...edges.values()],
+    },
+    counts,
+    parents,
+  };
+}
+export function topologyNeighborhood(map: TopologyMap, id: string, depth = 1) {
+  const nodes = new Set<string>();
+  const edges = new Set<string>();
+  const kinds = new Map(map.nodes.map((node) => [node.id, node.kind]));
+  if (!kinds.has(id)) return { nodes, edges };
+  const maximum = Math.max(1, Math.min(3, depth));
+  const distances = new Map([[id, 0]]);
+  const queue: [string, number][] = [[id, 0]];
+  const weight = (edge: TopologyMap["edges"][number]) =>
+    edge.kind === "contains" &&
+    (kinds.get(edge.from) === "network.interface" ||
+      kinds.get(edge.to) === "network.interface")
+      ? 0
+      : 1;
+  for (let index = 0; index < queue.length; index++) {
+    const [current, distance] = queue[index]!;
+    if (distances.get(current) !== distance) continue;
+    for (const edge of map.edges) {
+      if (edge.from !== current && edge.to !== current) continue;
+      const next = edge.from === current ? edge.to : edge.from;
+      const nextDistance = distance + weight(edge);
+      if (
+        nextDistance <= maximum &&
+        nextDistance < (distances.get(next) ?? Infinity)
+      ) {
+        distances.set(next, nextDistance);
+        queue.push([next, nextDistance]);
+      }
+    }
+  }
+  for (const node of distances.keys()) nodes.add(node);
+  for (const edge of map.edges) {
+    if (
+      nodes.has(edge.from) &&
+      nodes.has(edge.to) &&
+      Math.min(distances.get(edge.from)!, distances.get(edge.to)!) +
+        weight(edge) <=
+        maximum
+    )
+      edges.add(edge.id);
+  }
+  return { nodes, edges };
 }

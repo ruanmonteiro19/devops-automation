@@ -2,28 +2,30 @@ package model
 
 import "time"
 
-// Profiles store environment variable names, never credentials.
+// Public profiles contain connection metadata; SNMP credentials are stored separately as ciphertext.
 type Integration struct {
-	IntervalSeconds  int    `json:"interval_seconds,omitempty"`
-	SNMPRevision     string `json:"snmp_revision,omitempty"`
-	SNMPVersion      string `json:"snmp_version,omitempty"`
-	SNMPPort         uint16 `json:"snmp_port,omitempty"`
-	TemplateID       string `json:"template_id,omitempty"`
-	DeviceType       string `json:"device_type,omitempty"`
-	HostGroup        string `json:"host_group,omitempty"`
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Kind             string `json:"kind"`
-	Enabled          bool   `json:"enabled"`
-	Region           string `json:"region,omitempty"`
-	Scope            string `json:"scope,omitempty"`
-	CredentialPrefix string `json:"credential_prefix,omitempty"`
-	Endpoint         string `json:"endpoint,omitempty"`
-	Target           string `json:"target,omitempty"`
-	Module           string `json:"module,omitempty"`
-	Auth             string `json:"auth,omitempty"`
+	NeighborDiscovery bool   `json:"neighbor_discovery,omitempty"`
+	IntervalSeconds   int    `json:"interval_seconds,omitempty"`
+	SNMPRevision      string `json:"snmp_revision,omitempty"`
+	SNMPVersion       string `json:"snmp_version,omitempty"`
+	SNMPPort          uint16 `json:"snmp_port,omitempty"`
+	TemplateID        string `json:"template_id,omitempty"`
+	DeviceType        string `json:"device_type,omitempty"`
+	HostGroup         string `json:"host_group,omitempty"`
+	ID                string `json:"id"`
+	Name              string `json:"name"`
+	Kind              string `json:"kind"`
+	Enabled           bool   `json:"enabled"`
+	Region            string `json:"region,omitempty"`
+	Scope             string `json:"scope,omitempty"`
+	CredentialPrefix  string `json:"credential_prefix,omitempty"`
+	Endpoint          string `json:"endpoint,omitempty"`
+	Target            string `json:"target,omitempty"`
+	Module            string `json:"module,omitempty"`
+	Auth              string `json:"auth,omitempty"`
 }
 type IntegrationResource struct {
+	Neighbors  []DeviceNeighbor   `json:"neighbors,omitempty"`
 	ID         string             `json:"id"`
 	Name       string             `json:"name"`
 	Kind       string             `json:"kind"`

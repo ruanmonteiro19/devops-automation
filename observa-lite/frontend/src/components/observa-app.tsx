@@ -1,3 +1,6 @@
+import { LatestDataPage } from "./latest-data";
+import { NetworkTemplatesPanel } from "./network-configuration";
+import { collapseDeviceInterfaces, topologyNeighborhood } from "@/lib/topology";
 import { ConfigurationForm, ConfigField } from "./configuration-form";
 import { StoragePage } from "./storage-page";
 import { Download } from "lucide-react";
@@ -167,8 +170,6 @@ const navGroups: NavGroup[] = [
       [
         ["Visão geral", "", LayoutDashboard],
         ["Dashboards", "dashboards", PanelRight],
-        ["Notebooks", "notebooks", Code2],
-        ["Problemas APM", "problemas-apm", AlertTriangle],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
@@ -176,74 +177,76 @@ const navGroups: NavGroup[] = [
     label: "Monitoramento",
     items: (
       [
-        ["Serviços", "servicos", Boxes],
-        ["Visões do ambiente", "topologia", Boxes],
-
-        ["Traces distribuídos", "traces", Activity],
-        ["Erros & exceções", "erros", AlertTriangle],
-        ["Requisições", "requisicoes", Radio],
+        ["Problemas", "problemas-apm", AlertTriangle],
+        ["Hosts", "hosts", Server],
+        ["Equipamentos de rede", "dispositivos-rede", Network],
+        ["Dados recentes", "dados-recentes", ListFilter],
+        ["Mapas", "topologia", Boxes],
+        ["Gráficos", "graficos", Gauge],
+        ["Eventos de monitores", "incidentes", Clock3],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
   {
-    label: "Experiência digital",
+    label: "APM e experiência",
     items: (
       [
+        ["Serviços", "servicos", Boxes],
+        ["Traces distribuídos", "traces", Activity],
+        ["Requisições", "requisicoes", Radio],
+        ["Erros e exceções", "erros", AlertTriangle],
         ["Frontends descobertos", "frontends", Globe2],
         ["RUM", "rum", Globe2],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
   {
-    label: "Infraestrutura",
+    label: "Inventário",
     items: (
       [
-        ["Databases", "databases", Database],
-        ["Hosts", "hosts", Server],
         ["Processos", "processos", Activity],
-
-        ["Cloud providers", "clouds", Cloud],
-        ["Network devices", "dispositivos-rede", Network],
+        ["Bancos de dados", "databases", Database],
+        ["Clouds", "clouds", Cloud],
+        ["Vulnerabilidades", "vulnerabilidades", KeyRound],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
   {
-    label: "Dados",
+    label: "Coleta de dados",
+    items: (
+      [
+        ["Templates de rede", "templates-rede", Network],
+        ["Monitores HTTP / TCP", "templates", Globe2],
+        ["Grupos de hosts", "host-groups", Server],
+        ["Zonas de rede", "network-zones", Network],
+        ["Fontes externas", "data-sources", Database],
+        ["Regras de alerta", "correlacao", Bell],
+        ["Workflows", "workflows", Workflow],
+      ] satisfies [string, string, LucideIcon][]
+    ).map(toNav),
+  },
+  {
+    label: "Análise e relatórios",
     items: (
       [
         ["Logs", "telemetria-logs", ListFilter],
         ["Métricas", "metricas", Gauge],
-
-        ["Fontes externas", "data-sources", Database],
-        ["Armazenamento", "armazenamento", Database],
-      ] satisfies [string, string, LucideIcon][]
-    ).map(toNav),
-  },
-  {
-    label: "Confiabilidade",
-    items: (
-      [
-        ["Workflows", "workflows", Workflow],
-        ["Vulnerabilidades", "vulnerabilidades", KeyRound],
+        ["Notebooks", "notebooks", Code2],
         ["Objetivos SLO", "slos", HeartPulse],
-        ["Regras de alerta", "correlacao", Bell],
-        ["Monitores HTTP / TCP", "templates", Globe2],
-        ["Eventos de monitores", "incidentes", Clock3],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
   {
-    label: "Configuração",
+    label: "Administração",
     items: (
       [
-        ["Assistente MCP", "mcp", Code2],
+        ["Usuários e acesso", "usuarios", KeyRound],
         ["Componentes", "componentes", Download],
         ["Agentes", "agentes", Radio],
         ["Vetra Relay", "gateways", Network],
-        ["Host Groups", "host-groups", Server],
-        ["Network Zones", "network-zones", Network],
+        ["Armazenamento", "armazenamento", Database],
+        ["Assistente MCP", "mcp", Code2],
         ["Extensões", "extensoes", Boxes],
-        ["Usuários e acesso", "usuarios", KeyRound],
         ["Preferências", "configuracoes", Settings],
         ["Central de ajuda", "ajuda", CircleHelp],
       ] satisfies [string, string, LucideIcon][]
@@ -1010,6 +1013,21 @@ function PageRouter({
     return <WorkspaceStudio key={rawPath} path={rawPath} demo={demo} />;
   const initialCreate = rawPath.endsWith("/novo");
   const path = initialCreate ? rawPath.slice(0, -5) : rawPath;
+  if (path === "dados-recentes" || path === "graficos")
+    return (
+      <LatestDataPage key={path} demo={demo} graphs={path === "graficos"} />
+    );
+  if (path === "templates-rede")
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          eyebrow="Coleta de dados"
+          title="Templates de rede"
+          description="Importe, revise a compatibilidade e gerencie templates de monitoramento."
+        />
+        <NetworkTemplatesPanel demo={demo} standalone />
+      </div>
+    );
   if (path === "clouds" || path === "dispositivos-rede")
     return (
       <IntegrationManager
@@ -1019,11 +1037,15 @@ function PageRouter({
         initialCreate={initialCreate}
       />
     );
-  if (path === "topologia" || path.startsWith("topologia/"))
+  if (
+    path === "network-mapping" ||
+    path === "topologia" ||
+    path.startsWith("topologia/")
+  )
     return (
       <TopologyWorkspace
         key={path}
-        path={path}
+        path={path === "network-mapping" ? "topologia/network" : path}
         demo={demo}
         snapshot={snapshot}
         renderMap={(map, expand) => (
@@ -2080,7 +2102,15 @@ function Status({ value }: { value: string }) {
 }
 
 type FlowData = MapNode &
-  Record<string, unknown> & { layout?: TopologyLayout; onExpand?: () => void };
+  Record<string, unknown> & {
+    layout?: TopologyLayout;
+    onExpand?: () => void;
+    selected?: boolean;
+    related?: boolean;
+    interfaceCount?: number;
+    interfacesExpanded?: boolean;
+    onToggleInterfaces?: () => void;
+  };
 const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => {
   const Icon =
     data.kind === "group" || data.kind.startsWith("k8s.")
@@ -2101,7 +2131,16 @@ const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => {
                     ? Globe2
                     : Server;
   return (
-    <div className="topology-entity-node w-36 border border-map-node-border bg-map-node p-3">
+    <div
+      className={cn(
+        "topology-entity-node w-44 border bg-map-node p-3",
+        data.selected
+          ? "border-primary ring-2 ring-primary"
+          : data.related
+            ? "border-primary"
+            : "border-map-node-border",
+      )}
+    >
       <Handle
         type="target"
         position={data.layout === "vertical" ? Position.Top : Position.Left}
@@ -2130,6 +2169,19 @@ const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => {
         {data.kind}
         {data.runtime ? ` · ${data.runtime}` : ""}
       </div>
+      {!!data.interfaceCount && (
+        <button
+          type="button"
+          className="nodrag nopan mt-2 w-full border border-primary/40 bg-background px-2 py-1 text-[10px] text-primary"
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onToggleInterfaces?.();
+          }}
+        >
+          {data.interfacesExpanded ? "Recolher portas" : "Portas"} (
+          {data.interfaceCount})
+        </button>
+      )}
       {data.kind === "group" && data.onExpand && (
         <button
           className="mt-2 w-full border border-primary/40 bg-background px-2 py-1 text-[9px] text-primary"
@@ -2171,10 +2223,23 @@ function MappingView({
     [search, setSearch] = useState(""),
     [nodeKind, setNodeKind] = useState(""),
     [hideIsolated, setHideIsolated] = useState(false);
-  const filtered = useMemo(
-    () => filterTopology(map, { search, kind: nodeKind, hideIsolated }),
-    [map, search, nodeKind, hideIsolated],
+  const [expandedInterfaces, setExpandedInterfaces] = useState<string[]>([]);
+  const [focusDepth, setFocusDepth] = useState(2);
+  const collapsed = useMemo(
+    () => collapseDeviceInterfaces(map, expandedInterfaces),
+    [map, expandedInterfaces],
   );
+  const filtered = useMemo(
+    () =>
+      filterTopology(collapsed.graph, { search, kind: nodeKind, hideIsolated }),
+    [collapsed.graph, search, nodeKind, hideIsolated],
+  );
+  const neighborhood = useMemo(
+    () => topologyNeighborhood(filtered, selectedID, focusDepth),
+    [filtered, selectedID, focusDepth],
+  );
+  const focusActive = neighborhood.nodes.size > 0;
+
   const kinds = useMemo(
     () => [...new Set(map.nodes.map((node) => node.kind))].sort(),
     [map.nodes],
@@ -2302,14 +2367,49 @@ function MappingView({
           {nodes.length ? (
             <ReactFlow
               key={layout + ":" + search + ":" + nodeKind + ":" + hideIsolated}
-              nodes={renderNodes}
+              nodes={renderNodes.map((node) => ({
+                ...node,
+                style: {
+                  ...node.style,
+                  opacity:
+                    focusActive && !neighborhood.nodes.has(node.id) ? 0.18 : 1,
+                },
+                data: {
+                  ...node.data,
+                  selected: node.id === selectedID,
+                  related: focusActive && neighborhood.nodes.has(node.id),
+                  interfaceCount: collapsed.counts.get(node.id) || 0,
+                  interfacesExpanded: expandedInterfaces.includes(node.id),
+                  onToggleInterfaces: () =>
+                    setExpandedInterfaces((ids) =>
+                      ids.includes(node.id)
+                        ? ids.filter((id) => id !== node.id)
+                        : [...ids, node.id],
+                    ),
+                },
+              }))}
               onNodesChange={onNodesChange}
-              edges={edges}
+              edges={edges.map((edge) => ({
+                ...edge,
+                animated: focusActive && neighborhood.edges.has(edge.id),
+                style: {
+                  ...edge.style,
+                  stroke:
+                    focusActive && neighborhood.edges.has(edge.id)
+                      ? "#39c784"
+                      : undefined,
+                  strokeWidth:
+                    focusActive && neighborhood.edges.has(edge.id) ? 3 : 1.5,
+                  opacity:
+                    focusActive && !neighborhood.edges.has(edge.id) ? 0.1 : 1,
+                },
+              }))}
               nodeTypes={topologyNodeTypes}
               fitView
               minZoom={0.1}
               maxZoom={2}
               onNodeClick={(_, node) => setSelectedID(node.id)}
+              onPaneClick={() => setSelectedID("")}
               colorMode="dark"
             >
               <Background gap={24} size={1} />
@@ -2363,6 +2463,73 @@ function MappingView({
               <p className="mt-2 break-all font-mono text-[10px] text-muted-foreground">
                 {selected.id}
               </p>
+              <div className="mt-4 space-y-2 text-xs">
+                <label htmlFor="map-focus-depth">Destacar conexões</label>
+                <select
+                  id="map-focus-depth"
+                  className="w-full border bg-background p-2"
+                  value={focusDepth}
+                  onChange={(event) =>
+                    setFocusDepth(Number(event.target.value))
+                  }
+                >
+                  <option value={1}>Conexões diretas</option>
+                  <option value={2}>Até 2 saltos</option>
+                  <option value={3}>Até 3 saltos</option>
+                </select>
+                <p className="text-muted-foreground">
+                  {neighborhood.nodes.size - 1} entidades relacionadas. Clique
+                  no fundo para limpar.
+                </p>
+              </div>
+              {!!collapsed.counts.get(selected.id) && (
+                <details className="mt-4 border p-3">
+                  <summary className="cursor-pointer text-xs font-semibold">
+                    Portas e interfaces ({collapsed.counts.get(selected.id)})
+                  </summary>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() =>
+                      setExpandedInterfaces((ids) =>
+                        ids.includes(selected.id)
+                          ? ids.filter((id) => id !== selected.id)
+                          : [...ids, selected.id],
+                      )
+                    }
+                  >
+                    {expandedInterfaces.includes(selected.id)
+                      ? "Recolher no mapa"
+                      : "Expandir no mapa"}
+                  </Button>
+                  <ul className="mt-3 space-y-2">
+                    {map.nodes
+                      .filter(
+                        (node) =>
+                          collapsed.parents.get(node.id) === selected.id,
+                      )
+                      .map((node) => (
+                        <li key={node.id}>
+                          <button
+                            type="button"
+                            className="text-left text-xs text-primary"
+                            onClick={() => {
+                              setExpandedInterfaces((ids) =>
+                                ids.includes(selected.id)
+                                  ? ids
+                                  : [...ids, selected.id],
+                              );
+                              setSelectedID(node.id);
+                            }}
+                          >
+                            {node.name}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </details>
+              )}
               <div className="mt-5 space-y-3 text-xs">
                 <Detail
                   label="Estado"

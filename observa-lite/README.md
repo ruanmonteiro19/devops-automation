@@ -1,3 +1,5 @@
+> Organização Zabbix: [Menus, Dados recentes, mapa com drill-down e limites de compatibilidade](docs/ZABBIX-MENUS-MAPS-LATEST-DATA.md).
+
 > Rede nativa: [SNMPv1/v2c/v3, templates Zabbix com relatório de compatibilidade e validação](docs/NETWORK-NATIVE-AND-ZABBIX.md).
 
 > Vetra 0.5: [Contas, downloads, correção de formulários HTTP, SQLite/PostgreSQL interno e componentes separados](docs/PLATFORM-0.5.md).

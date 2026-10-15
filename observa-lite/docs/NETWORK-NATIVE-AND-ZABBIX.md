@@ -36,9 +36,10 @@ Abra Templates de rede, selecione uma exportação Zabbix YAML, JSON ou XML e cl
 | MULTIPLIER | Executado |
 | SIMPLE_CHANGE / CHANGE_PER_SECOND | Executados com duas amostras, sem inventar taxa inicial/reset |
 | DISCARD_UNCHANGED / HEARTBEAT | Valor coletado; histórico/heartbeat Zabbix não reproduzidos, aviso explícito |
-| LLD `discovery[macro,OID,...]` sem filtros | Walk e protótipos numéricos executados |
-| LLD dependente e filtros LLD | Não executados, reportados |
-| Itens master `walk[...]`, DEPENDENT, JSONPath, JavaScript | Não executados, reportados |
+| LLD `discovery[macro,OID,...]` | Walk e protótipos numéricos executados |
+| LLD dependente SNMP_WALK_TO_JSON e filtros regulares | Executados no subconjunto documentado no guia de mapas |
+| DEPENDENT com SNMP_WALK_VALUE e master `walk[...]` válido | Compilado para leitura SNMP direta; não reproduz cache master Zabbix |
+| JSONPath, JavaScript e demais dependências | Não executados, reportados |
 | Triggers, gráficos e templates vinculados | Não executados/expandidos, avisos explícitos |
 | Intervalo por item, tendências e retenção Zabbix | Substituídos pelo intervalo/armazenamento do perfil Vetra, com aviso |
 | Agente Zabbix, HTTP_AGENT, scripts, calculados, traps | Não executados |
@@ -70,7 +71,7 @@ Referências oficiais consultadas em 2026-10-15:
 - Gigamon: https://www.gigamon.com/content/dam/resource-library/english/feature-brief/fb-netflow-generation.pdf
 - GoSNMP: https://github.com/gosnmp/gosnmp
 
-NetBox é referência para inventário/IPAM e source of truth; não substitui o coletor de métricas. NetFlow/IPFIX descrevem fluxos de tráfego. Gigamon agrega visibilidade por pacotes/metadados e pode gerar fluxos. Esta entrega não implementa conector NetBox, receptor NetFlow/IPFIX/sFlow, inspeção de pacotes, traps ou descoberta física LLDP/CDP. O mapa de processos/conexões IP existente não é um receptor NetFlow.
+NetBox é referência para inventário/IPAM e source of truth; não substitui o coletor de métricas. NetFlow/IPFIX descrevem fluxos de tráfego. Gigamon agrega visibilidade por pacotes/metadados e pode gerar fluxos. Esta entrega não implementa conector NetBox, receptor NetFlow/IPFIX/sFlow, inspeção de pacotes, traps ou descoberta CDP. A descoberta LLDP opcional foi adicionada nesta atualização. O mapa de processos/conexões IP existente não é um receptor NetFlow.
 
 REA 6.5.0 foi invocado com `analyze-javascript-application` sobre o arquivo TypeScript selecionado do NetBox. A análise parou em `process-ownership/prepare_owned_process`: o `ps` do ambiente falhou com `fatal library error, lookup self`. Evidência parcial: `ev_8c8f3c049193973f64c746898a19e8b61c5382953924d19f0f3f416a64e755af`. Isso não comprova reconstrução do runtime NetBox, nem engenharia reversa de Gigamon. A implementação usa protocolos/bibliotecas abertas, documentação e leitura do código disponível.
 
@@ -80,6 +81,6 @@ Validação:
 - Importação YAML/JSON/XML, macros, scripts rejeitados, aliases recusados, multiplicador e taxas/reset.
 - API e SQLite: prévia sem gravação, credenciais cifradas, edição que preserva segredo, chave errada recusada, reinício e remoção sem segredo órfão.
 - Navegador + agente node-net-snmp: upload/prévia/importação, cadastro SNMP nativo sem exporter, coleta real, item adicional, script não executado, histórico, SNMPv3 em três níveis e SHA256/AES128 + SHA512/AES256, reinício do SQLite.
-- O template oficial FortiGate foi analisado com 36 itens compatíveis e 101 componentes incompatíveis (inclui protótipos de descobertas bloqueadas); triggers/gráficos têm avisos adicionais. Não foi validado contra um FortiGate físico.
+- O template oficial FortiGate foi analisado com 111 itens compatíveis e 17 componentes incompatíveis (inclui protótipos de descobertas bloqueadas); triggers/gráficos têm avisos adicionais. Não foi validado contra um FortiGate físico.
 
 Scripts: `scripts/smoke-network.mjs` (dependência de laboratório node-net-snmp por `VETRA_SNMP_MODULE`) e `scripts/smoke-console.mjs` (regressão de contas/downloads e exporter legado). Docker não está disponível no ambiente de desenvolvimento para executar as imagens; compilação e execução do servidor e navegador foram verificadas diretamente.

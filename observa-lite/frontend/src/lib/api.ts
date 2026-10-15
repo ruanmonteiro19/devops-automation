@@ -1,4 +1,5 @@
 export type ProcessInfo = {
+  display_name?: string;
   pid: number;
   name: string;
   service: string;
@@ -177,7 +178,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (error instanceof ApiError) throw error;
     if (error instanceof DOMException && error.name === "AbortError")
       throw new ApiError(408, "O servidor excedeu o tempo de resposta");
-    throw new ApiError(0, "Servidor Observa Lite não alcançável");
+    throw new ApiError(0, "Servidor Vetra Observability não alcançável");
   } finally {
     window.clearTimeout(timeout);
   }

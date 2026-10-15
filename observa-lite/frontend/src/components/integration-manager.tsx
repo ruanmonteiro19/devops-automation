@@ -71,9 +71,9 @@ export type IntegrationState = {
 };
 const labels: Record<string, string> = {
   aws: "AWS — EC2",
-  azure: "AZURE — RESOURCE MANAGER",
-  gcp: "GCP — COMPUTE ENGINE",
-  snmp_exporter: "NETWORK DEVICE — SNMP EXPORTER",
+  azure: "Azure — resource manager",
+  gcp: "GCP — Compute engine",
+  snmp_exporter: "Network device — SNMP exporter",
 };
 const blank = (devices: boolean): Integration => ({
   id: crypto.randomUUID(),
@@ -91,48 +91,48 @@ const blank = (devices: boolean): Integration => ({
 function InterfaceSummary({ metrics }: { metrics: Record<string, number> }) {
   const oper: Record<number, string> = {
     1: "UP",
-    2: "DOWN",
-    3: "TESTING",
+    2: "Down",
+    3: "Testing",
     4: "UNKNOWN",
-    5: "DORMANT",
-    6: "NOT PRESENT",
-    7: "LOWER LAYER DOWN",
+    5: "Dormant",
+    6: "Not present",
+    7: "Lower layer down",
   };
   const speed =
     (metrics["ifHighSpeed"] ?? 0) * 1000000 || (metrics["ifSpeed"] ?? 0);
   const format = (n: number | undefined, suffix: string) =>
     n === undefined
-      ? "SEM AMOSTRA"
+      ? "Sem amostra"
       : `${n.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${suffix}`;
   const items = [
     [
-      "ESTADO OPERACIONAL",
+      "Estado operacional",
       metrics["ifOperStatus"] === undefined
-        ? "NÃO RECEBIDO"
+        ? "Não recebido"
         : (oper[metrics["ifOperStatus"]!] ?? String(metrics["ifOperStatus"])),
     ],
     [
-      "VELOCIDADE",
-      speed > 0 ? format(speed / 1000000, "MBPS") : "NÃO RECEBIDA",
+      "Velocidade",
+      speed > 0 ? format(speed / 1000000, "Mbps") : "Não recebida",
     ],
     [
-      "TRÁFEGO DE ENTRADA",
+      "Tráfego de entrada",
       metrics["observa_in_bits_per_second"] === undefined
-        ? "AGUARDANDO DUAS COLETAS"
-        : format(metrics["observa_in_bits_per_second"]! / 1000000, "MBPS"),
+        ? "Aguardando duas coletas"
+        : format(metrics["observa_in_bits_per_second"]! / 1000000, "Mbps"),
     ],
     [
-      "TRÁFEGO DE SAÍDA",
+      "Tráfego de saída",
       metrics["observa_out_bits_per_second"] === undefined
-        ? "AGUARDANDO DUAS COLETAS"
-        : format(metrics["observa_out_bits_per_second"]! / 1000000, "MBPS"),
+        ? "Aguardando duas coletas"
+        : format(metrics["observa_out_bits_per_second"]! / 1000000, "Mbps"),
     ],
     [
-      "UTILIZAÇÃO DE ENTRADA",
+      "Utilização de entrada",
       format(metrics["observa_in_utilization_percent"], "%"),
     ],
     [
-      "UTILIZAÇÃO DE SAÍDA",
+      "Utilização de saída",
       format(metrics["observa_out_utilization_percent"], "%"),
     ],
   ];
@@ -225,14 +225,14 @@ export function IntegrationManager({
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-2 text-xs text-primary">INTEGRAÇÕES</p>
+          <p className="mb-2 text-xs text-primary">Integrações</p>
           <h1 className="text-2xl font-semibold">
-            {devices ? "NETWORK DEVICES" : "CLOUD PROVIDERS"}
+            {devices ? "Network devices" : "Cloud providers"}
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             {devices
-              ? "DADOS DE SISTEMA E INTERFACES VIA PROMETHEUS SNMP EXPORTER. OS MÓDULOS E A AUTENTICAÇÃO SNMP SÃO CONFIGURADOS NO EXPORTER."
-              : "INVENTÁRIO DE RECURSOS VIA API DOS PROVEDORES. CREDENCIAIS SOMENTE NO AMBIENTE DO SERVIDOR."}
+              ? "Dados de sistema e interfaces via prometheus SNMP exporter. Os módulos e a autenticação SNMP são configurados no exporter."
+              : "Inventário de recursos via API dos provedores. Credenciais somente no ambiente do servidor."}
           </p>
         </div>
         <Button
@@ -243,20 +243,20 @@ export function IntegrationManager({
           }}
         >
           <Plus className="size-4" />
-          {devices ? "ADICIONAR EQUIPAMENTO" : "CONECTAR CLOUD"}
+          {devices ? "Adicionar equipamento" : "Conectar cloud"}
         </Button>
       </header>
       {demo && (
         <p className="border p-4 text-xs">
-          DEMONSTRAÇÃO: CONEXÕES EXTERNAS E GRAVAÇÃO DESATIVADAS.
+          Demonstração: conexões externas e gravação desativadas.
         </p>
       )}
-      {query.isLoading && <p role="status">CARREGANDO INTEGRAÇÕES…</p>}
+      {query.isLoading && <p role="status">Carregando integrações…</p>}
       {query.error && (
         <p role="alert" className="text-danger">
           {query.error.message}
           <Button variant="outline" onClick={() => query.refetch()}>
-            TENTAR NOVAMENTE
+            Tentar novamente
           </Button>
         </p>
       )}
@@ -265,7 +265,7 @@ export function IntegrationManager({
           role="status"
           className="border border-primary bg-surface p-3 text-xs"
         >
-          COLETA INICIADA. A ATUALIZAÇÃO DO RESULTADO É AUTOMÁTICA.
+          Coleta iniciada. A atualização do resultado é automática.
         </p>
       )}
       {collect.error && (
@@ -274,8 +274,8 @@ export function IntegrationManager({
         </p>
       )}
       <Input
-        aria-label="BUSCAR RECURSOS"
-        placeholder="BUSCAR RECURSO, LOCALIZAÇÃO OU TIPO"
+        aria-label="Buscar recursos"
+        placeholder="Buscar recurso, localização ou tipo"
         className="max-w-md"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -298,10 +298,10 @@ export function IntegrationManager({
               <div className="mr-auto">
                 <h2 className="font-semibold">{p.name}</h2>
                 <p className="mt-1 text-[10px] text-muted-foreground">
-                  {labels[p.kind]} · {p.enabled ? "HABILITADO" : "PAUSADO"} ·{" "}
+                  {labels[p.kind]} · {p.enabled ? "Habilitado" : "Pausado"} ·{" "}
                   {query.data?.collecting?.includes(p.id)
-                    ? "COLETANDO"
-                    : result?.status || "SEM COLETA"}
+                    ? "Coletando"
+                    : result?.status || "Sem coleta"}
                 </p>
               </div>
               <Button
@@ -316,7 +316,7 @@ export function IntegrationManager({
                 onClick={() => collect.mutate(p.id)}
               >
                 <RefreshCw className="size-3.5" />
-                COLETAR AGORA
+                Coletar agora
               </Button>
               <Button
                 variant="outline"
@@ -328,7 +328,7 @@ export function IntegrationManager({
                 }}
               >
                 <Pencil className="size-3.5" />
-                EDITAR
+                Editar
               </Button>
               <Button
                 variant="ghost"
@@ -348,18 +348,18 @@ export function IntegrationManager({
                 role="alert"
                 className="border-b bg-background p-4 text-xs text-danger"
               >
-                FALHA NA COLETA: {result.error}.{" "}
+                Falha na coleta: {result.error}.{" "}
                 {resources.length > 0 &&
-                  "INVENTÁRIO ANTERIOR MANTIDO; DADOS DESATUALIZADOS."}
+                  "Inventário anterior mantido; dados desatualizados."}
               </p>
             )}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 text-xs text-muted-foreground">
               <p>
-                {resources.length} RECURSOS · ÚLTIMA COLETA BEM-SUCEDIDA:{" "}
+                {resources.length} Recursos · última coleta bem-sucedida:{" "}
                 {result?.success_at && !result.success_at.startsWith("0001")
                   ? new Date(result.success_at).toLocaleString("pt-BR")
-                  : "NENHUMA"}
-                {result?.truncated ? " · RESULTADO LIMITADO" : ""}
+                  : "Nenhuma"}
+                {result?.truncated ? " · Resultado limitado" : ""}
               </p>
               <Button
                 variant="ghost"
@@ -372,7 +372,7 @@ export function IntegrationManager({
                 }
               >
                 <Download className="size-3.5" />
-                EXPORTAR
+                Exportar
               </Button>
             </div>
             <div className="overflow-x-auto">
@@ -380,11 +380,11 @@ export function IntegrationManager({
                 <thead>
                   <tr>
                     {[
-                      "RECURSO",
-                      "TIPO",
-                      "LOCALIZAÇÃO",
-                      "ESTADO DO PROVEDOR",
-                      "DETALHES",
+                      "Recurso",
+                      "Tipo",
+                      "Localização",
+                      "Estado do provedor",
+                      "Detalhes",
                     ].map((label) => (
                       <th key={label} className="px-4 py-3">
                         {label}
@@ -408,7 +408,7 @@ export function IntegrationManager({
                           }
                         >
                           <ChevronRight className="size-4" />
-                          ABRIR
+                          Abrir
                         </Button>
                       </td>
                     </tr>
@@ -417,8 +417,8 @@ export function IntegrationManager({
               </table>
               {!resources.length && (
                 <p className="p-6 text-center text-xs text-muted-foreground">
-                  SEM RECURSOS NESTA SELEÇÃO. CONFIRA A CONFIGURAÇÃO E O
-                  RESULTADO DA COLETA.
+                  Sem recursos nesta seleção. confira a configuração e o
+                  resultado da coleta.
                 </p>
               )}
             </div>
@@ -427,7 +427,7 @@ export function IntegrationManager({
       })}
       {!profiles.length && !query.isLoading && (
         <div className="border border-dashed p-8 text-center text-sm text-muted-foreground">
-          NENHUMA INTEGRAÇÃO CONFIGURADA.
+          Nenhuma integração configurada.
         </div>
       )}
       <Dialog
@@ -439,17 +439,17 @@ export function IntegrationManager({
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {devices ? "CONFIGURAR EQUIPAMENTO" : "CONFIGURAR CLOUD"}
+              {devices ? "Configurar equipamento" : "Configurar cloud"}
             </DialogTitle>
             <DialogDescription>
-              PERFIL DE COLETA SOMENTE LEITURA. A COLETA AUTOMÁTICA OCORRE A
-              CADA 5 MINUTOS.
+              Perfil de coleta somente leitura. A coleta automática ocorre a
+              cada 5 minutos.
             </DialogDescription>
           </DialogHeader>
           {draft && (
             <form onSubmit={submit} className="space-y-4">
               <label className="block text-sm">
-                NOME
+                Nome
                 <Input
                   required
                   maxLength={200}
@@ -459,9 +459,9 @@ export function IntegrationManager({
               </label>
               {!devices && (
                 <label className="block text-sm">
-                  PROVEDOR
+                  Provedor
                   <select
-                    aria-label="PROVEDOR CLOUD"
+                    aria-label="Provedor cloud"
                     className="mt-2 h-10 w-full border bg-background px-3"
                     value={draft.kind}
                     onChange={(e) =>
@@ -480,7 +480,7 @@ export function IntegrationManager({
               )}
               {draft.kind === "aws" && (
                 <label className="block text-sm">
-                  REGIÃO AWS
+                  Região AWS
                   <Input
                     required
                     value={draft.region || ""}
@@ -495,7 +495,7 @@ export function IntegrationManager({
               )}
               {["azure", "gcp"].includes(draft.kind) && (
                 <label className="block text-sm">
-                  {draft.kind === "azure" ? "SUBSCRIPTION ID" : "PROJECT ID"}
+                  {draft.kind === "azure" ? "Subscription ID" : "Project ID"}
                   <Input
                     required
                     value={draft.scope || ""}
@@ -513,7 +513,7 @@ export function IntegrationManager({
               )}
               {!devices && (
                 <label className="block text-sm">
-                  PREFIXO DAS VARIÁVEIS DE CREDENCIAL
+                  Prefixo das variáveis de credencial
                   <Input
                     required
                     pattern="OBSERVA_[A-Z][A-Z0-9_]*"
@@ -530,7 +530,7 @@ export function IntegrationManager({
               {devices && (
                 <>
                   <label className="block text-sm">
-                    URL BASE DO SNMP EXPORTER
+                    URL Base do SNMP exporter
                     <Input
                       type="url"
                       required
@@ -542,7 +542,7 @@ export function IntegrationManager({
                     />
                   </label>
                   <label className="block text-sm">
-                    IP DO EQUIPAMENTO
+                    IP Do equipamento
                     <Input
                       required
                       placeholder="192.0.2.10"
@@ -553,7 +553,7 @@ export function IntegrationManager({
                     />
                   </label>
                   <label className="block text-sm">
-                    MÓDULOS DO EXPORTER
+                    Módulos do exporter
                     <Input
                       required
                       value={draft.module || ""}
@@ -563,7 +563,7 @@ export function IntegrationManager({
                     />
                   </label>
                   <label className="block text-sm">
-                    PERFIL AUTH DO EXPORTER
+                    Perfil auth do exporter
                     <Input
                       required
                       value={draft.auth || ""}
@@ -573,16 +573,16 @@ export function IntegrationManager({
                     />
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    PARA ENDEREÇOS INTERNOS, HABILITE
-                    OBSERVA_ALLOW_PRIVATE_TARGETS NO SERVIDOR. MÉTRICAS
-                    DISPONÍVEIS DEPENDEM DOS MIBS E MÓDULOS CONFIGURADOS; NÃO HÁ
-                    DESCOBERTA FÍSICA LLDP/CDP NESTA VERSÃO.
+                    Para endereços internos, habilite
+                    observa_allow_private_targets no servidor. Métricas
+                    disponíveis dependem dos mibs e módulos configurados; não há
+                    descoberta física lldp/cdp nesta versão.
                   </p>
                 </>
               )}
               <div className="border bg-background p-4">
                 <p className="mb-3 text-xs font-semibold">
-                  CONFIGURAR NO AMBIENTE DO SERVIDOR
+                  Configurar no ambiente do servidor
                 </p>
                 <pre
                   className="overflow-x-auto text-xs normal-case"
@@ -591,8 +591,8 @@ export function IntegrationManager({
                   {envHelp}
                 </pre>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  NÃO COLE CREDENCIAIS NESTE FORMULÁRIO. CONSULTE O GUIA DE
-                  INTEGRAÇÕES DO PROJETO PARA INJETAR AS VARIÁVEIS NO CONTAINER.
+                  Não cole credenciais neste formulário. consulte o guia de
+                  integrações do projeto para injetar as variáveis no container.
                 </p>
               </div>
               <label className="flex items-center gap-2 text-sm">
@@ -603,7 +603,7 @@ export function IntegrationManager({
                     setDraft({ ...draft, enabled: e.target.checked })
                   }
                 />
-                COLETA HABILITADA
+                Coleta habilitada
               </label>
               {save.error && (
                 <p role="alert" className="text-danger">
@@ -617,10 +617,10 @@ export function IntegrationManager({
                   disabled={save.isPending}
                   onClick={() => setDraft(null)}
                 >
-                  CANCELAR
+                  Cancelar
                 </Button>
                 <Button disabled={save.isPending || demo}>
-                  {save.isPending ? "SALVANDO…" : "SALVAR PERFIL"}
+                  {save.isPending ? "Salvando…" : "Salvar perfil"}
                 </Button>
               </div>
             </form>
@@ -635,10 +635,10 @@ export function IntegrationManager({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>EXCLUIR INTEGRAÇÃO?</DialogTitle>
+            <DialogTitle>Excluir integração?</DialogTitle>
             <DialogDescription>
-              O PERFIL E O INVENTÁRIO LOCAL SERÃO REMOVIDOS. NENHUM RECURSO
-              EXTERNO SERÁ ALTERADO.
+              O perfil e o inventário local serão removidos. nenhum recurso
+              externo será alterado.
             </DialogDescription>
           </DialogHeader>
           {remove.error && <p role="alert">{remove.error.message}</p>}
@@ -648,7 +648,7 @@ export function IntegrationManager({
               disabled={remove.isPending}
               onClick={() => setDeleting(null)}
             >
-              CANCELAR
+              Cancelar
             </Button>
             <Button
               variant="destructive"
@@ -657,7 +657,7 @@ export function IntegrationManager({
                 if (deleting) remove.mutate(deleting.id);
               }}
             >
-              EXCLUIR
+              Excluir
             </Button>
           </div>
         </DialogContent>
@@ -672,7 +672,7 @@ export function IntegrationManager({
           <SheetHeader>
             <SheetTitle>{selected?.resource.name}</SheetTitle>
             <SheetDescription>
-              INVENTÁRIO OBSERVADO · NÃO REPRESENTA SAÚDE INFERIDA
+              Inventário observado · não representa saúde inferida
             </SheetDescription>
           </SheetHeader>
           {selected && (
@@ -682,10 +682,10 @@ export function IntegrationManager({
               </p>
               {selected.result.status === "error" && (
                 <p className="text-xs text-warning">
-                  DADOS DA ÚLTIMA COLETA BEM-SUCEDIDA. A COLETA ATUAL FALHOU.
+                  Dados da última coleta bem-sucedida. A coleta atual falhou.
                 </p>
               )}
-              <h2 className="text-sm font-semibold">ATRIBUTOS</h2>
+              <h2 className="text-sm font-semibold">Atributos</h2>
               <dl className="space-y-2">
                 {Object.entries(selected.resource.attributes ?? {}).map(
                   ([key, value]) => (
@@ -696,7 +696,7 @@ export function IntegrationManager({
                   ),
                 )}
               </dl>
-              <h2 className="text-sm font-semibold">MÉTRICAS DE SISTEMA</h2>
+              <h2 className="text-sm font-semibold">Métricas de sistema</h2>
               {Object.entries(selected.resource.metrics ?? {}).map(
                 ([key, value]) => (
                   <div
@@ -711,7 +711,7 @@ export function IntegrationManager({
               {selected.resource.interfaces?.map((iface) => (
                 <section key={iface.index} className="border p-4">
                   <h3 className="text-sm font-semibold">
-                    {iface.name} · IFINDEX {iface.index}
+                    {iface.name} · IfIndex {iface.index}
                   </h3>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {iface.description}
@@ -719,7 +719,7 @@ export function IntegrationManager({
                   <InterfaceSummary metrics={iface.metrics} />
                   <details>
                     <summary className="cursor-pointer text-xs text-primary">
-                      MÉTRICAS ORIGINAIS DA INTERFACE
+                      Métricas originais da interface
                     </summary>
                     <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
                       {Object.entries(iface.metrics).map(([key, value]) => (
@@ -737,9 +737,9 @@ export function IntegrationManager({
                 </section>
               ))}
               <p className="text-xs text-muted-foreground">
-                CONTADORES SÃO ACUMULADOS. OBSERVA_* INDICA TAXAS E UTILIZAÇÃO
-                APÓS DUAS COLETAS VÁLIDAS. CPU, MEMÓRIA E OUTROS INDICADORES SÓ
-                APARECEM SE PUBLICADOS PELO MÓDULO.
+                Contadores são acumulados. Observa_* indica taxas e utilização
+                após duas coletas válidas. CPU, memória e outros indicadores só
+                aparecem se publicados pelo módulo.
               </p>
             </div>
           )}

@@ -1,3 +1,7 @@
+# Vetra Observability
+
+Nome atual da interface do projeto Observa Lite. Consulte [Inventário e escalabilidade](docs/VETRA-INVENTORY-SCALING.md) para as alterações recentes e os limites do backend.
+
 # Observa Lite
 
 ## Estado desta branch: Observa Lite APM 0.3.0-lab

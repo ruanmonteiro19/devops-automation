@@ -26,6 +26,9 @@ func BuildMaps(hosts []model.Host) (model.Map, model.Map) {
 			ipHost[ip] = hn
 		}
 		for _, p := range h.Processes {
+			if model.IsSystemProcess(p) {
+				continue
+			}
 			svc := strings.TrimSpace(p.Service)
 			if svc == "" {
 				continue
@@ -33,7 +36,11 @@ func BuildMaps(hosts []model.Host) (model.Map, model.Map) {
 			id := "svc:" + h.ID + ":" + svc
 			pidService[fmt.Sprintf("%s/%d", h.ID, p.PID)] = id
 			if _, ok := sn[id]; !ok {
-				sn[id] = &model.Node{ID: id, Name: svc, Kind: "service", Host: h.Name, Runtime: p.Runtime, Status: hostStatus(h)}
+				label := svc
+				if p.DisplayName != "" {
+					label = p.DisplayName
+				}
+				sn[id] = &model.Node{ID: id, Name: label, Kind: "service", Host: h.Name, Runtime: p.Runtime, Status: hostStatus(h)}
 			}
 			sn[id].RSSBytes += p.RSSBytes
 			sn[id].Instances++

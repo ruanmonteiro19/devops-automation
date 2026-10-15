@@ -382,7 +382,7 @@ html[data-theme="light"][data-accent="green"] {
 .workspace-main table th {
   font-size: 11px;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--muted-foreground);
   background: color-mix(in oklch, var(--surface-raised) 70%, transparent);
 }
@@ -559,16 +559,16 @@ option,
 [role="dialog"],
 [role="menu"],
 [role="tooltip"] {
-  text-transform: uppercase;
+  text-transform: none;
 }
 .workspace-main table th,
 .workspace-main .uppercase,
 aside .uppercase {
-  text-transform: uppercase;
+  text-transform: none;
 }
 input::placeholder,
 textarea::placeholder {
-  text-transform: uppercase;
+  text-transform: none;
 }
 .nav-menu-item {
   background: oklch(0.185 0.012 155);

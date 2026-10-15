@@ -157,7 +157,7 @@ export function MonitorManager({
                 </p>
               </div>
               <span className="rounded-full border px-2 py-1 text-[10px] font-medium">
-                {item.enabled ? "ATIVO" : "PAUSADO"}
+                {item.enabled ? "Ativo" : "Pausado"}
               </span>
             </div>
             <div className="my-5 grid grid-cols-3 gap-3 rounded-lg bg-background/60 p-3 text-xs">

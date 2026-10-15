@@ -1,3 +1,4 @@
+import { InventoryEditor } from "./inventory-editor";
 import { IntegrationManager } from "@/components/integration-manager";
 import { TopologyWorkspace } from "@/components/topology-workspace";
 import { ProcessExplorer } from "@/components/process-explorer";
@@ -395,7 +396,7 @@ function DemoBanner({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-x-0 top-0 z-[60] flex h-9 items-center justify-center gap-3 bg-demo px-3 text-xs font-semibold text-demo-foreground">
       <span className="rounded-sm border border-current px-1.5 py-0.5 text-[10px]">
-        DEMO
+        Demo
       </span>
       <span className="truncate">
         Dados ilustrativos — nenhuma telemetria real está sendo exibida.
@@ -470,7 +471,7 @@ function SidebarNav({
         {!collapsed && (
           <div>
             <div className="text-xl font-bold tracking-tight leading-tight">
-              Observa<span className="text-primary">.</span>
+              Vetra<span className="text-primary">.</span>
             </div>
             <div className="text-[10px] font-medium uppercase text-muted-foreground">
               Observabilidade
@@ -562,7 +563,7 @@ function SidebarNav({
           </span>
           {!collapsed && (
             <span className="text-xs text-muted-foreground">
-              Workspace · Observa 0.3
+              Workspace · Vetra 0.3
             </span>
           )}
         </div>
@@ -693,7 +694,7 @@ function Topbar({
         />
       </Button>
       <div className="hidden items-center gap-1 text-xs text-muted-foreground lg:flex">
-        <span>Observa Lite</span>
+        <span>Vetra Observability</span>
         <ChevronRight className="size-3" />
         <span className="font-medium text-foreground">
           {navText(
@@ -815,7 +816,9 @@ function ConnectionGate({
           <div className="mb-6 grid size-11 place-items-center rounded-md bg-primary text-primary-foreground">
             <LockKeyhole />
           </div>
-          <h1 className="text-2xl font-semibold">Conectar ao Observa Lite</h1>
+          <h1 className="text-2xl font-semibold">
+            Conectar ao Vetra Observability
+          </h1>
           <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
             Informe o token de administração do servidor existente. Ele ficará
             somente nesta aba e será enviado no cabeçalho das chamadas REST.
@@ -930,6 +933,11 @@ function PageRouter({
   demo: boolean;
   globalSearch: string;
 }) {
+  const inventoryQueryClient = useQueryClient();
+  const inventorySaved = () => {
+    void inventoryQueryClient.invalidateQueries({ queryKey: ["snapshot"] });
+    void inventoryQueryClient.invalidateQueries({ queryKey: ["topology"] });
+  };
   const initialCreate = rawPath.endsWith("/novo");
   const path = initialCreate ? rawPath.slice(0, -5) : rawPath;
   if (path === "clouds" || path === "dispositivos-rede")
@@ -959,7 +967,8 @@ function PageRouter({
         )}
       />
     );
-  if (path === "processos") return <ProcessExplorer snapshot={snapshot} />;
+  if (path === "processos")
+    return <ProcessExplorer snapshot={snapshot} onSaved={inventorySaved} />;
   if (path === "chaves-api") return <WorkspaceAccess />;
   if (path === "configuracoes") return <WorkspacePreferences />;
   if (path === "ajuda" || path.startsWith("ajuda/"))
@@ -1066,7 +1075,13 @@ function PageRouter({
     path === "containers" ||
     path === "kubernetes"
   )
-    return <InfrastructurePage snapshot={snapshot} path={path} />;
+    return (
+      <InfrastructurePage
+        snapshot={snapshot}
+        path={path}
+        onSaved={inventorySaved}
+      />
+    );
   if (!path || path === "saude")
     return <Overview snapshot={snapshot} demo={demo} />;
   return <FuturePage title={labels.get(path) ?? "Área operacional"} />;
@@ -1755,16 +1770,18 @@ function ServicesPage({
 function InfrastructurePage({
   snapshot,
   path,
+  onSaved,
 }: {
   snapshot: Snapshot;
   path: string;
+  onSaved?: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Snapshot["hosts"][number] | null>(
     null,
   );
   const hosts = snapshot.hosts.filter((h) =>
-    `${h.name} ${h.os} ${h.addresses.join(" ")}`
+    `${h.name} ${h.host_group || ""} ${h.os} ${h.addresses.join(" ")}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
@@ -1819,6 +1836,7 @@ function InfrastructurePage({
             headers={[
               "Host",
               "Sistema operacional",
+              "Grupo de hosts",
               "Endereços",
               "Processos",
               "Última observação",
@@ -1835,6 +1853,7 @@ function InfrastructurePage({
                   </button>
                 </Cell>
                 <Cell>{host.os}</Cell>
+                <Cell>{host.host_group || "Sem grupo"}</Cell>
                 <Cell>{host.addresses.join(", ") || "—"}</Cell>
                 <Cell>{applicationProcesses(host).length}</Cell>
                 <Cell>{formatDate(host.last_seen)}</Cell>
@@ -1873,6 +1892,16 @@ function InfrastructurePage({
           </SheetHeader>
           {selected && (
             <div className="space-y-5 p-5">
+              <InventoryEditor
+                host={selected}
+                groups={snapshot.hosts
+                  .map((h) => h.host_group || "")
+                  .filter(Boolean)}
+                onSaved={() => {
+                  setSelected(null);
+                  onSaved?.();
+                }}
+              />
               <dl className="grid grid-cols-2 gap-4 text-sm">
                 {[
                   ["Sistema", selected.os],
@@ -2036,7 +2065,7 @@ const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => {
             data.onExpand?.();
           }}
         >
-          EXPANDIR GRUPO
+          Expandir grupo
         </button>
       )}
       <Handle
@@ -2209,7 +2238,15 @@ function MappingView({
             >
               <Background gap={24} size={1} />
               <Controls />
-              <MiniMap pannable zoomable />
+              <MiniMap
+                pannable
+                zoomable
+                nodeColor="#22a879"
+                nodeStrokeColor="#76dbb1"
+                nodeStrokeWidth={2}
+                maskColor="rgba(8, 20, 15, 0.32)"
+                style={{ backgroundColor: "#13271e" }}
+              />
             </ReactFlow>
           ) : (
             <EmptyState
@@ -2395,7 +2432,7 @@ function DataSourceEditor({
                 </div>
               </div>
               <span className="rounded-sm border border-success/30 bg-success/10 px-2 py-1 text-[10px] text-success">
-                CONFIGURADA
+                Configurada
               </span>
             </div>
             <p className="mt-5 truncate font-mono text-xs text-muted-foreground">
@@ -2989,7 +3026,7 @@ function FuturePage({ title }: { title: string }) {
   return (
     <>
       <PageHeader
-        eyebrow="Observa Lite"
+        eyebrow="Vetra Observability"
         title={title}
         description="Esta área está preparada para receber telemetria e recursos quando o backend publicar suporte."
       />
@@ -3083,7 +3120,7 @@ function SelectField({
         <SelectContent>
           {options.map((option) => (
             <SelectItem key={option} value={option}>
-              {option.toUpperCase()}
+              {option.charAt(0).toUpperCase() + option.slice(1)}
             </SelectItem>
           ))}
         </SelectContent>

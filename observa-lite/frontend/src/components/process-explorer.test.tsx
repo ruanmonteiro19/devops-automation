@@ -70,17 +70,17 @@ describe("Application process inventory", () => {
       screen.getByRole("button", { name: "custom-payments" }),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "node" })).toBeTruthy();
-    fireEvent.click(screen.getByLabelText("MOSTRAR PROCESSOS DE SISTEMA"));
+    fireEvent.click(screen.getByLabelText("Mostrar processos de sistema"));
     expect(screen.getByRole("button", { name: "systemd" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "svchost.exe" })).toBeTruthy();
   });
   it("filters hosts and runtimes independently", () => {
     mount();
-    fireEvent.change(screen.getByLabelText("FILTRAR HOST"), {
+    fireEvent.change(screen.getByLabelText("Filtrar host"), {
       target: { value: "host-a" },
     });
     expect(screen.queryByRole("button", { name: "node" })).toBeNull();
-    fireEvent.change(screen.getByLabelText("FILTRAR RUNTIME"), {
+    fireEvent.change(screen.getByLabelText("Filtrar runtime"), {
       target: { value: "java" },
     });
     expect(screen.getByRole("button", { name: "java" })).toBeTruthy();
@@ -95,13 +95,13 @@ describe("Application process inventory", () => {
     expect(
       (
         screen.getByRole("switch", {
-          name: "DEEP MONITORING",
+          name: "Deep monitoring",
         }) as HTMLInputElement
       ).disabled,
     ).toBe(true);
     expect(
       screen
-        .getByRole("link", { name: "CONFIGURAR INSTRUMENTAÇÃO" })
+        .getByRole("link", { name: "Configurar instrumentação" })
         .getAttribute("href"),
     ).toBe("/ajuda/otlp");
   });

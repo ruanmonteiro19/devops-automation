@@ -14,6 +14,7 @@ import (
 )
 
 type persisted struct {
+	InventorySettings  map[string]InventorySettings       `json:"inventory_settings,omitempty"`
 	Integrations       map[string]model.Integration       `json:"integrations,omitempty"`
 	IntegrationResults map[string]model.IntegrationResult `json:"integration_results,omitempty"`
 	APMRules           map[string]model.APMRule           `json:"apm_rules,omitempty"`
@@ -222,6 +223,7 @@ func (s *Store) Snapshot() model.Snapshot {
 		if h.Addresses == nil {
 			h.Addresses = []string{}
 		}
+		h = s.projectInventory(h)
 		v.Hosts = append(v.Hosts, h)
 	}
 	for _, t := range s.data.Templates {

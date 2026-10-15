@@ -43,11 +43,11 @@ afterEach(() => {
 describe("Integration configuration", () => {
   it("saves a cloud profile containing environment names rather than credentials", async () => {
     mount();
-    fireEvent.click(screen.getByRole("button", { name: "CONECTAR CLOUD" }));
-    fireEvent.change(screen.getByLabelText("NOME"), {
-      target: { value: "PROD" },
+    fireEvent.click(screen.getByRole("button", { name: "Conectar cloud" }));
+    fireEvent.change(screen.getByLabelText("Nome"), {
+      target: { value: "Prod" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "SALVAR PERFIL" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar perfil" }));
     await waitFor(() =>
       expect(
         vi
@@ -68,7 +68,7 @@ describe("Integration configuration", () => {
   });
   it("keeps previous inventory visible with a failure message", async () => {
     state = {
-      integrations: [{ id: "aws", name: "PROD", kind: "aws", enabled: true }],
+      integrations: [{ id: "aws", name: "Prod", kind: "aws", enabled: true }],
       results: {
         aws: {
           at: new Date().toISOString(),
@@ -88,9 +88,9 @@ describe("Integration configuration", () => {
       },
     };
     mount();
-    expect(await screen.findByText(/INVENTÁRIO ANTERIOR MANTIDO/)).toBeTruthy();
+    expect(await screen.findByText(/Inventário anterior mantido/i)).toBeTruthy();
     expect(screen.getByText("API")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "COLETAR AGORA" }));
+    fireEvent.click(screen.getByRole("button", { name: "Coletar agora" }));
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith("/api/v1/integrations/aws/collect", {
         method: "POST",
@@ -100,7 +100,7 @@ describe("Integration configuration", () => {
   it("opens a reviewable editor from quick creation", () => {
     mount(false, false, true);
     expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "SALVAR PERFIL" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Salvar perfil" })).toBeTruthy();
     expect(
       vi
         .mocked(request)
@@ -112,7 +112,7 @@ describe("Integration configuration", () => {
     expect(
       (
         screen.getByRole("button", {
-          name: "ADICIONAR EQUIPAMENTO",
+          name: "Adicionar equipamento",
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);

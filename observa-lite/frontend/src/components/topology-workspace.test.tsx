@@ -69,14 +69,14 @@ describe("Topology views", () => {
     );
     expect(
       screen
-        .getByRole("link", { name: /VISÃO UNIFICADA/ })
+        .getByRole("link", { name: /Visão unificada/i })
         .getAttribute("href"),
     ).toBe("/topologia/all");
     expect(
-      screen.getByRole("link", { name: /KUBERNETES/ }).getAttribute("href"),
+      screen.getByRole("link", { name: /Kubernetes/i }).getAttribute("href"),
     ).toBe("/topologia/kubernetes");
-    expect(screen.getByRole("link", { name: /GOOGLE CLOUD/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /NETWORK DEVICES/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Google cloud/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Network devices/i })).toBeTruthy();
   });
   it("produces stable finite radial positions without changing relationships", () => {
     const first = layoutTopology(graph, "radial");

@@ -1,3 +1,4 @@
+import { InventoryEditor } from "./inventory-editor";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -23,7 +24,13 @@ import { observedProcesses, type ObservedProcess } from "@/lib/processes";
 import { downloadJSON } from "@/lib/workspace";
 const memory = (n: number) =>
   `${(n / 1048576).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
-export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
+export function ProcessExplorer({
+  snapshot,
+  onSaved,
+}: {
+  snapshot: Snapshot;
+  onSaved?: () => void;
+}) {
   const all = observedProcesses(snapshot.hosts);
   const [search, setSearch] = useState("");
   const [host, setHost] = useState("");
@@ -38,7 +45,7 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
         (showSystem || !p.system) &&
         (!host || p.host_id === host) &&
         (!runtime || p.runtime === runtime) &&
-        `${p.name} ${p.service} ${p.runtime} ${p.host_name} ${p.pid}`
+        `${p.display_name || p.name} ${p.service} ${p.runtime} ${p.host_name} ${p.pid}`
           .toLowerCase()
           .includes(search.toLowerCase()),
     )
@@ -60,12 +67,12 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-semibold text-primary">
-            INFRAESTRUTURA
+            Infraestrutura
           </p>
-          <h1 className="text-2xl font-semibold">PROCESSOS DE APLICAÇÃO</h1>
+          <h1 className="text-2xl font-semibold">Processos de aplicação</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            PROCESSOS OBSERVADOS PELOS AGENTES. COMPONENTES DE SISTEMA OCULTOS
-            POR PADRÃO.
+            Processos observados pelos agentes. componentes de sistema ocultos
+            por padrão.
           </p>
         </div>
         <Button
@@ -73,14 +80,14 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
           onClick={() => downloadJSON("observa-processos.json", filtered)}
         >
           <Download className="size-4" />
-          EXPORTAR RESULTADOS
+          Exportar resultados
         </Button>
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          ["APLICAÇÕES E OUTROS PROCESSOS", all.length - systemCount],
-          ["HOSTS", snapshot.hosts.length],
-          ["PROCESSOS DE SISTEMA OCULTOS", showSystem ? 0 : systemCount],
+          ["Aplicações e outros processos", all.length - systemCount],
+          ["Hosts", snapshot.hosts.length],
+          ["Processos de sistema ocultos", showSystem ? 0 : systemCount],
         ].map(([label, value]) => (
           <div key={label} className="border bg-surface p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
@@ -92,20 +99,20 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
         <div className="relative min-w-52 flex-1">
           <Search className="absolute left-3 top-3 size-4 text-primary" />
           <Input
-            aria-label="BUSCAR PROCESSOS"
-            placeholder="BUSCAR PROCESSO, SERVIÇO OU PID"
+            aria-label="Buscar processos"
+            placeholder="Buscar processo, serviço ou PID"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
         <select
-          aria-label="FILTRAR HOST"
+          aria-label="Filtrar host"
           className="h-10 max-w-60 border bg-background px-3 text-xs"
           value={host}
           onChange={(e) => setHost(e.target.value)}
         >
-          <option value="">TODOS OS HOSTS</option>
+          <option value="">Todos os hosts</option>
           {snapshot.hosts.map((h) => (
             <option key={h.id} value={h.id}>
               {h.name}
@@ -113,12 +120,12 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
           ))}
         </select>
         <select
-          aria-label="FILTRAR RUNTIME"
+          aria-label="Filtrar runtime"
           className="h-10 border bg-background px-3 text-xs"
           value={runtime}
           onChange={(e) => setRuntime(e.target.value)}
         >
-          <option value="">TODOS OS RUNTIMES</option>
+          <option value="">Todos os runtimes</option>
           {[...new Set(all.map((p) => p.runtime).filter(Boolean))]
             .sort()
             .map((r) => (
@@ -128,13 +135,13 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
             ))}
         </select>
         <select
-          aria-label="ORDENAR PROCESSOS"
+          aria-label="Ordenar processos"
           className="h-10 border bg-background px-3 text-xs"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
-          <option value="memory">MAIOR MEMÓRIA RSS</option>
-          <option value="name">NOME</option>
+          <option value="memory">Maior memória RSS</option>
+          <option value="name">Nome</option>
           <option value="pid">PID</option>
         </select>
         <label className="flex items-center gap-2 border bg-background px-3 py-2.5 text-xs">
@@ -143,18 +150,18 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
             checked={showSystem}
             onChange={(e) => setShowSystem(e.target.checked)}
           />
-          MOSTRAR PROCESSOS DE SISTEMA
+          Mostrar processos de sistema
         </label>
       </section>
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
         <p>
-          {filtered.length} RESULTADOS · {Math.min(limit, filtered.length)}{" "}
-          EXIBIDOS
+          {filtered.length} Resultados · {Math.min(limit, filtered.length)}{" "}
+          Exibidos
         </p>
         <div className="flex items-center gap-2">
-          <span>EXIBIR</span>
+          <span>Exibir</span>
           <select
-            aria-label="LIMITE DE PROCESSOS"
+            aria-label="Limite de processos"
             className="border bg-surface p-2"
             value={limit}
             onChange={(e) => setLimit(Number(e.target.value))}
@@ -174,7 +181,7 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
               setSort("memory");
             }}
           >
-            LIMPAR FILTROS
+            Limpar filtros
           </Button>
         </div>
       </div>
@@ -183,14 +190,14 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
           <thead className="bg-surface-raised">
             <tr>
               {[
-                "PROCESSO",
+                "Processo",
                 "PID",
-                "SERVIÇO",
-                "RUNTIME",
-                "HOST",
-                "MEMÓRIA RSS",
-                "DEEP MONITORING",
-                "AÇÕES",
+                "Serviço",
+                "Runtime",
+                "Host",
+                "Memória RSS",
+                "Deep monitoring",
+                "Ações",
               ].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">
                   {h}
@@ -207,17 +214,17 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
                     onClick={() => setSelected(p)}
                   >
                     <Activity className="size-4 shrink-0 text-primary" />
-                    {p.name}
+                    {p.display_name || p.name}
                   </button>
                   {p.system && (
                     <p className="mt-1 text-[10px] text-muted-foreground">
-                      SISTEMA
+                      Sistema
                     </p>
                   )}
                 </td>
                 <td className="px-4">{p.pid}</td>
                 <td className="px-4">{p.service || "—"}</td>
-                <td className="px-4">{p.runtime || "NÃO IDENTIFICADO"}</td>
+                <td className="px-4">{p.runtime || "Não identificado"}</td>
                 <td className="px-4">{p.host_name}</td>
                 <td className="px-4 tabular-nums">{memory(p.rss_bytes)}</td>
                 <td className="px-4">
@@ -226,18 +233,18 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
                     onClick={() => setSelected(p)}
                     className="border border-border bg-background px-2 py-1.5 text-[10px] text-muted-foreground"
                   >
-                    REQUER INSTRUMENTAÇÃO
+                    Requer instrumentação
                   </button>
                 </td>
                 <td className="px-4">
                   <Button
                     variant="outline"
                     size="sm"
-                    aria-label={`DETALHES ${p.name} ${p.pid}`}
+                    aria-label={`DETALHES ${p.display_name || p.name} ${p.pid}`}
                     onClick={() => setSelected(p)}
                   >
                     <Settings2 className="size-3.5" />
-                    DETALHES
+                    Detalhes
                   </Button>
                 </td>
               </tr>
@@ -246,15 +253,15 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
         </table>
         {!filtered.length && (
           <p className="p-10 text-center text-sm text-muted-foreground">
-            NENHUM PROCESSO NESTA SELEÇÃO. AJUSTE OS FILTROS OU AGUARDE A COLETA
-            DO AGENTE.
+            Nenhum processo nesta seleção. ajuste os filtros ou aguarde a coleta
+            do agente.
           </p>
         )}
       </div>
       <p className="text-xs leading-5 text-muted-foreground">
-        A OCULTAÇÃO NÃO ENCERRA PROCESSOS NEM REMOVE DADOS. A CLASSIFICAÇÃO USA
-        NOMES CONHECIDOS DO SISTEMA; APLICAÇÕES PERSONALIZADAS CONTINUAM
-        VISÍVEIS.
+        A ocultação não encerra processos nem remove dados. A classificação usa
+        nomes conhecidos do sistema; aplicações personalizadas continuam
+        visíveis.
       </p>
       <Sheet
         open={selected !== null}
@@ -264,21 +271,30 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
       >
         <SheetContent className="overflow-y-auto sm:max-w-xl">
           <SheetHeader>
-            <SheetTitle>{selected?.name}</SheetTitle>
-            <SheetDescription>DETALHES DO PROCESSO OBSERVADO</SheetDescription>
+            <SheetTitle>{selected?.display_name || selected?.name}</SheetTitle>
+            <SheetDescription>Detalhes do processo observado</SheetDescription>
           </SheetHeader>
           {selected && (
             <div className="space-y-5 p-5">
+              <InventoryEditor
+                host={snapshot.hosts.find((h) => h.id === selected.host_id)!}
+                process={selected}
+                groups={[]}
+                onSaved={() => {
+                  setSelected(null);
+                  onSaved?.();
+                }}
+              />
               <dl className="grid grid-cols-2 gap-4 text-xs">
                 {[
-                  ["HOST", selected.host_name],
+                  ["Host", selected.host_name],
                   ["PID", String(selected.pid)],
-                  ["SERVIÇO", selected.service || "—"],
-                  ["RUNTIME", selected.runtime || "NÃO IDENTIFICADO"],
-                  ["MEMÓRIA RSS", memory(selected.rss_bytes)],
+                  ["Serviço", selected.service || "—"],
+                  ["Runtime", selected.runtime || "Não identificado"],
+                  ["Memória RSS", memory(selected.rss_bytes)],
                   [
-                    "CLASSIFICAÇÃO",
-                    selected.system ? "SISTEMA" : "APLICAÇÃO / OUTROS",
+                    "Classificação",
+                    selected.system ? "Sistema" : "Aplicação / Outros",
                   ],
                 ].map(([label, value]) => (
                   <div key={label}>
@@ -289,11 +305,11 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
               </dl>
               <section className="space-y-3 border bg-background p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-semibold">DEEP MONITORING</h2>
+                  <h2 className="text-sm font-semibold">Deep monitoring</h2>
                   <input
                     type="checkbox"
                     role="switch"
-                    aria-label="DEEP MONITORING"
+                    aria-label="Deep monitoring"
                     checked={false}
                     disabled
                     aria-describedby="deep-monitoring-requirement"
@@ -304,15 +320,15 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
                   id="deep-monitoring-requirement"
                   className="text-xs leading-6 text-muted-foreground"
                 >
-                  O AGENTE ATUAL NÃO INSTALA SENSORES EM PROCESSOS. ATIVAR OU
-                  DESATIVAR INSTRUMENTAÇÃO JAVA/.NET POR ESTA TELA AINDA NÃO É
-                  SUPORTADO. PARA RECEBER TRACES, CONFIGURE OPENTELEMETRY NA
-                  APLICAÇÃO OU NO COLLECTOR.
+                  O agente atual não instala sensores em processos. Ativar ou
+                  desativar instrumentação Java/.NET por esta tela ainda não é
+                  suportado. Para receber traces, configure opentelemetry na
+                  aplicação ou no collector.
                 </p>
                 <Button variant="outline" asChild>
                   <Link to="/$" params={{ _splat: "ajuda/otlp" }}>
                     <CircleHelp className="size-4" />
-                    CONFIGURAR INSTRUMENTAÇÃO
+                    Configurar instrumentação
                   </Link>
                 </Button>
               </section>
@@ -327,17 +343,17 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
                   }
                 >
                   <Download className="size-4" />
-                  EXPORTAR PROCESSO
+                  Exportar processo
                 </Button>
                 <Button variant="outline" asChild>
                   <Link to="/$" params={{ _splat: "process-mapping" }}>
                     <Server className="size-4" />
-                    MAPA DE PROCESSOS
+                    Mapa de processos
                   </Link>
                 </Button>
               </div>
               <h2 className="text-sm font-semibold">
-                CONEXÕES OBSERVADAS ({connections.length})
+                Conexões observadas ({connections.length})
               </h2>
               {connections.slice(0, 100).map((c, i) => (
                 <div key={i} className="space-y-1 border p-3 font-mono text-xs">
@@ -349,12 +365,12 @@ export function ProcessExplorer({ snapshot }: { snapshot: Snapshot }) {
               ))}
               {!connections.length && (
                 <p className="text-xs text-muted-foreground">
-                  NENHUMA CONEXÃO RECEBIDA PARA ESTE PID.
+                  Nenhuma conexão recebida para este PID.
                 </p>
               )}
               {connections.length > 100 && (
                 <p className="text-xs text-muted-foreground">
-                  EXIBINDO 100 CONEXÕES. A EXPORTAÇÃO CONTÉM TODAS.
+                  Exibindo 100 conexões. A exportação contém todas.
                 </p>
               )}
             </div>

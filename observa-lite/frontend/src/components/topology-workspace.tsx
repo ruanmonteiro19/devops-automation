@@ -30,62 +30,62 @@ import { downloadJSON } from "@/lib/workspace";
 const views = [
   {
     id: "all",
-    title: "VISÃO UNIFICADA",
-    description: "ENTIDADES E RELAÇÕES OBSERVADAS",
+    title: "Visão unificada",
+    description: "Entidades e relações observadas",
     icon: Boxes,
   },
   {
     id: "infrastructure",
-    title: "INFRAESTRUTURA",
-    description: "HOSTS, PROCESSOS E CONEXÕES",
+    title: "Infraestrutura",
+    description: "Hosts, processos e conexões",
     icon: Server,
   },
   {
     id: "problems",
-    title: "PROBLEMAS",
-    description: "EVIDÊNCIAS DE REGRAS E SERVIÇOS",
+    title: "Problemas",
+    description: "Evidências de regras e serviços",
     icon: AlertTriangle,
   },
   {
     id: "services",
-    title: "DEPENDÊNCIAS DE SERVIÇOS",
-    description: "CHAMADAS OBSERVADAS NOS TRACES",
+    title: "Dependências de serviços",
+    description: "Chamadas observadas nos traces",
     icon: Workflow,
   },
   {
     id: "kubernetes",
-    title: "KUBERNETES",
-    description: "CLUSTERS, NAMESPACES E PODS RECEBIDOS POR OTLP",
+    title: "Kubernetes",
+    description: "Clusters, namespaces e pods recebidos por OTLP",
     icon: Boxes,
   },
   {
     id: "aws",
     title: "AWS",
-    description: "INSTÂNCIAS EC2 DO INVENTÁRIO",
+    description: "Instâncias EC2 do inventário",
     icon: Cloud,
   },
   {
     id: "azure",
-    title: "AZURE",
-    description: "RECURSOS DO AZURE RESOURCE MANAGER",
+    title: "Azure",
+    description: "Recursos do azure resource manager",
     icon: Cloud,
   },
   {
     id: "gcp",
-    title: "GOOGLE CLOUD",
-    description: "INSTÂNCIAS COMPUTE ENGINE",
+    title: "Google cloud",
+    description: "Instâncias compute engine",
     icon: Cloud,
   },
   {
     id: "ai",
-    title: "AI OBSERVABILITY",
-    description: "SERVIÇOS COM ATRIBUTOS GEN_AI RECEBIDOS",
+    title: "AI Observability",
+    description: "Serviços com atributos gen_ai recebidos",
     icon: Bot,
   },
   {
     id: "devices",
-    title: "NETWORK DEVICES",
-    description: "EQUIPAMENTOS E INTERFACES IF-MIB",
+    title: "Network devices",
+    description: "Equipamentos e interfaces IF-MIB",
     icon: Network,
   },
 ];
@@ -103,7 +103,7 @@ export function groupTopology(
   const membership = new Map<string, string>();
   for (const n of map.nodes) {
     const name =
-      groupBy === "kind" ? n.kind : n.host || "SEM HOST / LOCALIZAÇÃO";
+      groupBy === "kind" ? n.kind : n.host || "Sem host / Localização";
     const id = `group:${groupBy}:${name}`;
     const members = groups.get(id) ?? [];
     members.push(n);
@@ -117,7 +117,7 @@ export function groupTopology(
     else
       nodes.push({
         id,
-        name: `${groupBy === "kind" ? items[0]!.kind : items[0]!.host || "SEM HOST / LOCALIZAÇÃO"} (${items.length})`,
+        name: `${groupBy === "kind" ? items[0]!.kind : items[0]!.host || "Sem host / Localização"} (${items.length})`,
         kind: "group",
         status: "unknown",
         instances: items.length,
@@ -143,7 +143,7 @@ export function groupTopology(
       name:
         groupBy === "kind"
           ? members(id)[0]!.kind
-          : members(id)[0]!.host || "SEM HOST / LOCALIZAÇÃO",
+          : members(id)[0]!.host || "Sem host / Localização",
       count: members(id).length,
     })),
   };
@@ -214,9 +214,9 @@ export function TopologyWorkspace({
       {selected && (
         <aside className="topology-view-nav sticky top-32 hidden h-fit border bg-surface xl:block">
           <div className="border-b bg-surface-raised px-3 py-3 text-xs font-semibold">
-            VISÕES DE TOPOLOGIA
+            Visões de topologia
           </div>
-          <nav aria-label="VISÕES DE TOPOLOGIA" className="space-y-1 p-2">
+          <nav aria-label="Visões de topologia" className="space-y-1 p-2">
             {views.map((view) => (
               <Link
                 key={view.id}
@@ -235,13 +235,13 @@ export function TopologyWorkspace({
       <div className="min-w-0 space-y-5">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="mb-2 text-xs text-primary">TOPOLOGIA</p>
+            <p className="mb-2 text-xs text-primary">Topologia</p>
             <h1 className="text-2xl font-semibold">
-              {selected?.title || "VISÕES DO AMBIENTE"}
+              {selected?.title || "Visões do ambiente"}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {selected?.description ||
-                "EXPLORE A INFRAESTRUTURA, AS APLICAÇÕES, AS CLOUDS E OS EQUIPAMENTOS DE REDE."}
+                "Explore a infraestrutura, as aplicações, as clouds e os equipamentos de rede."}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -250,7 +250,7 @@ export function TopologyWorkspace({
                 <Button variant="outline" asChild>
                   <Link to="/$" params={{ _splat: "topologia" }}>
                     <ArrowLeft className="size-4" />
-                    TODAS AS VISÕES
+                    Todas as visões
                   </Link>
                 </Button>
                 <Button
@@ -259,20 +259,20 @@ export function TopologyWorkspace({
                   onClick={() => query.refetch()}
                 >
                   <RefreshCw className="size-4" />
-                  ATUALIZAR
+                  Atualizar
                 </Button>
               </>
             )}
             <Button variant="outline" asChild>
               <Link to="/$" params={{ _splat: "clouds" }}>
                 <Cloud className="size-4" />
-                CONECTAR CLOUD
+                Conectar cloud
               </Link>
             </Button>
             <Button variant="outline" asChild>
               <Link to="/$" params={{ _splat: "dispositivos-rede" }}>
                 <Network className="size-4" />
-                EQUIPAMENTOS
+                Equipamentos
               </Link>
             </Button>
           </div>
@@ -311,7 +311,7 @@ export function TopologyWorkspace({
                   });
                 }}
               >
-                <SelectTrigger aria-label="VISÃO DO MAPA" className="w-64">
+                <SelectTrigger aria-label="Visão do mapa" className="w-64">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -326,19 +326,19 @@ export function TopologyWorkspace({
                 </SelectContent>
               </Select>
               <Select value={minutes} onValueChange={setMinutes}>
-                <SelectTrigger aria-label="PERÍODO OTLP" className="w-40">
+                <SelectTrigger aria-label="Período OTLP" className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="15">15 MINUTOS</SelectItem>
-                  <SelectItem value="60">1 HORA</SelectItem>
-                  <SelectItem value="360">6 HORAS</SelectItem>
-                  <SelectItem value="1440">24 HORAS</SelectItem>
+                  <SelectItem value="15">15 Minutos</SelectItem>
+                  <SelectItem value="60">1 Hora</SelectItem>
+                  <SelectItem value="360">6 Horas</SelectItem>
+                  <SelectItem value="1440">24 Horas</SelectItem>
                 </SelectContent>
               </Select>
               <Input
-                aria-label="BUSCAR ENTIDADE NO MAPA"
-                placeholder="BUSCAR NOME, ID OU LOCALIZAÇÃO"
+                aria-label="Buscar entidade no mapa"
+                placeholder="Buscar nome, ID ou localização"
                 className="max-w-xs"
                 value={entitySearch}
                 onChange={(e) => setEntitySearch(e.target.value)}
@@ -349,9 +349,9 @@ export function TopologyWorkspace({
                   checked={showSystem}
                   onChange={(e) => setShowSystem(e.target.checked)}
                 />
-                INCLUIR PROCESSOS DE SISTEMA
+                Incluir processos de sistema
               </label>
-              <label className="text-xs">AGRUPAR POR</label>
+              <label className="text-xs">Agrupar por</label>
               <Select
                 value={groupBy}
                 onValueChange={(v) => {
@@ -359,13 +359,13 @@ export function TopologyWorkspace({
                   setExpanded([]);
                 }}
               >
-                <SelectTrigger aria-label="AGRUPAR MAPA" className="w-52">
+                <SelectTrigger aria-label="Agrupar mapa" className="w-52">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="kind">TIPO DE ENTIDADE</SelectItem>
-                  <SelectItem value="host">HOST / LOCALIZAÇÃO</SelectItem>
-                  <SelectItem value="none">SEM AGRUPAMENTO</SelectItem>
+                  <SelectItem value="kind">Tipo de entidade</SelectItem>
+                  <SelectItem value="host">Host / localização</SelectItem>
+                  <SelectItem value="none">Sem agrupamento</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -374,14 +374,14 @@ export function TopologyWorkspace({
                 onClick={() => setExpanded(grouped.groups.map((g) => g.id))}
               >
                 <Layers className="size-3.5" />
-                EXPANDIR GRUPOS
+                Expandir grupos
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setExpanded([])}
               >
-                RECOLHER GRUPOS
+                Recolher grupos
               </Button>
               <Button
                 variant="ghost"
@@ -391,7 +391,7 @@ export function TopologyWorkspace({
                 }
               >
                 <Download className="size-3.5" />
-                EXPORTAR
+                Exportar
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -409,17 +409,17 @@ export function TopologyWorkspace({
                   }
                 >
                   {group.name} · {group.count} ·{" "}
-                  {expanded.includes(group.id) ? "RECOLHER" : "EXPANDIR"}
+                  {expanded.includes(group.id) ? "Recolher" : "Expandir"}
                 </button>
               ))}
             </div>
             {query.isLoading ? (
-              <p role="status">CARREGANDO TOPOLOGIA…</p>
+              <p role="status">Carregando topologia…</p>
             ) : query.error ? (
               <div role="alert" className="border p-5 text-sm text-danger">
                 {query.error.message}
                 <Button variant="outline" onClick={() => query.refetch()}>
-                  TENTAR NOVAMENTE
+                  Tentar novamente
                 </Button>
               </div>
             ) : visibleMap.nodes.length ? (
@@ -431,25 +431,25 @@ export function TopologyWorkspace({
             ) : (
               <div className="border border-dashed bg-surface p-12 text-center">
                 <Network className="mx-auto mb-4 size-10 text-primary" />
-                <h2 className="font-semibold">NENHUMA ENTIDADE NESTA VISÃO</h2>
+                <h2 className="font-semibold">Nenhuma entidade nesta visão</h2>
                 <p className="mx-auto mt-3 max-w-xl text-xs leading-6 text-muted-foreground">
-                  CONFIGURE A INTEGRAÇÃO E VERIFIQUE A COLETA. AS VISÕES
-                  KUBERNETES E AI USAM ATRIBUTOS EXPLÍCITOS DOS SPANS OTLP; NÃO
-                  DESCOBREM CLUSTERS OU MODELOS AUTOMATICAMENTE.
+                  Configure a integração e verifique a coleta. As visões
+                  kubernetes e AI usam atributos explícitos dos spans OTLP; não
+                  descobrem clusters ou modelos automaticamente.
                 </p>
               </div>
             )}
             {query.data?.truncated && (
               <p className="text-xs text-warning">
-                A API LIMITOU O MAPA A 500 NÓS / 2000 RELAÇÕES. A EXIBIÇÃO DO
-                CANVAS TEM LIMITE ADICIONAL DE 200 NÓS.
+                A API limitou o mapa a 500 nós / 2000 relações. A exibição do
+                canvas tem limite adicional de 200 nós.
               </p>
             )}
             <p className="text-xs leading-5 text-muted-foreground">
-              O PERÍODO AFETA OS DADOS OTLP. CLOUDS E EQUIPAMENTOS USAM O ÚLTIMO
-              INVENTÁRIO COLETADO. RELAÇÕES DE INVENTÁRIO SÃO CONTENÇÃO;
-              CHAMADAS VÊM DOS TRACES. PROBLEMAS DE REGRAS NÃO SIGNIFICAM CAUSA
-              RAIZ. RECURSOS RETIDOS APÓS FALHA DE COLETA APARECEM COMO STALE.
+              O período afeta os dados OTLP. clouds e equipamentos usam o último
+              inventário coletado. relações de inventário são contenção;
+              chamadas vêm dos traces. problemas de regras não significam causa
+              raiz. recursos retidos após falha de coleta aparecem como stale.
             </p>
           </>
         )}

@@ -17,11 +17,12 @@ type Discovery struct {
 	Connections    []Connection `json:"connections"`
 }
 type Process struct {
-	PID      int    `json:"pid"`
-	Name     string `json:"name"`
-	Service  string `json:"service"`
-	Runtime  string `json:"runtime"`
-	RSSBytes uint64 `json:"rss_bytes"`
+	DisplayName string `json:"display_name,omitempty"`
+	PID         int    `json:"pid"`
+	Name        string `json:"name"`
+	Service     string `json:"service"`
+	Runtime     string `json:"runtime"`
+	RSSBytes    uint64 `json:"rss_bytes"`
 }
 type Connection struct {
 	PID        int    `json:"pid"`

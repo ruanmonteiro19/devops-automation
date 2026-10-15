@@ -169,3 +169,15 @@ func TestRelayLogsMetricsPreservePathAndWire(t *testing.T) {
 		})
 	}
 }
+
+func TestRelayBackpressureSignalsRetry(t *testing.T) {
+	r := &relay{token: "test-token", slots: make(chan struct{}, 1)}
+	r.slots <- struct{}{}
+	req := httptest.NewRequest("POST", "/api/v1/ingest", bytes.NewBufferString("{}"))
+	req.Header.Set("X-API-Key", "test-token")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != 503 || w.Header().Get("Retry-After") != "1" {
+		t.Fatalf("missing overload signal: %d %v", w.Code, w.Header())
+	}
+}

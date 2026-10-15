@@ -42,6 +42,7 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("POST /api/v1/integrations", s.adminAuth(s.integrationSave))
 	m.HandleFunc("DELETE /api/v1/integrations/{id}", s.adminAuth(s.integrationDelete))
 	m.HandleFunc("POST /api/v1/integrations/{id}/collect", s.adminAuth(s.integrationCollect))
+	m.HandleFunc("PATCH /api/v1/hosts/{id}", s.adminAuth(s.editInventory))
 	m.HandleFunc("GET /api/v1/topology", s.adminAuth(s.topologyViews))
 	m.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { write(w, 200, map[string]bool{"ok": true}) })
 	m.HandleFunc("GET /", s.serveUI)

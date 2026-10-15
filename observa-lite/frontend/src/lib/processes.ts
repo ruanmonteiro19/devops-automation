@@ -4,6 +4,8 @@ import type { Host, ProcessInfo } from "./api";
 const systemNames = new Set(
   [
     "systemd",
+    "(sd-pam)",
+    "sd-pam",
     "systemd-journald",
     "systemd-udevd",
     "systemd-logind",

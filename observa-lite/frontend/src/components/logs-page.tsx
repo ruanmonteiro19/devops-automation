@@ -23,7 +23,7 @@ export function LogsPage({ sources, demo }: { sources: DataSource[]; demo: boole
   return <div className="space-y-5">
     <header><div className="mb-1 text-[11px] font-semibold uppercase text-primary">Explorar / Logs</div>
       <h1 className="text-2xl font-semibold">Logs</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Consulta LogQL diretamente no Loki. O Observa Lite não armazena nem indexa o conteúdo.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Consulta LogQL diretamente no Loki. O Vetra Observability não armazena nem indexa o conteúdo.</p>
     </header>
     <div className="rounded-lg border border-border bg-surface p-4">
       <div className="mb-4 flex items-start gap-3 rounded-md border border-primary/25 bg-primary/5 p-3 text-xs text-muted-foreground">

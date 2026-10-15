@@ -51,6 +51,7 @@ func (r *relay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	case r.slots <- struct{}{}:
 		defer func() { <-r.slots }()
 	default:
+		w.Header().Set("Retry-After", "1")
 		http.Error(w, "gateway busy", http.StatusServiceUnavailable)
 		return
 	}
@@ -122,6 +123,7 @@ func localURL(u *url.URL) bool {
 	return strings.EqualFold(host, "localhost") || (ip != nil && ip.IsLoopback())
 }
 func main() {
+	maxInflight := flag.Int("max-inflight", 32, "maximum concurrent forwarding requests per replica (1..4096)")
 	listen := flag.String("listen", ":18443", "TCP listen address")
 	upstreamRaw := flag.String("upstream", "http://127.0.0.1:8080", "backend server URL (HTTPS required remotely)")
 	cert := flag.String("tls-cert", "", "gateway TLS certificate with correct SAN")
@@ -129,6 +131,9 @@ func main() {
 	clientCA := flag.String("client-ca", "", "optional client certificate CA; requires client mTLS")
 	backendCA := flag.String("upstream-ca", "", "optional backend CA certificate")
 	flag.Parse()
+	if *maxInflight < 1 || *maxInflight > 4096 {
+		log.Fatal("max-inflight must be between 1 and 4096")
+	}
 	token := os.Getenv("OBSERVA_AGENT_TOKEN")
 	if len(token) < 24 || *cert == "" || *key == "" {
 		log.Fatal("agent token >=24 bytes and TLS certificate/key required")
@@ -161,7 +166,7 @@ func main() {
 		auth.ClientCAs = roots
 		auth.ClientAuth = tls.RequireAndVerifyClientCert
 	}
-	h := &relay{upstream: u, httpClient: client, token: token, slots: make(chan struct{}, 32)}
+	h := &relay{upstream: u, httpClient: client, token: token, slots: make(chan struct{}, *maxInflight)}
 	srv := &http.Server{Addr: *listen, Handler: h, TLSConfig: auth, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 20 * time.Second, MaxHeaderBytes: 16384}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

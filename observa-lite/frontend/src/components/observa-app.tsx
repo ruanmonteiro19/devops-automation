@@ -1,3 +1,5 @@
+import { ProcessExplorer } from "@/components/process-explorer";
+import { applicationProcesses } from "@/lib/processes";
 import { MonitorManager } from "@/components/monitor-manager";
 import { downloadJSON, menuIconColor } from "@/lib/workspace";
 import {
@@ -583,8 +585,9 @@ function NavLink({
 }) {
   const content = (
     <div
+      data-active={active}
       className={cn(
-        "group relative flex items-center rounded-lg transition-colors hover:bg-sidebar-accent",
+        "nav-menu-item group relative flex items-center rounded-lg transition-colors hover:bg-sidebar-accent",
         active &&
           "bg-primary/10 text-primary ring-1 ring-inset ring-primary/15",
       )}
@@ -919,6 +922,7 @@ function PageRouter({
 }) {
   const initialCreate = rawPath.endsWith("/novo");
   const path = initialCreate ? rawPath.slice(0, -5) : rawPath;
+  if (path === "processos") return <ProcessExplorer snapshot={snapshot} />;
   if (path === "chaves-api") return <WorkspaceAccess />;
   if (path === "configuracoes") return <WorkspacePreferences />;
   if (path === "ajuda" || path.startsWith("ajuda/"))
@@ -1795,7 +1799,7 @@ function InfrastructurePage({
                 </Cell>
                 <Cell>{host.os}</Cell>
                 <Cell>{host.addresses.join(", ") || "—"}</Cell>
-                <Cell>{host.processes.length}</Cell>
+                <Cell>{applicationProcesses(host).length}</Cell>
                 <Cell>{formatDate(host.last_seen)}</Cell>
               </tr>
             ))}
@@ -1839,7 +1843,10 @@ function InfrastructurePage({
                   ["Host Group", selected.host_group || "Não definido"],
                   ["Network Zone", selected.network_zone || "Não definida"],
                   ["Modo", selected.monitoring_mode || "Não informado"],
-                  ["Processos", String(selected.processes.length)],
+                  [
+                    "Processos de aplicação",
+                    String(applicationProcesses(selected).length),
+                  ],
                 ].map(([label, value]) => (
                   <div key={label}>
                     <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -1860,7 +1867,7 @@ function InfrastructurePage({
                 Exportar inventário deste host
               </Button>
               <h3 className="text-sm font-semibold">Processos observados</h3>
-              {selected.processes.map((p) => (
+              {applicationProcesses(selected).map((p) => (
                 <div
                   key={p.pid}
                   className="flex items-center justify-between border-b py-2 text-xs"

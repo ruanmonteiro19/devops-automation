@@ -67,18 +67,18 @@ describe("Workspace experience", () => {
   it("applies and persists theme, accent and density", () => {
     render(<WorkspacePreferences />);
     fireEvent.click(screen.getByRole("button", { name: "Claro" }));
-    fireEvent.click(screen.getByRole("button", { name: "Ciano" }));
+    fireEvent.click(screen.getByRole("button", { name: "Verde" }));
     fireEvent.click(screen.getByRole("button", { name: "Compacta" }));
     expect(loadAppearance()).toEqual({
       theme: "light",
-      accent: "cyan",
+      accent: "green",
       density: "compact",
     });
     expect(document.documentElement.dataset["theme"]).toBe("light");
     expect(document.documentElement.dataset["density"]).toBe("compact");
   });
   it("tolerates corrupted preferences", () => {
-    localStorage.setItem("observa-appearance-v1", "invalid");
+    localStorage.setItem("observa-appearance-v2", "invalid");
     expect(loadAppearance().theme).toBe("dark");
   });
   it("filters help and provides an explicit collector fragment without credentials", () => {

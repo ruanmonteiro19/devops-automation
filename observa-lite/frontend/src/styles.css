@@ -513,3 +513,126 @@ html[data-theme="light"] .menu-icon-pink {
 html[data-theme="light"] .menu-icon-violet {
   color: oklch(0.5 0.19 290);
 }
+
+/* Executive palette: solid black/green surfaces and filled navigation. */
+:root,
+.dark {
+  --background: oklch(0.115 0.006 155);
+  --foreground: oklch(0.94 0.006 155);
+  --surface: oklch(0.17 0.009 155);
+  --surface-raised: oklch(0.215 0.012 155);
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.19 0.01 155);
+  --popover-foreground: var(--foreground);
+  --sidebar: oklch(0.13 0.008 155);
+  --sidebar-foreground: oklch(0.87 0.01 155);
+  --sidebar-accent: oklch(0.27 0.04 155);
+  --border: oklch(0.31 0.015 155);
+  --sidebar-border: var(--border);
+  --muted: oklch(0.215 0.012 155);
+  --muted-foreground: oklch(0.73 0.014 155);
+  --primary: oklch(0.7 0.145 155);
+  --primary-foreground: oklch(0.12 0.012 155);
+  --accent: oklch(0.28 0.045 155);
+  --accent-foreground: var(--foreground);
+  --ring: var(--primary);
+  --success: oklch(0.73 0.14 155);
+  --chart-1: var(--primary);
+  --chart-2: oklch(0.65 0.09 165);
+  --chart-3: oklch(0.55 0.08 145);
+  --nav-section: oklch(0.65 0.015 155);
+}
+html[data-accent="green"],
+html[data-accent="cyan"],
+html[data-accent="violet"] {
+  --primary: oklch(0.7 0.145 155);
+  --primary-foreground: oklch(0.12 0.012 155);
+  --ring: var(--primary);
+}
+body,
+button,
+input,
+textarea,
+select,
+option,
+[role="dialog"],
+[role="menu"],
+[role="tooltip"] {
+  text-transform: uppercase;
+}
+.workspace-main table th,
+.workspace-main .uppercase,
+aside .uppercase {
+  text-transform: uppercase;
+}
+input::placeholder,
+textarea::placeholder {
+  text-transform: uppercase;
+}
+.nav-menu-item {
+  background: oklch(0.185 0.012 155);
+  border: 1px solid oklch(0.265 0.018 155);
+  margin-bottom: 4px;
+  box-shadow: none;
+}
+.nav-menu-item:hover {
+  background: oklch(0.255 0.035 155);
+}
+.nav-menu-item[data-active="true"] {
+  background: oklch(0.34 0.075 155);
+  border-color: oklch(0.48 0.1 155);
+  box-shadow: none;
+}
+.nav-menu-item[data-active="true"] > a {
+  color: oklch(0.97 0.006 155);
+}
+.nav-menu-item[data-active="true"] svg {
+  color: oklch(0.82 0.13 155);
+}
+[role="tab"],
+[role="menuitem"],
+[role="option"] {
+  background: var(--surface-raised);
+}
+[role="tab"][data-state="active"],
+[role="menuitem"][data-highlighted],
+[role="option"][data-state="checked"] {
+  background: oklch(0.34 0.075 155);
+  color: oklch(0.97 0.006 155);
+}
+[class*="menu-icon-"] {
+  color: oklch(0.75 0.12 155);
+}
+.workspace-shortcut,
+.workspace-tools,
+.workspace-main {
+  box-shadow: none;
+  background-image: none;
+}
+.workspace-main table tbody tr:hover {
+  background: oklch(0.225 0.02 155);
+}
+html[data-theme="light"] .nav-menu-item {
+  background: oklch(0.93 0.016 155);
+  border-color: oklch(0.82 0.025 155);
+}
+html[data-theme="light"] .nav-menu-item[data-active="true"] {
+  background: oklch(0.34 0.075 155);
+  border-color: oklch(0.48 0.1 155);
+}
+html[data-theme="light"] [class*="menu-icon-"] {
+  color: oklch(0.46 0.12 155);
+}
+html[data-theme="light"] .nav-menu-item[data-active="true"] svg {
+  color: oklch(0.82 0.13 155);
+}
+:root,
+.dark {
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--foreground);
+}
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--primary);
+}

@@ -46,3 +46,14 @@ Referência: organização de telas na documentação oficial do SigNoz (https:/
 - Temas claro/escuro e preferência de cor permanecem disponíveis.
 
 Verificação: 56 testes de interface, TypeScript e build. A limitação de revisão visual em navegador descrita acima permanece.
+
+## Revisão: preto/verde e processos de aplicação
+
+- Paleta padrão preta/verde sólida e fundo preenchido em todos os itens de navegação. A seleção usa fundo verde.
+- Caixa alta por CSS, sem converter valores originais de telemetria, credenciais, formulários ou exportações.
+- Preferências visuais usam `observa-appearance-v2`: tema inicial escuro/verde. Credenciais e dados não são alterados; tema claro permanece como escolha explícita.
+- Processos de sistema conhecidos ocultos por padrão, com opção de exibição. Não há remoção ou encerramento. Aplicações personalizadas/desconhecidas continuam visíveis; a classificação é heurística.
+- Busca e filtros por host/runtime, ordenação por memória/nome/PID, limite de linhas, detalhes, conexões por host/PID e exportação filtrada. Detalhes de hosts também ocultam processos de sistema.
+- DEEP MONITORING tem requisito explícito e controle desabilitado. O agente não injeta instrumentação nem ativa/desativa sensores Java/.NET remotamente. O guia OpenTelemetry está acessível; não há simulação de ativação.
+
+Verificação: 60 testes de interface, TypeScript e build. Limitação de revisão visual em navegador permanece.

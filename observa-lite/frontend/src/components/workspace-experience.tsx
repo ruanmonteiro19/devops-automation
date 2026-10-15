@@ -424,7 +424,7 @@ export function WorkspacePreferences() {
     setValue(next);
     applyAppearance(next);
     try {
-      localStorage.setItem("observa-appearance-v1", JSON.stringify(next));
+      localStorage.setItem("observa-appearance-v2", JSON.stringify(next));
       toast.success("Preferências salvas");
     } catch {
       toast.error("Não foi possível persistir neste navegador");
@@ -485,10 +485,10 @@ export function WorkspacePreferences() {
           </PreferenceCard>
           <PreferenceCard
             title="Cor de destaque"
-            description="Personalize botões, navegação e destaques."
+            description="Verde sólido para botões, navegação e destaques."
           >
             <div className="flex flex-wrap gap-3">
-              {(["violet", "cyan", "green"] as const).map((accent) => (
+              {(["green"] as const).map((accent) => (
                 <button
                   key={accent}
                   onClick={() => update({ accent })}
@@ -498,16 +498,7 @@ export function WorkspacePreferences() {
                     value.accent === accent && "border-primary bg-primary/10",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "size-4 rounded-full",
-                      accent === "violet"
-                        ? "bg-violet-400"
-                        : accent === "cyan"
-                          ? "bg-cyan-400"
-                          : "bg-emerald-400",
-                    )}
-                  />
+                  <span className="size-4 rounded-full bg-emerald-400" />
                   {{ violet: "Violeta", cyan: "Ciano", green: "Verde" }[accent]}
                 </button>
               ))}

@@ -5,19 +5,17 @@ export type Appearance = {
 };
 export const defaultAppearance: Appearance = {
   theme: "dark",
-  accent: "violet",
+  accent: "green",
   density: "comfortable",
 };
 export function loadAppearance(): Appearance {
   try {
     const saved = JSON.parse(
-      localStorage.getItem("observa-appearance-v1") || "{}",
+      localStorage.getItem("observa-appearance-v2") || "{}",
     );
     return {
       theme: saved.theme === "light" ? "light" : "dark",
-      accent: ["violet", "cyan", "green"].includes(saved.accent)
-        ? saved.accent
-        : "violet",
+      accent: "green",
       density: saved.density === "compact" ? "compact" : "comfortable",
     };
   } catch {

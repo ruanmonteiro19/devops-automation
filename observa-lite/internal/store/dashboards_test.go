@@ -158,3 +158,27 @@ func TestDashboardWritesRollbackOnPersistenceFailure(t *testing.T) {
 		t.Fatal("failed delete mutated memory")
 	}
 }
+
+func TestDashboardPanelLayoutPersistsAndRejectsInvalidWidth(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "layout.json")
+	s, err := New(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := model.Dashboard{ID: "layout", Title: "Layout", Panels: []model.Panel{{ID: "a", Title: "First", Kind: "stat", Width: "full"}, {ID: "b", Title: "Second", Kind: "stat", Width: "half"}}}
+	if err := s.PutDashboard(d); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := New(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := reopened.Snapshot().Dashboards
+	if len(got) != 1 || got[0].Panels[0].Width != "full" || got[0].Panels[1].Width != "half" {
+		t.Fatalf("layout lost: %+v", got)
+	}
+	d.Panels[0].Width = "invalid"
+	if err := s.PutDashboard(d); err == nil {
+		t.Fatal("invalid layout accepted")
+	}
+}

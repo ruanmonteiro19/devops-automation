@@ -670,19 +670,25 @@ function ServiceCharts({
                   })
                 }
                 minTickGap={45}
-                tick={{ fontSize: 10, fill: "#a3b6aa" }}
+                tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
               />
-              <YAxis width={45} tick={{ fontSize: 10, fill: "#a3b6aa" }} />
+              <YAxis
+                width={45}
+                tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+              />
               <Tooltip
                 labelFormatter={(v) =>
                   new Date(String(v)).toLocaleString("pt-BR")
                 }
-                contentStyle={{ background: "#17251c", borderColor: "#3b4e40" }}
+                contentStyle={{
+                  background: "var(--surface)",
+                  borderColor: "var(--border)",
+                }}
               />
               <Line
                 dataKey={key!}
                 name={title!}
-                stroke="#43d978"
+                stroke="var(--primary)"
                 dot={false}
                 strokeWidth={2}
                 isAnimationActive={false}

@@ -67,6 +67,7 @@ export type DataSource = {
   secret_env?: string;
 };
 export type DashboardPanel = {
+  width?: "half" | "full";
   id: string;
   title: string;
   kind: string;

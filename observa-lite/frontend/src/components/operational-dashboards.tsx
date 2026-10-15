@@ -1,3 +1,16 @@
+import {
+  ArrowUp,
+  ArrowDown,
+  Copy,
+  Upload,
+  Search,
+  Plus,
+  Pencil,
+  Download,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useRef } from "react";
 import { useState, type FormEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,14 +69,73 @@ const error = (e: unknown) =>
 export function OperationalDashboards({
   items,
   demo,
+  initialCreate = false,
 }: {
   items: Dashboard[];
   demo: boolean;
+  initialCreate?: boolean;
 }) {
   const client = useQueryClient();
+  const [search, setSearch] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
+  async function importDefinition(file: File) {
+    if (file.size > 1048576) {
+      toast.error("O arquivo deve ter até 1 MiB");
+      return;
+    }
+    try {
+      const value: unknown = JSON.parse(await file.text());
+      if (
+        !value ||
+        typeof value !== "object" ||
+        !("title" in value) ||
+        typeof value.title !== "string" ||
+        !("panels" in value) ||
+        !Array.isArray(value.panels) ||
+        value.panels.length > 50
+      )
+        throw Error("Formato inválido: use uma exportação nativa do Observa");
+      const panels = value.panels.map((p: unknown) => {
+        if (
+          !p ||
+          typeof p !== "object" ||
+          !("id" in p) ||
+          typeof p.id !== "string" ||
+          !("kind" in p) ||
+          typeof p.kind !== "string" ||
+          !["apm-stat", "apm-series", "stat", "html"].includes(p.kind) ||
+          !("title" in p) ||
+          typeof p.title !== "string"
+        )
+          throw Error("Painel inválido na definição");
+        return p as DashboardPanel;
+      });
+      save.reset();
+      setDraft({
+        id: crypto.randomUUID(),
+        title: `${value.title} (importado)`,
+        panels,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível importar");
+    }
+  }
+  function movePanel(index: number, direction: number) {
+    if (!draft) return;
+    const panels = [...draft.panels];
+    const target = index + direction;
+    if (target < 0 || target >= panels.length) return;
+    [panels[index], panels[target]] = [panels[target]!, panels[index]!];
+    setDraft({ ...draft, panels });
+  }
+
   const [minutes, setMinutes] = useState(60),
     [range, setRange] = useState(() => rangeFor(60));
-  const [draft, setDraft] = useState<Dashboard | null>(null),
+  const [draft, setDraft] = useState<Dashboard | null>(() =>
+      initialCreate && !demo
+        ? { id: `dashboard-${Date.now()}`, title: "", panels: [] }
+        : null,
+    ),
     [deleting, setDeleting] = useState<Dashboard | null>(null);
   const hasAPM = items.some((d) =>
     d.panels.some((p) => p.kind === "apm-stat" || p.kind === "apm-series"),
@@ -86,6 +158,7 @@ export function OperationalDashboards({
     onSuccess: () => {
       setDraft(null);
       client.invalidateQueries({ queryKey: ["dashboards"] });
+      client.invalidateQueries({ queryKey: ["snapshot"] });
     },
   });
   const remove = useMutation({
@@ -96,6 +169,7 @@ export function OperationalDashboards({
     onSuccess: () => {
       setDeleting(null);
       client.invalidateQueries({ queryKey: ["dashboards"] });
+      client.invalidateQueries({ queryKey: ["snapshot"] });
     },
   });
   function updatePanel(index: number, patch: Partial<DashboardPanel>) {
@@ -173,193 +247,263 @@ export function OperationalDashboards({
         {new Date(range.to).toLocaleString("pt-BR")}. Atualizar aplica o
         intervalo selecionado.
       </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+          <Input
+            aria-label="Buscar dashboards"
+            placeholder="Buscar dashboards…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {items.length} dashboards
+        </span>
+        {!demo && (
+          <>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              aria-label="Arquivo de dashboard"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void importDefinition(f);
+                e.target.value = "";
+              }}
+            />
+            <Button
+              variant="outline"
+              onClick={() => fileInput.current?.click()}
+            >
+              <Upload className="size-4" />
+              Importar JSON nativo
+            </Button>
+          </>
+        )}
+      </div>
       {!items.length && (
         <p className="rounded border border-dashed border-border p-8 text-center">
           Nenhum dashboard configurado.
         </p>
       )}
-      {items.map((d) => (
-        <section key={d.id} className="space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="mr-auto text-xl font-semibold">{d.title}</h2>
-            <Button variant="outline" onClick={() => exportJSON(d)}>
-              Exportar JSON
-            </Button>
-            {!demo && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    save.reset();
-                    setDraft({ ...d, panels: d.panels.map((p) => ({ ...p })) });
-                  }}
-                >
-                  Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    remove.reset();
-                    setDeleting(d);
-                  }}
-                >
-                  Excluir
-                </Button>
-              </>
-            )}
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {d.panels.map((p) => {
-              const config = configuration(p);
-              const live = p.kind === "apm-stat" || p.kind === "apm-series";
-              const service = services.data?.services.find(
-                (s) => s.id === config?.service_id,
-              );
-              const buckets =
-                series.data?.timeseries.find(
-                  (s) => s.service_id === config?.service_id,
-                )?.buckets ?? [];
-              const failure =
-                p.kind === "apm-series" ? series.error : services.error;
-              return (
-                <article
-                  key={p.id}
-                  className="min-w-0 rounded-lg border border-border bg-surface p-4"
-                >
-                  <h3 className="font-semibold">{p.title}</h3>
-                  {live ? (
-                    demo ? (
-                      <p className="mt-4">—</p>
-                    ) : !config ? (
-                      <p role="alert">Configuração APM inválida.</p>
-                    ) : failure ? (
-                      <div role="alert">
-                        Falha ao consultar: {error(failure)}
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            p.kind === "apm-series"
-                              ? series.refetch()
-                              : services.refetch()
-                          }
-                        >
-                          Tentar novamente
-                        </Button>
-                      </div>
-                    ) : (
-                        p.kind === "apm-series"
-                          ? series.isFetching
-                          : services.isFetching
-                      ) ? (
-                      <p role="status">Carregando…</p>
-                    ) : (
-                      <>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {config.service_id} · {metrics[config.metric]}
-                        </p>
-                        {p.kind === "apm-stat" ? (
-                          <div className="py-5 text-3xl font-semibold">
-                            {!service || service.requests === 0
-                              ? "—"
-                              : service[config.metric].toLocaleString("pt-BR", {
-                                  maximumFractionDigits: 3,
-                                })}
-                          </div>
-                        ) : !buckets.some((b) => b.requests > 0) ? (
-                          <p className="py-5">
-                            — Sem requisições nesta janela.
+      {items
+        .filter((d) => d.title.toLowerCase().includes(search.toLowerCase()))
+        .map((d) => (
+          <section key={d.id} className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="mr-auto text-xl font-semibold">{d.title}</h2>
+              <Button variant="outline" onClick={() => exportJSON(d)}>
+                <Download className="size-4" />
+                Exportar JSON
+              </Button>
+              {!demo && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      save.reset();
+                      setDraft({
+                        ...d,
+                        id: crypto.randomUUID(),
+                        title: `${d.title} (cópia)`,
+                        panels: d.panels.map((p) => ({
+                          ...p,
+                          id: crypto.randomUUID(),
+                        })),
+                      });
+                    }}
+                  >
+                    <Copy className="size-4" />
+                    Duplicar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      save.reset();
+                      setDraft({
+                        ...d,
+                        panels: d.panels.map((p) => ({ ...p })),
+                      });
+                    }}
+                  >
+                    <Pencil className="size-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      remove.reset();
+                      setDeleting(d);
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                    Excluir
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {d.panels.map((p) => {
+                const config = configuration(p);
+                const live = p.kind === "apm-stat" || p.kind === "apm-series";
+                const service = services.data?.services.find(
+                  (s) => s.id === config?.service_id,
+                );
+                const buckets =
+                  series.data?.timeseries.find(
+                    (s) => s.service_id === config?.service_id,
+                  )?.buckets ?? [];
+                const failure =
+                  p.kind === "apm-series" ? series.error : services.error;
+                return (
+                  <article
+                    key={p.id}
+                    className={`min-w-0 rounded-xl border border-border bg-surface p-5 ${p.width === "full" ? "lg:col-span-2" : ""}`}
+                  >
+                    <h3 className="font-semibold">{p.title}</h3>
+                    {live ? (
+                      demo ? (
+                        <p className="mt-4">—</p>
+                      ) : !config ? (
+                        <p role="alert">Configuração APM inválida.</p>
+                      ) : failure ? (
+                        <div role="alert">
+                          Falha ao consultar: {error(failure)}
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              p.kind === "apm-series"
+                                ? series.refetch()
+                                : services.refetch()
+                            }
+                          >
+                            Tentar novamente
+                          </Button>
+                        </div>
+                      ) : (
+                          p.kind === "apm-series"
+                            ? series.isFetching
+                            : services.isFetching
+                        ) ? (
+                        <p role="status">Carregando…</p>
+                      ) : (
+                        <>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {config.service_id} · {metrics[config.metric]}
                           </p>
-                        ) : (
-                          <>
-                            <div className="mt-4 h-48">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <LineChart
-                                  data={buckets.map((b) => ({
-                                    ...b,
-                                    value:
-                                      b.requests === 0
-                                        ? null
-                                        : b[config.metric],
-                                  }))}
-                                >
-                                  <XAxis
-                                    dataKey="start_time"
-                                    tickFormatter={(v) =>
-                                      new Date(v).toLocaleTimeString("pt-BR", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })
-                                    }
-                                  />
-                                  <YAxis />
-                                  <Tooltip />
-                                  <Line
-                                    dataKey="value"
-                                    name={metrics[config.metric]}
-                                    type="linear"
-                                    stroke="#22c55e"
-                                    connectNulls={false}
-                                    dot={false}
-                                  />
-                                </LineChart>
-                              </ResponsiveContainer>
+                          {p.kind === "apm-stat" ? (
+                            <div className="py-5 text-3xl font-semibold">
+                              {!service || service.requests === 0
+                                ? "—"
+                                : service[config.metric].toLocaleString(
+                                    "pt-BR",
+                                    {
+                                      maximumFractionDigits: 3,
+                                    },
+                                  )}
                             </div>
-                            <details className="mt-2 text-xs">
-                              <summary>Tabela de pontos</summary>
-                              <table className="w-full">
-                                <tbody>
-                                  {buckets.map((b) => (
-                                    <tr key={b.start_time}>
-                                      <td>
-                                        {new Date(b.start_time).toLocaleString(
+                          ) : !buckets.some((b) => b.requests > 0) ? (
+                            <p className="py-5">
+                              — Sem requisições nesta janela.
+                            </p>
+                          ) : (
+                            <>
+                              <div className="mt-4 h-48">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart
+                                    data={buckets.map((b) => ({
+                                      ...b,
+                                      value:
+                                        b.requests === 0
+                                          ? null
+                                          : b[config.metric],
+                                    }))}
+                                  >
+                                    <XAxis
+                                      dataKey="start_time"
+                                      tickFormatter={(v) =>
+                                        new Date(v).toLocaleTimeString(
                                           "pt-BR",
-                                        )}
-                                      </td>
-                                      <td>
-                                        {b.requests === 0
-                                          ? "—"
-                                          : b[config.metric]}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </details>
-                          </>
-                        )}
+                                          {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          },
+                                        )
+                                      }
+                                    />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line
+                                      dataKey="value"
+                                      name={metrics[config.metric]}
+                                      type="linear"
+                                      stroke="var(--primary)"
+                                      connectNulls={false}
+                                      dot={false}
+                                    />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <details className="mt-2 text-xs">
+                                <summary>Tabela de pontos</summary>
+                                <table className="w-full">
+                                  <tbody>
+                                    {buckets.map((b) => (
+                                      <tr key={b.start_time}>
+                                        <td>
+                                          {new Date(
+                                            b.start_time,
+                                          ).toLocaleString("pt-BR")}
+                                        </td>
+                                        <td>
+                                          {b.requests === 0
+                                            ? "—"
+                                            : b[config.metric]}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </details>
+                            </>
+                          )}
+                        </>
+                      )
+                    ) : p.kind === "html" ? (
+                      <>
+                        <p className="my-2 text-xs text-muted-foreground">
+                          Conteúdo HTML isolado; scripts desativados.
+                        </p>
+                        <iframe
+                          title={p.title}
+                          sandbox=""
+                          srcDoc={p.html ?? ""}
+                          className="h-48 w-full border-0"
+                        />
                       </>
-                    )
-                  ) : p.kind === "html" ? (
-                    <>
-                      <p className="my-2 text-xs text-muted-foreground">
-                        Conteúdo HTML isolado; scripts desativados.
+                    ) : p.kind === "stat" && !p.source_id ? (
+                      <>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Valor estático configurado
+                        </p>
+                        <div className="py-4 text-2xl">{p.query ?? "—"}</div>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        Painel legado preservado ({p.kind}). Fonte externa sem
+                        visualização nesta tela.
                       </p>
-                      <iframe
-                        title={p.title}
-                        sandbox=""
-                        srcDoc={p.html ?? ""}
-                        className="h-48 w-full border-0"
-                      />
-                    </>
-                  ) : p.kind === "stat" && !p.source_id ? (
-                    <>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Valor estático configurado
-                      </p>
-                      <div className="py-4 text-2xl">{p.query ?? "—"}</div>
-                    </>
-                  ) : (
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      Painel legado preservado ({p.kind}). Fonte externa sem
-                      visualização nesta tela.
-                    </p>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       <Dialog
         open={!demo && draft !== null}
         onOpenChange={(open) => {
@@ -406,7 +550,69 @@ export function OperationalDashboards({
                     key={p.id}
                     className="space-y-2 rounded border border-border p-3"
                   >
-                    <legend>Painel {i + 1}</legend>
+                    <legend className="px-2 text-xs font-semibold uppercase tracking-wider text-primary">
+                      Painel {i + 1}
+                    </legend>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Mover painel ${i + 1} para cima`}
+                        disabled={i === 0}
+                        onClick={() => movePanel(i, -1)}
+                      >
+                        <ArrowUp className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Mover painel ${i + 1} para baixo`}
+                        disabled={i === draft.panels.length - 1}
+                        onClick={() => movePanel(i, 1)}
+                      >
+                        <ArrowDown className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={draft.panels.length >= 50}
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            panels: [
+                              ...draft.panels,
+                              {
+                                ...p,
+                                id: crypto.randomUUID(),
+                                title: `${p.title} (cópia)`,
+                              },
+                            ],
+                          })
+                        }
+                      >
+                        <Copy className="size-3.5" />
+                        Duplicar painel {i + 1}
+                      </Button>
+                    </div>
+                    <label className="block text-sm">
+                      Largura
+                      <select
+                        aria-label={`Largura do painel ${i + 1}`}
+                        className="ml-3 rounded-lg border bg-background p-2"
+                        value={p.width || "half"}
+                        onChange={(e) =>
+                          updatePanel(i, {
+                            width: e.target.value as "half" | "full",
+                          })
+                        }
+                      >
+                        <option value="half">Meia largura</option>
+                        <option value="full">Largura completa</option>
+                      </select>
+                    </label>
                     <label>
                       Título
                       <Input
@@ -513,6 +719,7 @@ export function OperationalDashboards({
               <Button
                 type="button"
                 variant="outline"
+                disabled={draft.panels.length >= 50}
                 onClick={() =>
                   setDraft({
                     ...draft,
@@ -532,6 +739,7 @@ export function OperationalDashboards({
                   })
                 }
               >
+                <Plus className="size-4" />
                 Adicionar painel
               </Button>
               {save.isError && (

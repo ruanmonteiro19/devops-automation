@@ -20,7 +20,7 @@ Estado do código entregue em15/10/2026. **Implementado** significa comportament
 | Métricas | Gauge/sum/histogramas explícitos, tipo/unidade/exemplares | Sem summaries/exponential hist, PromQL local ou derivados automáticos |
 | SLO | CRUD, disponibilidade/latência, meta/saldo/burn | Janela limitada24h amostrada; sem templates universais ou alerta próprio |
 | Alertas e problemas | Regras error_rate/P95, amostra mínima, estados, evidências/timeline | Sem detecção automática de baseline nem RCA causal |
-| Dashboards | CRUD, stat/séries reais, períodos, export nativo | Sem grid arrastável, import Grafana/Dynatrace ou DQL |
+| Dashboards | CRUD, stat/séries reais, períodos, export nativo | Reordenação por botões, largura e importação JSON nativa; sem grid arrastável, import Grafana/Dynatrace ou DQL |
 | Gateway | Relay autenticado dos3 sinais com tipos/gzip preservados | Sem fila durável/ACK/HA por sinal |
 | Infra/processos | Discovery Linux/Windows anterior e Process Mapping separados | Sem OneAgent/eBPF/profiling/full stack automático |
 
@@ -51,3 +51,7 @@ A existência dessa lista não comprova investigação minuciosa de todos os mó
 ## Continuação: contexto e vínculos OTLP
 
 Links são evidências explícitas, inclusive entre traces distintos. A interface permite navegar ao trace referenciado; ele pode estar ausente por retenção ou amostragem. Esses links não são convertidos em parents nem em dependências comprovadas do mapa. Validado JSON/protobuf, IDs, persistência após reinicialização e isolamento de mutações. Flags são preservados integralmente, sem inferir amostragem global.
+
+## Experiência do workspace
+
+Reformulação de navegação, aparência, criação, ajuda e ações operacionais documentada em [WORKSPACE-EXPERIENCE.md](WORKSPACE-EXPERIENCE.md). Recursos sem implementação saíram do menu principal; isso não representa implementação dessas áreas.

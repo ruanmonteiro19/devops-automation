@@ -5,16 +5,16 @@ import "time"
 // Discovery is a point-in-time passive observation. All relationships remain
 // observations until resolved by the inventory/correlation engine.
 type Discovery struct {
-	HostID      string       `json:"host_id"`
-	Hostname    string       `json:"hostname"`
-	OS          string       `json:"os"`
-	Addresses   []string     `json:"addresses"`
-	CapturedAt  time.Time    `json:"captured_at"`
-	HostGroup string `json:"host_group,omitempty"`
-	NetworkZone string `json:"network_zone,omitempty"`
-	MonitoringMode string `json:"monitoring_mode,omitempty"`
-	Processes   []Process    `json:"processes"`
-	Connections []Connection `json:"connections"`
+	HostID         string       `json:"host_id"`
+	Hostname       string       `json:"hostname"`
+	OS             string       `json:"os"`
+	Addresses      []string     `json:"addresses"`
+	CapturedAt     time.Time    `json:"captured_at"`
+	HostGroup      string       `json:"host_group,omitempty"`
+	NetworkZone    string       `json:"network_zone,omitempty"`
+	MonitoringMode string       `json:"monitoring_mode,omitempty"`
+	Processes      []Process    `json:"processes"`
+	Connections    []Connection `json:"connections"`
 }
 type Process struct {
 	PID      int    `json:"pid"`
@@ -32,16 +32,16 @@ type Connection struct {
 	State      string `json:"state"`
 }
 type Host struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	OS          string       `json:"os"`
-	Addresses   []string     `json:"addresses"`
-	LastSeen    time.Time    `json:"last_seen"`
-	HostGroup string `json:"host_group,omitempty"`
-	NetworkZone string `json:"network_zone,omitempty"`
-	MonitoringMode string `json:"monitoring_mode,omitempty"`
-	Processes   []Process    `json:"processes"`
-	Connections []Connection `json:"connections"`
+	ID             string       `json:"id"`
+	Name           string       `json:"name"`
+	OS             string       `json:"os"`
+	Addresses      []string     `json:"addresses"`
+	LastSeen       time.Time    `json:"last_seen"`
+	HostGroup      string       `json:"host_group,omitempty"`
+	NetworkZone    string       `json:"network_zone,omitempty"`
+	MonitoringMode string       `json:"monitoring_mode,omitempty"`
+	Processes      []Process    `json:"processes"`
+	Connections    []Connection `json:"connections"`
 }
 type Node struct {
 	ID        string `json:"id"`
@@ -97,6 +97,7 @@ type DataSource struct {
 	SecretEnv string `json:"secret_env,omitempty"`
 }
 type Panel struct {
+	Width    string `json:"width,omitempty"`
 	ID       string `json:"id"`
 	Title    string `json:"title"`
 	Kind     string `json:"kind"`
@@ -125,17 +126,17 @@ type Snapshot struct {
 	Events      []Event      `json:"events"`
 }
 
- // GatewayEndpoint is configured by an administrator. Never accept destinations from untrusted agents.
- type GatewayEndpoint struct {
-   ID string `json:"id"`
-   NetworkZone string `json:"network_zone"`
-   URL string `json:"url"`
-   Priority int `json:"priority"`
-   Enabled bool `json:"enabled"`
- }
- type ConnectionInfo struct {
-   NetworkZone string `json:"network_zone"`
-   Endpoints []string `json:"endpoints"`
-   DefaultZoneFallback bool `json:"default_zone_fallback"`
-   ValidForSeconds int `json:"valid_for_seconds"`
- }
+// GatewayEndpoint is configured by an administrator. Never accept destinations from untrusted agents.
+type GatewayEndpoint struct {
+	ID          string `json:"id"`
+	NetworkZone string `json:"network_zone"`
+	URL         string `json:"url"`
+	Priority    int    `json:"priority"`
+	Enabled     bool   `json:"enabled"`
+}
+type ConnectionInfo struct {
+	NetworkZone         string   `json:"network_zone"`
+	Endpoints           []string `json:"endpoints"`
+	DefaultZoneFallback bool     `json:"default_zone_fallback"`
+	ValidForSeconds     int      `json:"valid_for_seconds"`
+}

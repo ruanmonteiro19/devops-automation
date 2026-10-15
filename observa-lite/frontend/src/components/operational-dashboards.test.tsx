@@ -172,4 +172,64 @@ describe("Operational dashboards", () => {
     expect(screen.getByText("Valor estático configurado")).toBeTruthy();
     expect(screen.getByText("17")).toBeTruthy();
   });
+  it("persists panel order and full width after editing", async () => {
+    vi.mocked(api.apmServices).mockResolvedValue({
+      services: [service as never],
+    });
+    vi.mocked(api.createDashboard).mockResolvedValue(dashboard);
+    mount([
+      {
+        ...dashboard,
+        panels: [
+          ...dashboard.panels,
+          { ...dashboard.panels[0]!, id: "second", title: "Second panel" },
+        ],
+      },
+    ]);
+    fireEvent.click(screen.getByText("Editar"));
+    fireEvent.change(screen.getByLabelText("Largura do painel 1"), {
+      target: { value: "full" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Mover painel 1 para baixo" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(api.createDashboard).toHaveBeenCalled());
+    const saved = vi.mocked(api.createDashboard).mock.calls[0]![0];
+    expect(saved.panels.map((p) => p.id)).toEqual(["second", "requests"]);
+    expect(saved.panels[1]!.width).toBe("full");
+  });
+  it("duplicates a dashboard into a reviewable draft with new identities", async () => {
+    vi.mocked(api.apmServices).mockResolvedValue({
+      services: [service as never],
+    });
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Duplicar" }));
+    expect(api.createDashboard).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue("Operations (cópia)")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(api.createDashboard).toHaveBeenCalled());
+    const saved = vi.mocked(api.createDashboard).mock.calls[0]![0];
+    expect(saved.id).not.toBe(dashboard.id);
+    expect(saved.panels[0]!.id).not.toBe(dashboard.panels[0]!.id);
+  });
+  it("imports native JSON into an unsaved review draft", async () => {
+    vi.mocked(api.apmServices).mockResolvedValue({
+      services: [service as never],
+    });
+    mount();
+    const file = new File([JSON.stringify(dashboard)], "dashboard.json", {
+      type: "application/json",
+    });
+    Object.defineProperty(file, "text", {
+      value: async () => JSON.stringify(dashboard),
+    });
+    fireEvent.change(screen.getByLabelText("Arquivo de dashboard"), {
+      target: { files: [file] },
+    });
+    expect(
+      await screen.findByDisplayValue("Operations (importado)"),
+    ).toBeTruthy();
+    expect(api.createDashboard).not.toHaveBeenCalled();
+  });
 });

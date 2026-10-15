@@ -36,14 +36,18 @@ const blank: APMRule = {
 export function APMProblemsPage({
   demo,
   path,
+  initialCreate = false,
 }: {
   demo: boolean;
   path: string;
+  initialCreate?: boolean;
 }) {
   const rulesMode = path === "correlacao";
   const client = useQueryClient();
   const [status, setStatus] = useState(""),
-    [draft, setDraft] = useState<APMRule | null>(null),
+    [draft, setDraft] = useState<APMRule | null>(() =>
+      initialCreate && !demo && rulesMode ? { ...blank } : null,
+    ),
     [deleting, setDeleting] = useState<APMRule | null>(null),
     [selected, setSelected] = useState("");
   const [range] = useState(() => {

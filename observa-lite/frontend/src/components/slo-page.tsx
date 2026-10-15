@@ -42,11 +42,27 @@ const value = (n: number | null | undefined, suffix = "") =>
     : `${n.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}${suffix}`;
 const errorText = (e: unknown) =>
   e instanceof Error ? e.message : "Erro desconhecido";
-export function SLOPage({ demo = false }: { demo?: boolean }) {
+export function SLOPage({
+  demo = false,
+  initialCreate = false,
+}: {
+  demo?: boolean;
+  initialCreate?: boolean;
+}) {
   const client = useQueryClient();
   const [minutes, setMinutes] = useState(60);
   const [window, setWindow] = useState(() => windowFor(60));
-  const [editor, setEditor] = useState<Policy | null>(null);
+  const [editor, setEditor] = useState<Policy | null>(() =>
+    initialCreate && !demo
+      ? {
+          id: `slo-${Date.now()}`,
+          name: "",
+          service_id: "",
+          kind: "availability",
+          target_percent: 99.5,
+        }
+      : null,
+  );
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState<SLOEvaluation | null>(null);
   const query = useQuery({

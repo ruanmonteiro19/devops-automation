@@ -63,6 +63,9 @@ func validateDashboard(v *model.Dashboard) error {
 		if len(p.HTML)+len(p.CSS)+len(p.JS) > 100000 {
 			return dashboardInvalid("panel HTML, CSS and JS exceed 100000 bytes")
 		}
+		if p.Width != "" && p.Width != "half" && p.Width != "full" {
+			return dashboardInvalid("panel width must be half or full")
+		}
 		p.Kind = strings.ToLower(p.Kind)
 		switch p.Kind {
 		case "html", "stat":

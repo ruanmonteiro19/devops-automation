@@ -166,18 +166,39 @@
     font-family: var(--font-sans);
     letter-spacing: 0;
   }
-  button { cursor: pointer; }
+  button {
+    cursor: pointer;
+  }
 }
 
-html { color-scheme: dark; }
-.observa-scrollbar { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-.react-flow__controls button { background: var(--surface-raised); color: var(--foreground); border-color: var(--border); }
-.react-flow__minimap { background: var(--background); border: 1px solid var(--border); }
-.react-flow__edge-path { stroke: var(--primary); }
-.react-flow__edge-text { fill: var(--muted-foreground); }
-.react-flow__edge-textbg { fill: var(--surface); }
+html {
+  color-scheme: dark;
+}
+.observa-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.react-flow__controls button {
+  background: var(--surface-raised);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+.react-flow__minimap {
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+.react-flow__edge-path {
+  stroke: var(--primary);
+}
+.react-flow__edge-text {
+  fill: var(--muted-foreground);
+}
+.react-flow__edge-textbg {
+  fill: var(--surface);
+}
 /* Observa Enterprise — black/green, authoritative theme tokens */
-:root, .dark {
+:root,
+.dark {
   --background: oklch(0.105 0.008 151);
   --foreground: oklch(0.96 0.009 157);
   --card: oklch(0.17 0.012 153);
@@ -213,9 +234,184 @@ html { color-scheme: dark; }
   --chart-1: oklch(0.73 0.18 150);
   --chart-2: oklch(0.71 0.13 170);
   --chart-3: oklch(0.66 0.12 110);
-  --chart-4: oklch(0.80 0.13 90);
+  --chart-4: oklch(0.8 0.13 90);
   --chart-5: oklch(0.68 0.12 205);
 }
-.react-flow__node { transition: filter 160ms ease; }
-.react-flow__node:hover { filter: brightness(1.13); }
-::selection { background: oklch(0.45 0.11 151); color: white; }
+.react-flow__node {
+  transition: filter 160ms ease;
+}
+.react-flow__node:hover {
+  filter: brightness(1.13);
+}
+::selection {
+  background: oklch(0.45 0.11 151);
+  color: white;
+}
+
+/* Workspace design: layered neutral surfaces with an adjustable accent. */
+:root,
+.dark {
+  --radius: 0.85rem;
+  --background: oklch(0.155 0.018 270);
+  --foreground: oklch(0.95 0.008 270);
+  --card: oklch(0.195 0.023 270);
+  --card-foreground: var(--foreground);
+  --surface: oklch(0.195 0.023 270);
+  --surface-raised: oklch(0.235 0.026 270);
+  --popover: oklch(0.215 0.024 270);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.75 0.16 290);
+  --primary-foreground: oklch(0.16 0.04 290);
+  --secondary: oklch(0.26 0.03 270);
+  --secondary-foreground: var(--foreground);
+  --accent: oklch(0.29 0.05 285);
+  --accent-foreground: var(--foreground);
+  --muted: oklch(0.245 0.025 270);
+  --muted-foreground: oklch(0.72 0.025 270);
+  --border: oklch(0.34 0.025 270 / 65%);
+  --input: oklch(0.38 0.03 270);
+  --ring: var(--primary);
+  --sidebar: oklch(0.175 0.023 270);
+  --sidebar-foreground: oklch(0.8 0.025 270);
+  --sidebar-accent: oklch(0.27 0.045 285);
+  --sidebar-border: oklch(0.32 0.025 270 / 60%);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --nav-section: oklch(0.62 0.025 270);
+  --map-node: var(--surface-raised);
+  --map-node-border: oklch(0.55 0.08 285);
+  --chart-1: oklch(0.75 0.16 290);
+  --chart-2: oklch(0.76 0.13 200);
+  --chart-3: oklch(0.77 0.15 160);
+  --chart-4: oklch(0.8 0.14 80);
+  --chart-5: oklch(0.72 0.17 335);
+}
+html[data-theme="light"] {
+  color-scheme: light;
+  --background: oklch(0.97 0.008 275);
+  --foreground: oklch(0.25 0.035 270);
+  --surface: oklch(1 0 0);
+  --surface-raised: oklch(0.955 0.012 275);
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.51 0.22 290);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.93 0.02 275);
+  --secondary-foreground: var(--foreground);
+  --accent: oklch(0.93 0.035 290);
+  --accent-foreground: var(--foreground);
+  --muted: oklch(0.93 0.015 275);
+  --muted-foreground: oklch(0.49 0.035 270);
+  --border: oklch(0.87 0.02 275);
+  --input: oklch(0.79 0.025 275);
+  --sidebar: oklch(0.985 0.006 275);
+  --sidebar-foreground: oklch(0.4 0.035 270);
+  --sidebar-accent: oklch(0.93 0.04 290);
+  --sidebar-border: var(--border);
+  --nav-section: oklch(0.54 0.025 270);
+  --success: oklch(0.48 0.14 155);
+  --warning: oklch(0.5 0.13 70);
+  --danger: oklch(0.53 0.2 25);
+  --map-node: var(--surface);
+  --shadow-color: oklch(0.3 0.04 270 / 12%);
+}
+html[data-accent="cyan"] {
+  --primary: oklch(0.76 0.13 210);
+  --primary-foreground: oklch(0.16 0.03 210);
+  --ring: var(--primary);
+}
+html[data-accent="green"] {
+  --primary: oklch(0.77 0.17 155);
+  --primary-foreground: oklch(0.16 0.03 155);
+  --ring: var(--primary);
+}
+html[data-theme="light"][data-accent="cyan"] {
+  --primary: oklch(0.48 0.12 220);
+  --primary-foreground: oklch(0.99 0 0);
+}
+html[data-theme="light"][data-accent="green"] {
+  --primary: oklch(0.47 0.13 155);
+  --primary-foreground: oklch(0.99 0 0);
+}
+.workspace-tools {
+  background: color-mix(in oklch, var(--surface) 65%, var(--background));
+}
+.workspace-main {
+  background-image: radial-gradient(
+    ellipse at 85% 0%,
+    color-mix(in oklch, var(--primary) 5%, transparent),
+    transparent 50%
+  );
+}
+.workspace-hero {
+  background: linear-gradient(
+    115deg,
+    var(--surface) 35%,
+    color-mix(in oklch, var(--primary) 14%, var(--surface))
+  );
+}
+.hero-orbit {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  right: 8%;
+  top: 0;
+  border: 1px solid color-mix(in oklch, var(--primary) 20%, transparent);
+  border-radius: 50%;
+  transform: rotate(-25deg);
+  box-shadow:
+    0 0 0 40px color-mix(in oklch, var(--primary) 4%, transparent),
+    0 0 0 80px color-mix(in oklch, var(--primary) 3%, transparent);
+}
+.hero-orbit::after {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  top: 34px;
+  right: 32px;
+  border-radius: 8px;
+  background: var(--primary);
+  box-shadow: 0 0 45px color-mix(in oklch, var(--primary) 45%, transparent);
+}
+.workspace-shortcut {
+  box-shadow: 0 4px 18px color-mix(in oklch, var(--background) 30%, transparent);
+}
+.workspace-main table th {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  background: color-mix(in oklch, var(--surface-raised) 70%, transparent);
+}
+.workspace-main table td {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.workspace-main table tbody tr:hover {
+  background: color-mix(in oklch, var(--primary) 4%, var(--surface));
+}
+html[data-density="compact"] .workspace-main table td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+@media (max-width: 768px) {
+  .hero-orbit {
+    right: -200px;
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+::selection {
+  background: color-mix(in oklch, var(--primary) 40%, var(--background));
+  color: var(--foreground);
+}

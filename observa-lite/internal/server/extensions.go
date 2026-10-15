@@ -31,7 +31,7 @@ func extensionCatalog(sources []model.DataSource, templates []model.Template, ag
 		{ID: "http", Name: "HTTP Monitor", Category: "Monitoramento", Description: "Verificações ativas HTTP", Available: true, Integration: "template"},
 		{ID: "tcp", Name: "TCP Monitor", Category: "Monitoramento", Description: "Verificações de conectividade TCP", Available: true, Integration: "template"},
 		{ID: "mcp", Name: "MCP Server", Category: "IA e Integrações", Description: "Ferramentas MCP somente leitura", Available: true, Configured: true, Integration: "mcp"},
-		{ID: "snmp", Name: "SNMP Exporter / IF-MIB", Category: "Rede", Description: "Leitura de equipamentos e interfaces via SNMP Exporter", Available: true, Integration: "devices"},
+		{ID: "snmp", Name: "SNMP nativo / IF-MIB", Category: "Rede", Description: "Coleta SNMPv1/v2c/v3 direta, interfaces e importação parcial de templates Zabbix", Available: true, Integration: "devices"},
 		{ID: "zabbix", Name: "Zabbix", Category: "Integrações", Description: "Importação de itens, eventos e triggers", Integration: "future"},
 		{ID: "opentelemetry", Name: "OpenTelemetry", Category: "APM", Description: "Traces, logs e métricas OTLP HTTP com limites locais", Available: true, Integration: "otlp"},
 		{ID: "kubernetes", Name: "Kubernetes / OpenShift", Category: "Cloud", Description: "Descoberta de workloads, namespaces e serviços", Integration: "future"},
@@ -108,6 +108,8 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 			"cloud_inventory_aws_ec2":               true,
 			"cloud_inventory_azure_arm":             true,
 			"cloud_inventory_gcp_compute":           true,
+			"snmp_native_read":                      true,
+			"zabbix_template_import_partial":        true,
 			"snmp_exporter_read":                    true,
 			"topology_views":                        true,
 			"service_map":                           true, // Instrumented parent-child span relationships.

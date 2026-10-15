@@ -69,9 +69,27 @@ export function TelemetryPage({
 }) {
   const logs = path === "telemetria-logs";
   const [minutes, setMinutes] = useState(60),
-    [service, setService] = useState(""),
-    [filter, setFilter] = useState("");
-  const [submitted, setSubmitted] = useState<string | null>(null);
+    [service, setService] = useState(
+      () => new URLSearchParams(location.search).get("service") || "",
+    ),
+    [filter, setFilter] = useState(
+      () =>
+        new URLSearchParams(location.search).get(logs ? "trace_id" : "name") ||
+        "",
+    );
+  const [submitted, setSubmitted] = useState<string | null>(() => {
+    const query = new URLSearchParams(location.search);
+    if (!query.get("service")) return null;
+    const now = new Date();
+    const p = new URLSearchParams({
+      from: new Date(now.getTime() - 60 * 60000).toISOString(),
+      to: now.toISOString(),
+      limit: "200",
+      service: query.get("service") || "",
+    });
+    if (query.get("name") && !logs) p.set("name", query.get("name") || "");
+    return p.toString();
+  });
   const query = useQuery({
     queryKey: ["telemetry", logs, submitted],
     queryFn: () =>

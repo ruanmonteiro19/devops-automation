@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/ruanmonteiro19/observa-lite/internal/collectors"
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
@@ -26,15 +28,33 @@ func (s *Server) integrationList(w http.ResponseWriter, r *http.Request) {
 	write(w, 200, map[string]any{"integrations": s.Store.Integrations(), "results": s.Store.IntegrationResults(), "collecting": collecting})
 }
 func (s *Server) integrationSave(w http.ResponseWriter, r *http.Request) {
-	var p model.Integration
-	if !decode(w, r, &p) {
+	var request struct {
+		model.Integration
+		Credentials *model.SNMPCredentials `json:"credentials,omitempty"`
+	}
+	if !decode(w, r, &request) {
 		return
+	}
+	p := request.Integration
+	secret, err := s.prepareSNMPProfile(p, request.Credentials)
+	if err != nil {
+		fail(w, 400, err)
+		return
+	}
+	if p.Kind == "snmp" {
+		if old, ok := s.Store.Integration(p.ID); ok {
+			p.SNMPRevision = old.SNMPRevision
+		}
+		if secret != "" {
+			sum := sha256.Sum256([]byte(secret))
+			p.SNMPRevision = hex.EncodeToString(sum[:8])
+		}
 	}
 	if e := store.ValidateIntegration(p); e != nil {
 		fail(w, 400, e)
 		return
 	}
-	if e := s.Store.PutIntegration(p); e != nil {
+	if e := s.Store.PutIntegrationWithSecret(p, secret); e != nil {
 		fail(w, 500, e)
 		return
 	}
@@ -79,7 +99,7 @@ func (s *Server) runProfile(ctx context.Context, p model.Integration) (model.Int
 		}
 	} else {
 		result.SuccessAt = result.At
-		if p.Kind == "snmp_exporter" {
+		if p.Kind == "snmp_exporter" || p.Kind == "snmp" {
 			if previous, ok := s.Store.IntegrationResults()[p.ID]; ok {
 				collectors.DeviceRates(&result, previous)
 			}
@@ -129,7 +149,11 @@ func (s *Server) pollIntegrations(ctx context.Context) {
 		if !p.Enabled {
 			continue
 		}
-		if previous, ok := results[p.ID]; ok && time.Since(previous.At) < 5*time.Minute {
+		interval := 5 * time.Minute
+		if p.Kind == "snmp" && p.IntervalSeconds >= 30 {
+			interval = time.Duration(p.IntervalSeconds) * time.Second
+		}
+		if previous, ok := results[p.ID]; ok && time.Since(previous.At) < interval {
 			continue
 		}
 		p := p

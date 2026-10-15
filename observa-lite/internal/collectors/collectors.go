@@ -18,6 +18,8 @@ import (
 
 type Runner struct {
 	AllowPrivate      bool
+	SNMPCredentials   func(string) (model.SNMPCredentials, error)
+	NetworkTemplate   func(string) (model.NetworkTemplate, bool)
 	integrationClient func() *http.Client
 }
 

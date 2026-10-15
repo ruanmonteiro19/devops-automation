@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/ruanmonteiro19/observa-lite/internal/collectors"
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
+	"github.com/ruanmonteiro19/observa-lite/internal/network"
 	"github.com/ruanmonteiro19/observa-lite/internal/store"
 	"io"
 	"log"
@@ -35,7 +36,12 @@ type Server struct {
 }
 
 func New(st *store.Store, admin, agent string, allowPrivate bool) *Server {
-	return &Server{Store: st, AdminToken: admin, AgentToken: agent, Runner: collectors.Runner{AllowPrivate: allowPrivate}, running: map[string]bool{}}
+	return &Server{Store: st, AdminToken: admin, AgentToken: agent, Runner: collectors.Runner{AllowPrivate: allowPrivate, SNMPCredentials: func(id string) (model.SNMPCredentials, error) { return st.SNMPCredentials(admin, id) }, NetworkTemplate: func(id string) (model.NetworkTemplate, bool) {
+		if id == "generic-snmp" {
+			return network.Builtin(), true
+		}
+		return st.NetworkTemplate(id)
+	}}, running: map[string]bool{}}
 }
 func (s *Server) Handler() http.Handler {
 	m := http.NewServeMux()
@@ -58,6 +64,9 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("GET /api/v1/storage", s.adminAuth(func(w http.ResponseWriter, r *http.Request) { write(w, 200, s.Store.StorageInfo()) }))
 	s.rumRoutes(m)
 	s.workspaceRoutes(m)
+	m.HandleFunc("GET /api/v1/network/templates", s.adminAuth(s.networkTemplateList))
+	m.HandleFunc("DELETE /api/v1/network/templates/{id}", s.adminAuth(s.networkTemplateDelete))
+	m.HandleFunc("POST /api/v1/network/templates/import", s.adminAuth(s.networkTemplateImport))
 	m.HandleFunc("GET /api/v1/integrations", s.adminAuth(s.integrationList))
 	m.HandleFunc("POST /api/v1/integrations", s.adminAuth(s.integrationSave))
 	m.HandleFunc("DELETE /api/v1/integrations/{id}", s.adminAuth(s.integrationDelete))

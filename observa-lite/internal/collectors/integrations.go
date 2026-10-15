@@ -69,6 +69,8 @@ func (r Runner) CollectIntegration(ctx context.Context, p model.Integration) (mo
 		result.Resources, result.Truncated, e = r.azureInventory(ctx, p)
 	case "gcp":
 		result.Resources, result.Truncated, e = r.gcpInventory(ctx, p)
+	case "snmp":
+		result.Resources, result.Truncated, e = r.nativeDeviceInventory(ctx, p)
 	case "snmp_exporter":
 		result.Resources, result.Truncated, e = r.deviceInventory(ctx, p)
 	default:

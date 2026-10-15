@@ -180,6 +180,24 @@ func DeviceRates(current *model.IntegrationResult, previous model.IntegrationRes
 		if reboot {
 			continue
 		}
+		for attribute, transform := range resource.Attributes {
+			if !strings.HasPrefix(attribute, "preprocessing:") {
+				continue
+			}
+			key := strings.TrimPrefix(attribute, "preprocessing:")
+			currentValue, has := resource.Metrics[key+".raw_counter"]
+			oldValue, had := prior.Metrics[key+".raw_counter"]
+			if !has || !had || (transform == "per_second" && currentValue < oldValue) {
+				continue
+			}
+			value := currentValue - oldValue
+			if transform == "per_second" {
+				value /= seconds
+			}
+			if !math.IsNaN(value) && !math.IsInf(value, 0) {
+				resource.Metrics[key] = value
+			}
+		}
 		interfaces := map[string]model.DeviceInterface{}
 		for _, v := range prior.Interfaces {
 			interfaces[v.Index] = v

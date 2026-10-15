@@ -133,7 +133,7 @@ func (s *Server) topologyViews(w http.ResponseWriter, r *http.Request) {
 	profiles := s.Store.Integrations()
 	results := s.Store.IntegrationResults()
 	for _, p := range profiles {
-		if view != "all" && view != p.Kind && !(view == "devices" && p.Kind == "snmp_exporter") {
+		if view != "all" && view != p.Kind && !(view == "devices" && (p.Kind == "snmp_exporter" || p.Kind == "snmp")) {
 			continue
 		}
 		result, ok := results[p.ID]

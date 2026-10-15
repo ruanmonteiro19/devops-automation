@@ -1,3 +1,5 @@
+> Rede nativa: [SNMPv1/v2c/v3, templates Zabbix com relatório de compatibilidade e validação](docs/NETWORK-NATIVE-AND-ZABBIX.md).
+
 > Vetra 0.5: [Contas, downloads, correção de formulários HTTP, SQLite/PostgreSQL interno e componentes separados](docs/PLATFORM-0.5.md).
 
 > Injeção RUM: [Módulo Node sem edição de código, proxy de aplicações e gateway RUM](docs/AUTO-INJECTION-AND-PROXIES.md).
@@ -18,7 +20,7 @@ O agente de processos permanece separado: ele não injeta instrumentação nas a
 
 Comece pelo [guia da entrega](docs/RELEASE-0.3.0.md). Consulte a [cobertura funcional](docs/FEATURE-COVERAGE.md), [configuração OTLP](docs/APM-OTLP.md) e [investigação do playground](docs/reverse-engineering/DYNATRACE-PLAYGROUND-2026-10-15.md).
 
-As seções históricas abaixo descrevem fases anteriores do MVP. Afirmações antigas de ausência de tracing se referem a essas fases; funcionalidades como gRPC, autoinstrumentação, RCA causal, SSO e RBAC continuam ausentes nesta branch.
+As seções históricas abaixo descrevem fases anteriores do MVP. Afirmações antigas de ausência de tracing se referem a essas fases; os guias recentes acima descrevem o estado atual, incluindo usuários/RBAC e SNMP nativo. gRPC de ingestão, SSO e paridade completa com os produtos de referência não estão implementados.
 
 
 MVP de observabilidade em português com **agente Linux de descoberta**, descoberta de serviços, **Service Mapping**, **Network Mapping (fluxos IP)**, templates HTTP/TCP, Data Sources Prometheus/JSON, dashboards personalizáveis, HTML Graphics isolado e ferramentas MCP de consulta e configuração.
@@ -130,13 +132,13 @@ curl -s http://127.0.0.1:8080/mcp -H "X-API-Key: $OBSERVA_ADMIN_TOKEN" \
 - `/proc` e sockets não dão métricas APM de métodos, consultas SQL, erros HTTP ou traces distribuídos. O tráfego TLS não é descriptografado.
 - O agente **não** injeta código nem utiliza eBPF. A correlação implementada cruza `PID → socket → IP/porta → processo remoto` e registra desaparecimentos de serviços. Falhas HTTP/TCP de templates também geram incidentes.
 - Armazenamento local JSON com escrita atômica é adequado para laboratório pequeno, **não** para milhares de hosts. Próximas etapas: PostgreSQL/ClickHouse, histórico de métricas, retenção e backup.
-- Há leitura de SNMP exporter e usuários locais com perfis administrador/leitura. Não há LLD, auto-instrumentação Java/.NET, IA generativa, MCP Client ou paridade de dashboards com Grafana.
+- Há SNMP nativo v1/v2c/v3, leitura de exporter legado, importação parcial de templates Zabbix e LLD numérica sem filtros, além de usuários locais administrador/leitura. Consulte o relatório de compatibilidade; Java/.NET automático, IA generativa, MCP Client e paridade de dashboards com Grafana não estão implementados.
 - O código e a interface são originais; as referências Coroot, Checkmk, Zabbix e Grafana foram estudadas conceitualmente, sem incorporar código desses projetos.
 
 ## Roadmap
 
 1. Persistência escalável, identidade de entidades e agentes eBPF com agregação local.
-2. SNMPv3, LLDP e descoberta de interfaces / equipamentos; templates com macros e LLD.
+2. Expandir compatibilidade Zabbix, LLD dependente/filtros, LLDP/CDP, coleta remota e receptores de fluxos.
 3. OpenTelemetry OTLP ingestão, spans, logs, métricas e dependências L7.
 4. Auto-instrumentação opcional Java/.NET sem modificar o código das aplicações.
 5. Correlação temporal, SLO, regras de saúde, incidentes e RCA explicável.

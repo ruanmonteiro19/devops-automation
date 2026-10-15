@@ -4,6 +4,13 @@ import "time"
 
 // Profiles store environment variable names, never credentials.
 type Integration struct {
+	IntervalSeconds  int    `json:"interval_seconds,omitempty"`
+	SNMPRevision     string `json:"snmp_revision,omitempty"`
+	SNMPVersion      string `json:"snmp_version,omitempty"`
+	SNMPPort         uint16 `json:"snmp_port,omitempty"`
+	TemplateID       string `json:"template_id,omitempty"`
+	DeviceType       string `json:"device_type,omitempty"`
+	HostGroup        string `json:"host_group,omitempty"`
 	ID               string `json:"id"`
 	Name             string `json:"name"`
 	Kind             string `json:"kind"`

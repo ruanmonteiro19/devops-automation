@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 var integrationID = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,100}$`)
@@ -30,6 +31,19 @@ func ValidateIntegration(v model.Integration) error {
 		if !cloudScope.MatchString(v.Scope) {
 			return errors.New("subscription or project required")
 		}
+	case "snmp":
+		if v.IntervalSeconds != 0 && (v.IntervalSeconds < 30 || v.IntervalSeconds > 86400) {
+			return errors.New("intervalo SNMP precisa estar entre 30 e 86400 segundos")
+		}
+		if net.ParseIP(v.Target) == nil && !regexp.MustCompile(`^[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,251}[a-zA-Z0-9])?$`).MatchString(v.Target) {
+			return errors.New("endereço IP ou DNS válido obrigatório")
+		}
+		if v.SNMPVersion != "1" && v.SNMPVersion != "2c" && v.SNMPVersion != "3" {
+			return errors.New("versão SNMP inválida")
+		}
+		if len(v.HostGroup) > 128 || len(v.DeviceType) > 64 || !integrationID.MatchString(v.TemplateID) {
+			return errors.New("template ou grupo inválido")
+		}
 	case "snmp_exporter":
 		u, e := url.Parse(v.Endpoint)
 		if e != nil || u.Hostname() == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
@@ -44,7 +58,7 @@ func ValidateIntegration(v model.Integration) error {
 	default:
 		return errors.New("unsupported integration")
 	}
-	if v.Kind != "snmp_exporter" && !credentialPrefix.MatchString(v.CredentialPrefix) {
+	if v.Kind != "snmp_exporter" && v.Kind != "snmp" && !credentialPrefix.MatchString(v.CredentialPrefix) {
 		return errors.New("credential prefix must start with OBSERVA_ and contain uppercase letters, numbers and underscores")
 	}
 	return nil
@@ -65,25 +79,44 @@ func (s *Store) Integration(id string) (model.Integration, bool) {
 	v, ok := s.data.Integrations[id]
 	return v, ok
 }
-func (s *Store) PutIntegration(v model.Integration) error {
+func (s *Store) PutIntegration(v model.Integration) error { return s.PutIntegrationWithSecret(v, "") }
+func (s *Store) PutIntegrationWithSecret(v model.Integration, secret string) error {
 	if e := ValidateIntegration(v); e != nil {
 		return e
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if v.Kind == "snmp" {
+		if secret == "" && s.data.IntegrationSecrets[v.ID] == "" {
+			return errors.New("credenciais SNMP não configuradas")
+		}
+		if v.TemplateID != "generic-snmp" {
+			if _, ok := s.data.NetworkTemplates[v.TemplateID]; !ok {
+				return errors.New("template de rede não encontrado")
+			}
+		}
+	}
 	old, exists := s.data.Integrations[v.ID]
+	if s.data.IntegrationSecrets == nil {
+		s.data.IntegrationSecrets = map[string]string{}
+	}
+	oldSecret := s.data.IntegrationSecrets[v.ID]
 	if !exists && len(s.data.Integrations) >= 50 {
 		return errors.New("max 50 integration profiles")
 	}
 	previous, hadResult := s.data.IntegrationResults[v.ID]
 	s.data.Integrations[v.ID] = v
+	if secret != "" {
+		s.data.IntegrationSecrets[v.ID] = secret
+	}
 	comparison := old
 	comparison.Enabled = v.Enabled
 	comparison.Name = v.Name
-	if comparison != v {
+	if comparison != v || secret != "" {
 		delete(s.data.IntegrationResults, v.ID)
 	}
 	if e := s.persist(); e != nil {
+		s.data.IntegrationSecrets[v.ID] = oldSecret
 		if exists {
 			s.data.Integrations[v.ID] = old
 		} else {
@@ -101,10 +134,13 @@ func (s *Store) DeleteIntegration(id string) error {
 	defer s.mu.Unlock()
 	old, ok := s.data.Integrations[id]
 	result, had := s.data.IntegrationResults[id]
+	oldSecret := s.data.IntegrationSecrets[id]
+	delete(s.data.IntegrationSecrets, id)
 	delete(s.data.Integrations, id)
 	delete(s.data.IntegrationResults, id)
 	if e := s.persist(); e != nil {
 		if ok {
+			s.data.IntegrationSecrets[id] = oldSecret
 			s.data.Integrations[id] = old
 		}
 		if had {
@@ -140,12 +176,18 @@ func (s *Store) SaveIntegrationResult(profile model.Integration, result model.In
 		return errors.New("older integration result rejected")
 	}
 	s.data.IntegrationResults[profile.ID] = cloned
+	oldMetrics := s.data.MetricPoints
+	if (profile.Kind == "snmp" || profile.Kind == "snmp_exporter") && result.Status == "ok" && (!had || !previous.At.Equal(result.At)) {
+		batch := networkMetricBatch(profile, result)
+		s.data.MetricPoints = retainSignals(oldMetrics, batch, MaxMetricPoints, func(v model.MetricPoint) time.Time { return v.Timestamp })
+	}
 	total := 0
 	for _, value := range s.data.IntegrationResults {
 		encoded, _ := json.Marshal(value.Resources)
 		total += len(encoded)
 	}
 	if total > 16<<20 {
+		s.data.MetricPoints = oldMetrics
 		if had {
 			s.data.IntegrationResults[profile.ID] = previous
 		} else {
@@ -154,6 +196,7 @@ func (s *Store) SaveIntegrationResult(profile model.Integration, result model.In
 		return errors.New("integration inventory exceeds 16 MiB")
 	}
 	if e = s.persist(); e != nil {
+		s.data.MetricPoints = oldMetrics
 		if had {
 			s.data.IntegrationResults[profile.ID] = previous
 		} else {

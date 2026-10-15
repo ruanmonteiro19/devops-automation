@@ -1,4 +1,11 @@
 import {
+  NativeNetworkFields,
+  NetworkTemplateFields,
+  NetworkTemplatesPanel,
+  type NetworkCatalog,
+  type SNMPCredentials,
+} from "./network-configuration";
+import {
   ConfigurationForm,
   ConfigField,
   ConfigurationTabs,
@@ -35,6 +42,13 @@ import {
 import { request } from "@/lib/api";
 import { downloadJSON } from "@/lib/workspace";
 export type Integration = {
+  interval_seconds?: number;
+  snmp_version?: string;
+  snmp_port?: number;
+  template_id?: string;
+  device_type?: string;
+  host_group?: string;
+  credentials?: SNMPCredentials;
   id: string;
   name: string;
   kind: string;
@@ -79,12 +93,22 @@ const labels: Record<string, string> = {
   aws: "AWS — EC2",
   azure: "Azure — resource manager",
   gcp: "GCP — Compute engine",
-  snmp_exporter: "Network device — SNMP exporter",
+  snmp_exporter: "SNMP exporter (legado)",
+  snmp: "SNMP nativo",
 };
 const blank = (devices: boolean): Integration => ({
   id: newID(),
   name: "",
-  kind: devices ? "snmp_exporter" : "aws",
+  kind: devices ? "snmp" : "aws",
+  ...(devices
+    ? {
+        snmp_version: "2c",
+        snmp_port: 161,
+        template_id: "generic-snmp",
+        device_type: "generic",
+        credentials: { community: "" },
+      }
+    : {}),
   enabled: true,
   region: "us-east-1",
   scope: "",
@@ -179,6 +203,11 @@ export function IntegrationManager({
     refetchInterval: 5000,
     retry: false,
   });
+  const networkCatalog = useQuery({
+    queryKey: ["network-templates"],
+    queryFn: () => request<NetworkCatalog>("/api/v1/network/templates"),
+    enabled: devices && !demo,
+  });
   const invalidate = () => {
     void client.invalidateQueries({ queryKey: ["integrations"] });
     void client.invalidateQueries({ queryKey: ["topology"] });
@@ -216,7 +245,7 @@ export function IntegrationManager({
     if (!demo && draft) save.mutate(draft);
   }
   const profiles = (query.data?.integrations ?? []).filter(
-    (p) => (p.kind === "snmp_exporter") === devices,
+    (p) => ["snmp_exporter", "snmp"].includes(p.kind) === devices,
   );
   const prefix = draft?.credential_prefix || "OBSERVA_CLOUD";
   const envHelp =
@@ -237,7 +266,7 @@ export function IntegrationManager({
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             {devices
-              ? "Dados de sistema e interfaces via prometheus SNMP exporter. Os módulos e a autenticação SNMP são configurados no exporter."
+              ? "Coleta SNMP direta: sistema, interfaces e métricas de templates. Cadastre o equipamento e suas credenciais; o Vetra Server executa a consulta."
               : "Inventário de recursos via API dos provedores. Credenciais somente no ambiente do servidor."}
           </p>
         </div>
@@ -252,6 +281,7 @@ export function IntegrationManager({
           {devices ? "Adicionar equipamento" : "Conectar cloud"}
         </Button>
       </header>
+      {devices && <NetworkTemplatesPanel demo={demo} />}
       {demo && (
         <p className="border p-4 text-xs">
           Demonstração: conexões externas e gravação desativadas.
@@ -310,6 +340,15 @@ export function IntegrationManager({
                     : result?.status || "Sem coleta"}
                 </p>
               </div>
+              {devices && (
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={`/metricas?service=${encodeURIComponent(p.name)}&name=network.snmp.sysUpTime`}
+                  >
+                    Histórico de métricas
+                  </a>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -339,7 +378,7 @@ export function IntegrationManager({
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label={`EXCLUIR ${p.name}`}
+                aria-label={`Excluir ${p.name}`}
                 disabled={demo}
                 onClick={() => {
                   remove.reset();
@@ -448,8 +487,8 @@ export function IntegrationManager({
               {devices ? "Configurar equipamento" : "Configurar cloud"}
             </DialogTitle>
             <DialogDescription>
-              Perfil de coleta somente leitura. A coleta automática ocorre a
-              cada 5 minutos.
+              Perfil de coleta somente leitura. A coleta usa o intervalo
+              configurado; padrão de 5 minutos.
             </DialogDescription>
           </DialogHeader>
           {draft && (
@@ -485,7 +524,10 @@ export function IntegrationManager({
                               }
                             >
                               {Object.entries(labels)
-                                .filter(([key]) => key !== "snmp_exporter")
+                                .filter(
+                                  ([key]) =>
+                                    !["snmp_exporter", "snmp"].includes(key),
+                                )
                                 .map(([key, label]) => (
                                   <option key={key} value={key}>
                                     {label}
@@ -493,6 +535,13 @@ export function IntegrationManager({
                                 ))}
                             </select>
                           </ConfigField>
+                        )}
+                        {devices && draft.kind === "snmp" && (
+                          <NetworkTemplateFields
+                            draft={draft}
+                            onChange={setDraft}
+                            catalog={networkCatalog.data}
+                          />
                         )}
                         <ConfigField className="flex items-center gap-2 text-sm">
                           <input
@@ -565,7 +614,14 @@ export function IntegrationManager({
                             />
                           </ConfigField>
                         )}
-                        {devices && (
+                        {devices && draft.kind === "snmp" && (
+                          <NativeNetworkFields
+                            draft={draft}
+                            onChange={setDraft}
+                            catalog={networkCatalog.data}
+                          />
+                        )}
+                        {devices && draft.kind === "snmp_exporter" && (
                           <>
                             <ConfigField className="block text-sm">
                               URL base do SNMP exporter
@@ -628,32 +684,61 @@ export function IntegrationManager({
                   {
                     id: "ajuda",
                     title: "Ajuda e credenciais",
-                    content: (
-                      <div className="configuration-help">
-                        <h3>Como funciona a coleta</h3>
-                        <p>
-                          {devices
-                            ? "O servidor consulta um SNMP exporter já configurado. Informe o endereço do exporter e o IP ou DNS do equipamento; a comunidade e as credenciais SNMPv3 ficam no exporter."
-                            : "As credenciais são lidas do ambiente do servidor. Informe o provedor e o escopo para coletar o inventário autorizado."}
-                        </p>{" "}
-                        <div className="border bg-background p-4">
-                          <p className="mb-3 text-xs font-semibold">
-                            Configurar no ambiente do servidor
+                    content:
+                      draft.kind === "snmp" ? (
+                        <div className="configuration-help">
+                          <h3>Monitoramento SNMP direto</h3>
+                          <p>
+                            O Vetra Server consulta o equipamento pela porta UDP
+                            configurada, no intervalo do perfil. Use “Coletar
+                            agora” para testar após salvar.
                           </p>
-                          <pre
-                            className="overflow-x-auto text-xs normal-case"
-                            style={{ textTransform: "none" }}
-                          >
-                            {envHelp}
-                          </pre>
-                          <p className="mt-3 text-xs text-muted-foreground">
-                            Não cole credenciais neste formulário. Consulte o
-                            guia de integrações do projeto para injetar as
-                            variáveis no container.
+                          <p>
+                            Autorize o IP do servidor na ACL SNMP do
+                            equipamento. Para rede interna, habilite
+                            OBSERVA_ALLOW_PRIVATE_TARGETS no servidor.
+                          </p>
+                          <p>
+                            Switches, roteadores, firewalls, wireless, UPS e
+                            outros equipamentos podem expor MIBs diferentes. O
+                            perfil padrão lê sistema e interfaces; templates
+                            importados acrescentam os OIDs compatíveis. Escolher
+                            o tipo do equipamento organiza o inventário, sem
+                            presumir métricas que ele não fornece.
+                          </p>
+                          <p>
+                            Templates Zabbix são analisados antes da importação.
+                            O relatório identifica componentes incompatíveis.
+                            NetFlow, IPFIX, traps e coleta remota via Relay
+                            ainda não estão disponíveis neste coletor.
                           </p>
                         </div>
-                      </div>
-                    ),
+                      ) : (
+                        <div className="configuration-help">
+                          <h3>Como funciona a coleta</h3>
+                          <p>
+                            {devices
+                              ? "O servidor consulta um SNMP exporter já configurado. Informe o endereço do exporter e o IP ou DNS do equipamento; a comunidade e as credenciais SNMPv3 ficam no exporter."
+                              : "As credenciais são lidas do ambiente do servidor. Informe o provedor e o escopo para coletar o inventário autorizado."}
+                          </p>{" "}
+                          <div className="border bg-background p-4">
+                            <p className="mb-3 text-xs font-semibold">
+                              Configurar no ambiente do servidor
+                            </p>
+                            <pre
+                              className="overflow-x-auto text-xs normal-case"
+                              style={{ textTransform: "none" }}
+                            >
+                              {envHelp}
+                            </pre>
+                            <p className="mt-3 text-xs text-muted-foreground">
+                              Não cole credenciais neste formulário. Consulte o
+                              guia de integrações do projeto para injetar as
+                              variáveis no container.
+                            </p>
+                          </div>
+                        </div>
+                      ),
                   },
                 ]}
               />

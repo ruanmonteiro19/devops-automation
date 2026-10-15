@@ -14,6 +14,8 @@ import (
 )
 
 type persisted struct {
+	NetworkTemplates   map[string]model.NetworkTemplate   `json:"network_templates,omitempty"`
+	IntegrationSecrets map[string]string                  `json:"integration_secrets,omitempty"`
 	Users              map[string]storedUser              `json:"users,omitempty"`
 	Sessions           map[string]LoginSession            `json:"sessions,omitempty"`
 	Workspace          map[string]model.WorkspaceObject   `json:"workspace,omitempty"`

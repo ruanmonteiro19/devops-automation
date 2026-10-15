@@ -48,6 +48,8 @@ Na interface, abra **Cloud Providers → Conectar Cloud**, selecione provedor, r
 
 ## Network Devices
 
+Novos cadastros usam [SNMP nativo](NETWORK-NATIVE-AND-ZABBIX.md): IP/DNS, porta, versão e credenciais no próprio Vetra. O exporter não é mais obrigatório. As instruções abaixo descrevem os perfis legados de exporter.
+
 Se já possui SNMP Exporter acessível ao servidor, use-o. Para uma instância no mesmo Compose:
 
 ```bash

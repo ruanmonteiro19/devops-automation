@@ -162,21 +162,36 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: {
         "Content-Type": "application/json",
         ...(token ? { "X-API-Key": token } : {}),
+        ...(window.sessionStorage.getItem("vetra-csrf")
+          ? { "X-CSRF-Token": window.sessionStorage.getItem("vetra-csrf")! }
+          : {}),
         ...init?.headers,
       },
     });
     if (!response.ok) {
-      const detail =
-        response.status === 400 ? (await response.text()).slice(0, 300) : "";
+      let detail = [400, 403, 429].includes(response.status)
+        ? (await response.text()).slice(0, 300)
+        : "";
+      try {
+        const parsed = JSON.parse(detail);
+        if (typeof parsed.error === "string") detail = parsed.error;
+      } catch {
+        /* plain text API errors */
+      }
       throw new ApiError(
         response.status,
         response.status === 401
-          ? "Token inválido ou ausente"
+          ? path === "/api/v1/auth/login"
+            ? "Usuário ou senha inválidos"
+            : "Token inválido ou ausente"
           : detail || `Falha na API (${response.status})`,
       );
     }
     if (response.status === 204) return undefined as T;
-    return (await response.json()) as T;
+    const result = await response.json();
+    if (typeof result?.csrf === "string")
+      window.sessionStorage.setItem("vetra-csrf", result.csrf);
+    return result as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (error instanceof DOMException && error.name === "AbortError")

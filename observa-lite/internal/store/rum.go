@@ -368,3 +368,40 @@ func rumEventKey(e model.RUMEvent) string {
 	}
 	return e.AppID + ":" + e.ID
 }
+
+// RUMActivity only reports actual retained browser telemetry, never discovery probes.
+func (s *Store) RUMActivity(id string) map[string]any {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	app, ok := s.data.RUMApplications[id]
+	sessions := map[string]bool{}
+	replays := map[string]bool{}
+	pages := 0
+	var last time.Time
+	cutoff := time.Now().Add(-24 * time.Hour)
+	for _, e := range s.data.RUMEvents {
+		if e.AppID != id || e.At.Before(cutoff) {
+			continue
+		}
+		sessions[e.SessionID] = true
+		if e.Kind == "page_view" || e.Kind == "navigation" {
+			pages++
+		}
+		if e.At.After(last) {
+			last = e.At
+		}
+	}
+	for _, c := range s.data.RUMReplay {
+		if c.AppID == id && !c.At.Before(cutoff) {
+			replays[c.SessionID] = true
+		}
+	}
+	return map[string]any{"configured": ok, "test_url": firstOrigin(app.Origins), "enabled": app.Enabled, "replay_enabled": app.ReplayEnabled, "sessions": len(sessions), "pages": pages, "replay_sessions": len(replays), "last_beacon": last}
+}
+
+func firstOrigin(origins []string) string {
+	if len(origins) > 0 {
+		return origins[0]
+	}
+	return ""
+}

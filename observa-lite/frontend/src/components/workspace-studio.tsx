@@ -1,3 +1,4 @@
+import { newID } from "@/lib/id";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { request } from "../lib/api";
@@ -44,7 +45,7 @@ type Run = {
   result: Record<string, unknown>;
 };
 type Row = Record<string, unknown>;
-const id = () => crypto.randomUUID();
+const id = () => newID();
 const input =
   "w-full rounded-sm border border-emerald-900 bg-black px-3 py-2 text-sm text-zinc-100 focus:outline-emerald-500";
 const button =
@@ -328,20 +329,96 @@ export function WorkspaceStudio({
       )}
       {path === "frontends" && (
         <section className={box}>
-          <Table rows={inventory.data?.frontends ?? []} />
+          <details>
+            <summary className="cursor-pointer text-sm text-zinc-400">
+              Detalhes da descoberta
+            </summary>
+            <Table rows={inventory.data?.frontends ?? []} />
+          </details>
+          <div className="grid gap-3 md:grid-cols-2">
+            {inventory.data?.frontends?.map((f) => {
+              const rum = (f["rum"] ?? {}) as Record<string, unknown>;
+              return (
+                <section
+                  key={String(f["id"])}
+                  className="space-y-3 border border-emerald-900 bg-black p-4"
+                >
+                  <h3 className="font-semibold">
+                    {String(f["service"])} · {String(f["host_name"])}
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    {String(rum["sessions"] ?? 0)} sessões ·{" "}
+                    {String(rum["pages"] ?? 0)} acessos ·{" "}
+                    {String(rum["replay_sessions"] ?? 0)} sessões com replay
+                  </p>
+                  {rum["configured"] ? (
+                    <div className="flex gap-2 flex-wrap">
+                      {!!rum["test_url"] && (
+                        <a
+                          className={button}
+                          href={String(rum["test_url"])}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Visitar aplicação
+                        </a>
+                      )}
+                      <a
+                        className={button}
+                        href={`/rum?app_id=${encodeURIComponent(String(f["id"]))}`}
+                      >
+                        Ver acessos
+                      </a>
+                      <a
+                        className={button}
+                        href={`/session-replay?app_id=${encodeURIComponent(String(f["id"]))}`}
+                      >
+                        Ver Session Replays
+                      </a>
+                      <a
+                        className={button}
+                        href={`/experience-vitals?app_id=${encodeURIComponent(String(f["id"]))}`}
+                      >
+                        Experience Vitals
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-400">
+                      Configure RUM abaixo e abra a aplicação pelo caminho
+                      instrumentado para gerar uma sessão real.
+                    </p>
+                  )}
+                  {!!rum["configured"] && !rum["replay_enabled"] && (
+                    <p className="text-xs text-amber-200">
+                      Replay desativado. Ative na configuração RUM, revise a
+                      amostragem e autorize no navegador de teste.
+                    </p>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+
           <div className="flex gap-3 flex-wrap">
-            {inventory.data?.frontends?.map((f) => (
-              <button
-                key={String(f["id"])}
-                className={button}
-                onClick={() => {
-                  setCandidate(f);
-                  setOrigin("");
-                }}
-              >
-                Configurar RUM · {String(f["service"])}:{String(f["port"])}
-              </button>
-            ))}
+            {inventory.data?.frontends
+              ?.filter(
+                (f) =>
+                  !(f["rum"] as Record<string, unknown> | undefined)?.[
+                    "configured"
+                  ],
+              )
+              .map((f) => (
+                <button
+                  key={String(f["id"])}
+                  className={button}
+                  onClick={() => {
+                    setCandidate(f);
+                    setOrigin("");
+                  }}
+                >
+                  Configurar RUM · {String(f["service"])}:{String(f["port"])}
+                </button>
+              ))}
           </div>
           <p className="text-sm text-zinc-400">
             A descoberta não inicia a captura do navegador. Informe a origem

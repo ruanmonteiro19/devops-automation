@@ -1,3 +1,5 @@
+> O gateway é apresentado na interface como **Vetra Relay** e o proxy de injeção como **Vetra Relay Web**. Downloads em [PLATFORM-0.5.md](PLATFORM-0.5.md). Os comandos legados permanecem compatíveis.
+
 # Injeção RUM e proxies Vetra
 
 ## O que esta entrega faz

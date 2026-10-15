@@ -1,3 +1,5 @@
+> Atualização de armazenamento, usuários e componentes em [PLATFORM-0.5.md](PLATFORM-0.5.md). O token continua disponível e o backend SQL é opcional fora do Compose.
+
 # Vetra 0.4 — Frontends, satisfação e operações
 
 ## Frontends pelo agente

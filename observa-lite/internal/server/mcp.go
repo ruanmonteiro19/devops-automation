@@ -241,7 +241,7 @@ func (s *Server) mcp(w http.ResponseWriter, r *http.Request) {
 	var rpcErr any
 	switch req.Method {
 	case "initialize":
-		result = map[string]any{"protocolVersion": "2025-03-26", "capabilities": map[string]any{"tools": map[string]bool{"listChanged": false}}, "serverInfo": map[string]string{"name": "vetra-observability", "version": "0.4.0"}, "instructions": "Administrative API-token authentication. Read tools query retained observations. Configuration tools preview unless apply=true; applications remain subject to the same validation as the UI. Do not put database passwords or API tokens in tool arguments."}
+		result = map[string]any{"protocolVersion": "2025-03-26", "capabilities": map[string]any{"tools": map[string]bool{"listChanged": false}}, "serverInfo": map[string]string{"name": "vetra-observability", "version": "0.5.0"}, "instructions": "Administrative API-token authentication. Read tools query retained observations. Configuration tools preview unless apply=true; applications remain subject to the same validation as the UI. Do not put database passwords or API tokens in tool arguments."}
 	case "ping":
 		result = map[string]any{}
 	case "tools/list":

@@ -29,7 +29,7 @@ func TestCapabilitiesDoNotAdvertiseVisualStubsAsFeatures(t *testing.T) {
 	if e := json.Unmarshal(w.Body.Bytes(), &out); e != nil {
 		t.Fatal(e)
 	}
-	for _, feature := range []string{"grafana_dashboard_import", "zabbix_lld", "deep_apm", "gateway_heartbeat", "rbac", "mfa", "oidc_sso", "ai_rca", "otlp_grpc"} {
+	for _, feature := range []string{"grafana_dashboard_import", "zabbix_lld", "deep_apm", "gateway_heartbeat", "mfa", "oidc_sso", "ai_rca", "otlp_grpc"} {
 		if out.Features[feature] {
 			t.Fatalf("%s is not implemented and must not be advertised as supported", feature)
 		}

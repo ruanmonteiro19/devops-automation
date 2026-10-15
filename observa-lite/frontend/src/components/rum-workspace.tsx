@@ -53,7 +53,9 @@ const pct = (n: number) => `${Math.round(n * 100)}%`;
 const date = (s: string) => new Date(s).toLocaleString("pt-BR");
 export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
   const qc = useQueryClient();
-  const [appID, setAppID] = useState("");
+  const [appID, setAppID] = useState(
+    new URLSearchParams(location.search).get("app_id") || "",
+  );
   const [minutes, setMinutes] = useState(60);
   const [draft, setDraft] = useState<RUMApplication | null>(null);
   const [installation, setInstallation] = useState<RUMApplication | null>(null);

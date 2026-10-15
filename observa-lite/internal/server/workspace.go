@@ -31,6 +31,7 @@ func (s *Server) frontendCandidates() []vql.Row {
 			r["host_name"] = h.Name
 			r["fresh"] = time.Since(h.LastSeen) < 2*time.Minute
 			r["addresses"] = h.Addresses
+			r["rum"] = s.Store.RUMActivity(f.ID)
 			out = append(out, r)
 		}
 	}

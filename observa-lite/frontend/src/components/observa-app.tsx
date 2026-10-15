@@ -1,3 +1,8 @@
+import { StoragePage } from "./storage-page";
+import { Download } from "lucide-react";
+import { ComponentDownloads } from "./component-downloads";
+import { UsersPage } from "./user-access";
+import { newID } from "@/lib/id";
 import { WorkspaceStudio } from "./workspace-studio";
 import { RUMWorkspace } from "./rum-workspace";
 import { InventoryEditor } from "./inventory-editor";
@@ -172,7 +177,7 @@ const navGroups: NavGroup[] = [
       [
         ["Serviços", "servicos", Boxes],
         ["Visões do ambiente", "topologia", Boxes],
-        ["Mapa de serviços", "service-mapping", Workflow],
+
         ["Traces distribuídos", "traces", Activity],
         ["Erros & exceções", "erros", AlertTriangle],
         ["Requisições", "requisicoes", Radio],
@@ -185,9 +190,6 @@ const navGroups: NavGroup[] = [
       [
         ["Frontends descobertos", "frontends", Globe2],
         ["RUM", "rum", Globe2],
-        ["Session Replay", "session-replay", Activity],
-        ["Apdex", "apdex", Activity],
-        ["Experience Vitals", "experience-vitals", Gauge],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
@@ -198,8 +200,7 @@ const navGroups: NavGroup[] = [
         ["Databases", "databases", Database],
         ["Hosts", "hosts", Server],
         ["Processos", "processos", Activity],
-        ["Mapa de processos", "process-mapping", GitBranch],
-        ["Mapa de rede", "network-mapping", Network],
+
         ["Cloud providers", "clouds", Cloud],
         ["Network devices", "dispositivos-rede", Network],
       ] satisfies [string, string, LucideIcon][]
@@ -209,10 +210,11 @@ const navGroups: NavGroup[] = [
     label: "Dados",
     items: (
       [
-        ["Logs OTLP", "telemetria-logs", ListFilter],
+        ["Logs", "telemetria-logs", ListFilter],
         ["Métricas", "metricas", Gauge],
-        ["Logs Loki", "logs", Code2],
-        ["Fontes de dados", "data-sources", Database],
+
+        ["Fontes externas", "data-sources", Database],
+        ["Armazenamento", "armazenamento", Database],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
@@ -234,12 +236,13 @@ const navGroups: NavGroup[] = [
     items: (
       [
         ["Assistente MCP", "mcp", Code2],
+        ["Componentes", "componentes", Download],
         ["Agentes", "agentes", Radio],
-        ["Gateways", "gateways", Network],
+        ["Vetra Relay", "gateways", Network],
         ["Host Groups", "host-groups", Server],
         ["Network Zones", "network-zones", Network],
         ["Extensões", "extensoes", Boxes],
-        ["Acesso & token", "chaves-api", KeyRound],
+        ["Usuários e acesso", "usuarios", KeyRound],
         ["Preferências", "configuracoes", Settings],
         ["Central de ajuda", "ajuda", CircleHelp],
       ] satisfies [string, string, LucideIcon][]
@@ -437,7 +440,7 @@ function SidebarNav({
   collapsed,
   search,
   setSearch,
-  current,
+  current: rawCurrent,
   onNavigate,
   language,
 }: {
@@ -448,6 +451,19 @@ function SidebarNav({
   onNavigate?: (() => void) | undefined;
   language: ObservaLanguage;
 }) {
+  const current =
+    (
+      {
+        "session-replay": "rum",
+        "experience-vitals": "rum",
+        apdex: "rum",
+        "process-mapping": "topologia",
+        "network-mapping": "topologia",
+        "service-mapping": "topologia",
+        logs: "data-sources",
+        "chaves-api": "usuarios",
+      } as Record<string, string>
+    )[rawCurrent] ?? rawCurrent;
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const raw: unknown = JSON.parse(
@@ -591,7 +607,7 @@ function SidebarNav({
           </span>
           {!collapsed && (
             <span className="text-xs text-muted-foreground">
-              Workspace · Vetra 0.4
+              Workspace · Vetra 0.5
             </span>
           )}
         </div>
@@ -727,6 +743,18 @@ function Topbar({
         <span className="font-medium text-foreground">
           {navText(
             labels.get(current) ??
+              (
+                {
+                  "session-replay": "Session Replay",
+                  "experience-vitals": "Experience Vitals",
+                  apdex: "Apdex",
+                  "process-mapping": "Mapa de processos",
+                  "network-mapping": "Mapa de rede",
+                  "service-mapping": "Mapa de serviços",
+                  logs: "Logs externos",
+                  "chaves-api": "Acesso por token",
+                } as Record<string, string>
+              )[current] ??
               labels.get(current.split("/")[0] || "") ??
               "Visão geral",
             language,
@@ -1010,6 +1038,9 @@ function PageRouter({
     );
   if (path === "processos")
     return <ProcessExplorer snapshot={snapshot} onSaved={inventorySaved} />;
+  if (path === "armazenamento") return <StoragePage />;
+  if (path === "componentes") return <ComponentDownloads />;
+  if (path === "usuarios") return <UsersPage />;
   if (path === "chaves-api") return <WorkspaceAccess />;
   if (path === "configuracoes") return <WorkspacePreferences />;
   if (path === "ajuda" || path.startsWith("ajuda/"))
@@ -1178,7 +1209,7 @@ function AgentRoutingPage({
     path === "agentes"
       ? "Agentes"
       : path === "gateways"
-        ? "Gateways"
+        ? "Vetra Relay"
         : path === "host-groups"
           ? "Host Groups"
           : "Network Zones";
@@ -2430,7 +2461,7 @@ function DataSourceEditor({
     }
     const data = new FormData(event.currentTarget);
     create.mutate({
-      id: editing?.id ?? crypto.randomUUID(),
+      id: editing?.id ?? newID(),
       name: String(data.get("name")),
       kind: String(data.get("kind")) as "prometheus" | "json" | "loki",
       url: String(data.get("url")),
@@ -2593,11 +2624,11 @@ function DashboardBuilder({
     }
     const data = new FormData(event.currentTarget);
     create.mutate({
-      id: crypto.randomUUID(),
+      id: newID(),
       title: String(data.get("title")),
       panels: [
         {
-          id: crypto.randomUUID(),
+          id: newID(),
           title: String(data.get("panelTitle")),
           kind: String(data.get("kind")),
           ...(String(data.get("html"))

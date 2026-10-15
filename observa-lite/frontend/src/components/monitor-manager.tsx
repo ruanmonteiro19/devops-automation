@@ -1,3 +1,4 @@
+import { newID } from "@/lib/id";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,7 +27,7 @@ import { api, type MonitorTemplate } from "@/lib/api";
 import { downloadJSON } from "@/lib/workspace";
 import { WorkspaceHeading } from "./workspace-experience";
 const blank = (): MonitorTemplate => ({
-  id: crypto.randomUUID(),
+  id: newID(),
   name: "",
   kind: "http",
   target: "",

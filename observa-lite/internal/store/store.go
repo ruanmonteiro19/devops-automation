@@ -14,6 +14,8 @@ import (
 )
 
 type persisted struct {
+	Users              map[string]storedUser              `json:"users,omitempty"`
+	Sessions           map[string]LoginSession            `json:"sessions,omitempty"`
 	Workspace          map[string]model.WorkspaceObject   `json:"workspace,omitempty"`
 	OperationRuns      []model.OperationRun               `json:"operation_runs,omitempty"`
 	RUMApplications    map[string]model.RUMApplication    `json:"rum_applications,omitempty"`
@@ -37,9 +39,11 @@ type persisted struct {
 	Events             []model.Event                      `json:"events"`
 }
 type Store struct {
-	mu   sync.RWMutex
-	file string
-	data persisted
+	maintenanceAt time.Time
+	sql           *SQLStorage
+	mu            sync.RWMutex
+	file          string
+	data          persisted
 }
 
 func New(file string) (*Store, error) {
@@ -51,6 +55,10 @@ func New(file string) (*Store, error) {
 	} else if !os.IsNotExist(e) {
 		return nil, e
 	}
+	s.initialize()
+	return s, nil
+}
+func (s *Store) initialize() {
 	if s.data.Integrations == nil {
 		s.data.Integrations = map[string]model.Integration{}
 	}
@@ -85,9 +93,12 @@ func New(file string) (*Store, error) {
 			s.data.OperationRuns[i].FinishedAt = time.Now().UTC()
 		}
 	}
-	return s, nil
 }
+
 func (s *Store) persist() error {
+	if s.sql != nil {
+		return s.persistSQL()
+	}
 	if err := os.MkdirAll(filepath.Dir(s.file), 0700); err != nil {
 		return err
 	}

@@ -1,3 +1,4 @@
+import { newID } from "@/lib/id";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -76,7 +77,7 @@ const labels: Record<string, string> = {
   snmp_exporter: "Network device — SNMP exporter",
 };
 const blank = (devices: boolean): Integration => ({
-  id: crypto.randomUUID(),
+  id: newID(),
   name: "",
   kind: devices ? "snmp_exporter" : "aws",
   enabled: true,

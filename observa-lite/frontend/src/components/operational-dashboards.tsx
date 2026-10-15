@@ -1,3 +1,4 @@
+import { newID } from "@/lib/id";
 import {
   ArrowUp,
   ArrowDown,
@@ -112,7 +113,7 @@ export function OperationalDashboards({
       });
       save.reset();
       setDraft({
-        id: crypto.randomUUID(),
+        id: newID(),
         title: `${value.title} (importado)`,
         panels,
       });
@@ -308,11 +309,11 @@ export function OperationalDashboards({
                       save.reset();
                       setDraft({
                         ...d,
-                        id: crypto.randomUUID(),
+                        id: newID(),
                         title: `${d.title} (cópia)`,
                         panels: d.panels.map((p) => ({
                           ...p,
-                          id: crypto.randomUUID(),
+                          id: newID(),
                         })),
                       });
                     }}
@@ -586,7 +587,7 @@ export function OperationalDashboards({
                               ...draft.panels,
                               {
                                 ...p,
-                                id: crypto.randomUUID(),
+                                id: newID(),
                                 title: `${p.title} (cópia)`,
                               },
                             ],

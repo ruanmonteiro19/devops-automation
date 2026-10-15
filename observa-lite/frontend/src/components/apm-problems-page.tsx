@@ -1,3 +1,4 @@
+import { newID } from "@/lib/id";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, request } from "@/lib/api";
@@ -115,7 +116,7 @@ export function APMProblemsPage({
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!draft || demo) return;
-    save.mutate({ ...draft, id: draft.id || crypto.randomUUID() });
+    save.mutate({ ...draft, id: draft.id || newID() });
   }
   return (
     <div className="space-y-5">

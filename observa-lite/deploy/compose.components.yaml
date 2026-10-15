@@ -1,0 +1,89 @@
+# Optional split deployment; use --env-file .env from observa-lite directory.
+name: vetra
+services:
+  vetra-web:
+    image: vetra/web:local
+    build:
+      context: ..
+      target: web
+    ports: ['${VETRA_WEB_BIND:-127.0.0.1}:${VETRA_WEB_PORT:-18090}:8080']
+    depends_on:
+      vetra-server:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  vetra-server:
+    image: vetra/server:components
+    build:
+      context: ..
+      target: server
+    environment:
+      OBSERVA_ADMIN_TOKEN: ${OBSERVA_ADMIN_TOKEN:?Required}
+      OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Required}
+      OBSERVA_DB: ${VETRA_MIGRATION_JSON:-/var/lib/observa/state.json}
+      OBSERVA_ALLOW_PRIVATE_TARGETS: ${OBSERVA_ALLOW_PRIVATE_TARGETS:-false}
+      VETRA_STORAGE_ENGINE: postgres
+      VETRA_STORAGE_DSN: postgres://vetra:${VETRA_DB_PASSWORD:?Set VETRA_DB_PASSWORD in .env}@vetra-db:5432/vetra?sslmode=disable
+      VETRA_COOKIE_SECURE: ${VETRA_COOKIE_SECURE:-false}
+    ports: ['127.0.0.1:${VETRA_API_PORT:-18091}:8080']
+    depends_on:
+      vetra-db:
+        condition: service_healthy
+    volumes: [vetra-data:/var/lib/observa]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, /usr/local/bin/observa, health]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  vetra-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vetra
+      POSTGRES_USER: vetra
+      POSTGRES_PASSWORD: ${VETRA_DB_PASSWORD:?Required}
+    volumes: [vetra-db:/var/lib/postgresql/data]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U vetra -d vetra']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  vetra-agent:
+    image: vetra/agent:components
+    build:
+      context: ..
+      target: agent
+    network_mode: host
+    pid: host
+    uts: host
+    user: '0:0'
+    environment:
+      OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Required}
+    command: [agent, --server, 'http://127.0.0.1:${VETRA_API_PORT:-18091}', --interval, 30s]
+    volumes: ['/etc/machine-id:/etc/machine-id:ro', '/etc/os-release:/etc/os-release:ro']
+    cap_drop: [ALL]
+    cap_add: [SYS_PTRACE, DAC_READ_SEARCH]
+    restart: unless-stopped
+    read_only: true
+  vetra-proxy:
+    profiles: [relay]
+    image: vetra/relay:components
+    build:
+      context: ..
+      target: gateway
+    environment:
+      OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Required}
+    network_mode: host
+    command: [--listen, '${VETRA_RELAY_LISTEN:-127.0.0.1:18444}', --upstream, 'http://127.0.0.1:${VETRA_API_PORT:-18091}', --tls-cert, /etc/vetra/tls/tls.crt, --tls-key, /etc/vetra/tls/tls.key]
+    volumes: ['./gateway/tls:/etc/vetra/tls:ro']
+    restart: unless-stopped
+volumes:
+  vetra-data:
+  vetra-db:

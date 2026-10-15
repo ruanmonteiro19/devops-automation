@@ -1,3 +1,5 @@
+> Vetra 0.5: [Contas, downloads, correção de formulários HTTP, SQLite/PostgreSQL interno e componentes separados](docs/PLATFORM-0.5.md).
+
 > Injeção RUM: [Módulo Node sem edição de código, proxy de aplicações e gateway RUM](docs/AUTO-INJECTION-AND-PROXIES.md).
 
 > Atualização Vetra 0.4: [Frontends pelo agente, satisfação, notebooks VQL, workflows, PostgreSQL, vulnerabilidades OSV e MCP](docs/WORKSPACE-OPERATIONS.md). Limites e evidências de validação documentados.
@@ -128,7 +130,7 @@ curl -s http://127.0.0.1:8080/mcp -H "X-API-Key: $OBSERVA_ADMIN_TOKEN" \
 - `/proc` e sockets não dão métricas APM de métodos, consultas SQL, erros HTTP ou traces distribuídos. O tráfego TLS não é descriptografado.
 - O agente **não** injeta código nem utiliza eBPF. A correlação implementada cruza `PID → socket → IP/porta → processo remoto` e registra desaparecimentos de serviços. Falhas HTTP/TCP de templates também geram incidentes.
 - Armazenamento local JSON com escrita atômica é adequado para laboratório pequeno, **não** para milhares de hosts. Próximas etapas: PostgreSQL/ClickHouse, histórico de métricas, retenção e backup.
-- Não há SNMP, LLD, auto-instrumentação Java/.NET, IA generativa, MCP Client, multiusuário/RBAC ou dashboards equivalentes ao Grafana.
+- Há leitura de SNMP exporter e usuários locais com perfis administrador/leitura. Não há LLD, auto-instrumentação Java/.NET, IA generativa, MCP Client ou paridade de dashboards com Grafana.
 - O código e a interface são originais; as referências Coroot, Checkmk, Zabbix e Grafana foram estudadas conceitualmente, sem incorporar código desses projetos.
 
 ## Roadmap

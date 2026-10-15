@@ -39,6 +39,23 @@ func New(st *store.Store, admin, agent string, allowPrivate bool) *Server {
 }
 func (s *Server) Handler() http.Handler {
 	m := http.NewServeMux()
+	s.userRoutes(m)
+	s.downloadRoutes(m)
+	m.HandleFunc("POST /api/v1/storage/export", func(w http.ResponseWriter, r *http.Request) {
+		if !s.authorizeUser(w, r, true) {
+			return
+		}
+		b, e := s.Store.ExportJSON()
+		if e != nil {
+			fail(w, 500, e)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", `attachment; filename="vetra-state-export.json"`)
+		w.Header().Set("Cache-Control", "no-store")
+		w.Write(b)
+	})
+	m.HandleFunc("GET /api/v1/storage", s.adminAuth(func(w http.ResponseWriter, r *http.Request) { write(w, 200, s.Store.StorageInfo()) }))
 	s.rumRoutes(m)
 	s.workspaceRoutes(m)
 	m.HandleFunc("GET /api/v1/integrations", s.adminAuth(s.integrationList))
@@ -163,7 +180,13 @@ func (s *Server) auth(token string, next http.HandlerFunc) http.HandlerFunc {
 		next(w, r)
 	}
 }
-func (s *Server) adminAuth(next http.HandlerFunc) http.HandlerFunc { return s.auth(s.AdminToken, next) }
+func (s *Server) adminAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.authorizeUser(w, r, false) {
+			next(w, r)
+		}
+	}
+}
 func (s *Server) agentAuth(next http.HandlerFunc) http.HandlerFunc { return s.auth(s.AgentToken, next) }
 func decode(w http.ResponseWriter, r *http.Request, to interface{}) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, 6<<20)
@@ -293,6 +316,9 @@ func (s *Server) Poll(ctx context.Context) {
 	}
 }
 func (s *Server) pollOnce(ctx context.Context) {
+	if e := s.Store.PruneExpired(time.Now()); e != nil {
+		log.Print("storage retention maintenance failed")
+	}
 	s.pollIntegrations(ctx)
 	s.pollWorkflows(ctx)
 	for _, t := range s.Store.Templates() {

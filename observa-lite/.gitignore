@@ -15,3 +15,5 @@
 # Local injection routes and gateway TLS credentials
 /deploy/rum/routes.json
 /deploy/gateway/tls/
+
+/downloads/

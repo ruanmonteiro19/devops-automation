@@ -723,3 +723,13 @@ select {
 .topology-view-card:hover {
   background: var(--surface-raised);
 }
+
+/* Compact navigation: one open section for the current workspace. */
+.vetra-nav-group > summary { min-height: 34px; padding: 8px 10px; border: 1px solid var(--sidebar-border); background: var(--sidebar-accent); font-size: 11px; letter-spacing: 0; }
+.vetra-nav-group > div { padding-top: 4px; }
+.vetra-nav-group .nav-menu-item { min-height: 32px; margin-bottom: 2px; box-shadow: none; }
+.vetra-nav-group .nav-menu-item > a { padding-block: 7px; font-size: 11px; }
+.vital-card[data-health="good"] { border-top: 3px solid #24ad79; }
+.vital-card[data-health="needs-improvement"] { border-top: 3px solid #d4a33f; }
+.vital-card[data-health="poor"] { border-top: 3px solid #df6262; }
+.vetra-replay-root .replayer-wrapper { margin-inline: auto; }

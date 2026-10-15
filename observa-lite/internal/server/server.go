@@ -31,6 +31,7 @@ type Server struct {
 	Runner                 collectors.Runner
 	mu                     sync.Mutex
 	running                map[string]bool
+	rumLimits              map[string]rumBudget
 }
 
 func New(st *store.Store, admin, agent string, allowPrivate bool) *Server {
@@ -38,6 +39,7 @@ func New(st *store.Store, admin, agent string, allowPrivate bool) *Server {
 }
 func (s *Server) Handler() http.Handler {
 	m := http.NewServeMux()
+	s.rumRoutes(m)
 	m.HandleFunc("GET /api/v1/integrations", s.adminAuth(s.integrationList))
 	m.HandleFunc("POST /api/v1/integrations", s.adminAuth(s.integrationSave))
 	m.HandleFunc("DELETE /api/v1/integrations/{id}", s.adminAuth(s.integrationDelete))

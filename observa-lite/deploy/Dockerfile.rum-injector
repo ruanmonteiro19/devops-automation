@@ -1,0 +1,9 @@
+FROM golang:1.23-alpine AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+COPY cmd/vetra-injector ./cmd/vetra-injector
+RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /vetra-injector ./cmd/vetra-injector
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /vetra-injector /usr/local/bin/vetra-injector
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/vetra-injector"]

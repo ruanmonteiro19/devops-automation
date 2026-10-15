@@ -86,6 +86,13 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		"version":        "0.2.0",
 		"authentication": map[string]interface{}{"mode": "api_token", "sso": false, "mfa": false, "rbac": false, "description": "Autenticação administrativa por token. SSO e MFA dependem de implementação de backend e provedor de identidade."},
 		"features": map[string]bool{
+			"rum_web":                          true,
+			"rum_html_proxy_injection":         true,
+			"session_replay_web_masked":        true,
+			"experience_vitals_web":            true,
+			"apdex_page_load":                  true,
+			"rum_native_mobile_sdk":            false,
+			"vulnerability_scanning":           false,
 			"cloud_inventory_aws_ec2":          true,
 			"cloud_inventory_azure_arm":        true,
 			"cloud_inventory_gcp_compute":      true,

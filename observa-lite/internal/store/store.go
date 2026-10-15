@@ -14,6 +14,10 @@ import (
 )
 
 type persisted struct {
+	RUMApplications    map[string]model.RUMApplication    `json:"rum_applications,omitempty"`
+	RUMEvents          []model.RUMEvent                   `json:"rum_events,omitempty"`
+	RUMReplay          []model.RUMReplayChunk             `json:"rum_replay,omitempty"`
+	RUMIdentityKey     string                             `json:"rum_identity_key,omitempty"`
 	InventorySettings  map[string]InventorySettings       `json:"inventory_settings,omitempty"`
 	Integrations       map[string]model.Integration       `json:"integrations,omitempty"`
 	IntegrationResults map[string]model.IntegrationResult `json:"integration_results,omitempty"`

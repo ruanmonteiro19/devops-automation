@@ -1,0 +1,31 @@
+{
+  "kind": "Summary extracted from REA evidence; not the canonical evidence bundle",
+  "evidence_id": "ev_c0d2d05da026a348f1e5fbdbe3ff21c6ed4d2aba808cfca1d4c32a8d22e5df18",
+  "provider": {
+    "id": "rea-cdp-browser",
+    "name": "REA Chrome DevTools Protocol observation provider",
+    "version": "2"
+  },
+  "operation": "observe_web_execution",
+  "observation_ms": 2000,
+  "environment": "Isolated local Chromium lab; all non-lab requests blocked before SDK load",
+  "artifact_sha256": "aed9e9bf32f1d7dfb5c1e4cc472aa6c20da35cf4c60cded7d40ccc5db40071ac",
+  "coverage_state": "captured",
+  "script_count": 1,
+  "functions_observed": 221,
+  "limitations": [
+    "Artifact identity is unavailable for this observation.",
+    "Website source ownership requires the selected main frame and a proven default execution world. Isolated, worker and unknown worlds are excluded from coverage/source joins; referenced producer context metadata is retained.",
+    "Precise coverage resets counters, retains execution records and prevents optimized execution until stopped. Timing and JIT behavior are affected.",
+    "Only the selected main document's proven frame/context scripts are attributed. Child frames, workers, service workers, WebAssembly and scripts without ownership metadata remain outside this operation.",
+    "V8 reports nested function/block ranges and counts, not a chronological trace. Counts must not be summed across overlapping ranges; zero counts concern this instrumented window only.",
+    "Previously parsed scripts may be absent from a precise sample. Their source inventory is retained, but missing coverage never means zero execution or an unexecuted function.",
+    "A detailed-coverage request does not guarantee block granularity for already compiled functions. When is_block_coverage is false, branch execution is unknown; REA preserves the function-only producer ranges.",
+    "The local armed/end clock and backend coverage timestamps are distinct clocks. Counters start when the backend accepts instrumentation, before the armed receipt, and end at the resetting sample after the requested window. Counts may include execution during those command intervals; requests are restricted to the locally armed window.",
+    "Source metadata is collected through the final resetting sample, then frozen for source joins. Known identities remain checked during asynchronous source completion; newly parsed scripts after that cutoff are outside this evidence.",
+    "Request callsites are producer-reported initiators associated by session script ID; they do not establish UI causality. Unresolved asynchronous parent IDs are retained without fetching their stacks.",
+    "Producer hashes and UTF-8 digests of retained text are distinct identities. Inline script locations use reported resource offsets; anonymous/eval/sourceURL names are declarations.",
+    "Metadata has an 8 MiB script budget and 8 MiB request budget; complete retained sources have a 32 MiB budget. Resource failures return no partial success. The externally owned browser's CPU and memory are not controlled by REA."
+  ],
+  "conclusion": "Execution was observed. This does not prove the semantics of minified functions, successful vendor ingestion, supported auto-injection, replay completeness, or parity."
+}

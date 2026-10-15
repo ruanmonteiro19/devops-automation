@@ -41,7 +41,7 @@ Smartscape novo: vistas Smartscape on Grail, infra, problemas, dependências de 
 | Software delivery | Workflows, Site Reliability Guardian | Ausentes; SLO é somente o módulo descrito acima |
 | APM avançado | AI Observability, Live Debugger, Multidimensional Analysis, Profiling & Optimization, Message Queues | A visão AI mostra atributos gen_ai recebidos; os sensores avançados permanecem ausentes. Spans e agrupamentos não substituem esses módulos. |
 | Application Security | Vulnerabilities, Security Posture Management, Threats & Exploits | Ausentes |
-| Digital Experience | Experience Vitals, Users & Sessions, Error Inspector, Synthetic, Opportunity Insights, Session Segmentation, Query User Sessions, Frontend/Web/Mobile, Session Replay, Custom Applications | Ausentes; checks HTTP/TCP anteriores não equivalem a browser/RUM/mobile |
+| Digital Experience | Experience Vitals, Users & Sessions, Error Inspector, Synthetic, Opportunity Insights, Session Segmentation, Query User Sessions, Frontend/Web/Mobile, Session Replay, Custom Applications | Captura RUM web, sessões, replay web mascarado, Apdex de carregamentos iniciais e Web Vitals disponíveis; SDK/replay nativos mobile e paridade integral ausentes. Veja RUM-INSTALLATION.md |
 | Business Observability | Business Flow, Compliance Assistant, Cost & Carbon Optimization, Explore Business Events | Ausentes |
 | Gestão | Settings, Fleet Management, Discovery & Coverage, Hub, Deployment Status, Personal Access Tokens, User Settings, Credential Vault | Registro/rotas de agentes/gateways básicos; gestão corporativa de credenciais e identidade ausente |
 | Outros/custom | Releases, Security Overview/Operations, Third-Party Vulnerabilities, Learn DQL, Sensitive Data Center, Cloud SRE Agents, Incident Quest | Sem implementação equivalente |
@@ -59,3 +59,7 @@ Reformulação de navegação, aparência, criação, ajuda e ações operaciona
 ## Topologia, clouds e rede
 
 Catálogo de dez visões, agrupamento/expansão e layout radial; conectores de inventário cloud e equipamentos SNMP via exporter documentados em [CLOUD-NETWORK-INTEGRATIONS.md](CLOUD-NETWORK-INTEGRATIONS.md). Não há equivalência integral ao Smartscape, nem monitoramento de todos os serviços de cloud ou de todos os MIBs de equipamentos.
+
+## Experiência digital web
+
+Implementação, instalação, privacidade e limites em [RUM-INSTALLATION.md](RUM-INSTALLATION.md). Evidências e distinções entre Dynatrace web/mobile em [DYNATRACE-DIGITAL-EXPERIENCE.md](research/DYNATRACE-DIGITAL-EXPERIENCE.md). Vulnerabilidades e SDK nativo mobile continuam ausentes.

@@ -1,3 +1,4 @@
+import { RUMWorkspace } from "./rum-workspace";
 import { InventoryEditor } from "./inventory-editor";
 import { IntegrationManager } from "@/components/integration-manager";
 import { TopologyWorkspace } from "@/components/topology-workspace";
@@ -66,6 +67,7 @@ import {
   Controls,
   Handle,
   MiniMap,
+  useNodesState,
   Position,
   ReactFlow,
   type Edge,
@@ -153,7 +155,7 @@ type NavGroup = { label: string; items: NavItem[] };
 
 const navGroups: NavGroup[] = [
   {
-    label: "Workspace",
+    label: "Painéis",
     items: (
       [
         ["Visão geral", "", LayoutDashboard],
@@ -163,7 +165,7 @@ const navGroups: NavGroup[] = [
     ).map(toNav),
   },
   {
-    label: "Aplicações & serviços",
+    label: "Monitoramento",
     items: (
       [
         ["Serviços", "servicos", Boxes],
@@ -172,6 +174,17 @@ const navGroups: NavGroup[] = [
         ["Traces distribuídos", "traces", Activity],
         ["Erros & exceções", "erros", AlertTriangle],
         ["Requisições", "requisicoes", Radio],
+      ] satisfies [string, string, LucideIcon][]
+    ).map(toNav),
+  },
+  {
+    label: "Experiência digital",
+    items: (
+      [
+        ["RUM", "rum", Globe2],
+        ["Session Replay", "session-replay", Activity],
+        ["Apdex", "apdex", Activity],
+        ["Experience Vitals", "experience-vitals", Gauge],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
   },
@@ -189,7 +202,7 @@ const navGroups: NavGroup[] = [
     ).map(toNav),
   },
   {
-    label: "Explorar dados",
+    label: "Dados",
     items: (
       [
         ["Logs OTLP", "telemetria-logs", ListFilter],
@@ -211,7 +224,7 @@ const navGroups: NavGroup[] = [
     ).map(toNav),
   },
   {
-    label: "Gerenciar",
+    label: "Configuração",
     items: (
       [
         ["Agentes", "agentes", Radio],
@@ -522,8 +535,16 @@ function SidebarNav({
         {filtered.map((group) => (
           <details
             key={`${group.label}-${search ? "search" : "browse"}-${collapsed ? "collapsed" : "expanded"}`}
-            open
-            className="group/nav mt-3"
+            open={
+              collapsed ||
+              !!search ||
+              group.items.some(
+                (item) =>
+                  current === item.path ||
+                  (item.path !== "" && current.startsWith(item.path + "/")),
+              )
+            }
+            className="group/nav vetra-nav-group mt-2"
           >
             {!collapsed && (
               <summary className="flex cursor-pointer list-none items-center justify-between px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-nav-section">
@@ -938,6 +959,8 @@ function PageRouter({
     void inventoryQueryClient.invalidateQueries({ queryKey: ["snapshot"] });
     void inventoryQueryClient.invalidateQueries({ queryKey: ["topology"] });
   };
+  if (["rum", "session-replay", "experience-vitals", "apdex"].includes(rawPath))
+    return <RUMWorkspace path={rawPath} demo={demo} />;
   const initialCreate = rawPath.endsWith("/novo");
   const path = initialCreate ? rawPath.slice(0, -5) : rawPath;
   if (path === "clouds" || path === "dispositivos-rede")
@@ -2121,6 +2144,8 @@ function MappingView({
       },
     }));
   }, [filtered, layout, onExpandGroup]);
+  const [renderNodes, setRenderNodes, onNodesChange] = useNodesState(nodes);
+  useEffect(() => setRenderNodes(nodes), [nodes, setRenderNodes]);
   const edges: Edge[] = useMemo(
     () =>
       filtered.edges.map((edge) => ({
@@ -2227,7 +2252,8 @@ function MappingView({
           {nodes.length ? (
             <ReactFlow
               key={layout + ":" + search + ":" + nodeKind + ":" + hideIsolated}
-              nodes={nodes}
+              nodes={renderNodes}
+              onNodesChange={onNodesChange}
               edges={edges}
               nodeTypes={topologyNodeTypes}
               fitView

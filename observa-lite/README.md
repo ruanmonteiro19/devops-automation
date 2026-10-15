@@ -1,6 +1,6 @@
 # Vetra Observability
 
-Nome atual da interface do projeto Observa Lite. Consulte [Inventário e escalabilidade](docs/VETRA-INVENTORY-SCALING.md) para as alterações recentes e os limites do backend.
+Nome atual da interface do projeto Observa Lite. [Instalação RUM, Replay, Apdex e Experience Vitals](docs/RUM-INSTALLATION.md) · [Investigação frontend/mobile](docs/research/DYNATRACE-DIGITAL-EXPERIENCE.md). Consulte [Inventário e escalabilidade](docs/VETRA-INVENTORY-SCALING.md) para as alterações recentes e os limites do backend.
 
 # Observa Lite
 

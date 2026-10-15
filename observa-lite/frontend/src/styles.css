@@ -725,11 +725,213 @@ select {
 }
 
 /* Compact navigation: one open section for the current workspace. */
-.vetra-nav-group > summary { min-height: 34px; padding: 8px 10px; border: 1px solid var(--sidebar-border); background: var(--sidebar-accent); font-size: 11px; letter-spacing: 0; }
-.vetra-nav-group > div { padding-top: 4px; }
-.vetra-nav-group .nav-menu-item { min-height: 32px; margin-bottom: 2px; box-shadow: none; }
-.vetra-nav-group .nav-menu-item > a { padding-block: 7px; font-size: 11px; }
-.vital-card[data-health="good"] { border-top: 3px solid #24ad79; }
-.vital-card[data-health="needs-improvement"] { border-top: 3px solid #d4a33f; }
-.vital-card[data-health="poor"] { border-top: 3px solid #df6262; }
-.vetra-replay-root .replayer-wrapper { margin-inline: auto; }
+.vetra-nav-group > summary {
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid var(--sidebar-border);
+  background: var(--sidebar-accent);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.vetra-nav-group > div {
+  padding-top: 4px;
+}
+.vetra-nav-group .nav-menu-item {
+  min-height: 32px;
+  margin-bottom: 2px;
+  box-shadow: none;
+}
+.vetra-nav-group .nav-menu-item > a {
+  padding-block: 7px;
+  font-size: 11px;
+}
+.vital-card[data-health="good"] {
+  border-top: 3px solid #24ad79;
+}
+.vital-card[data-health="needs-improvement"] {
+  border-top: 3px solid #d4a33f;
+}
+.vital-card[data-health="poor"] {
+  border-top: 3px solid #df6262;
+}
+.vetra-replay-root .replayer-wrapper {
+  margin-inline: auto;
+}
+
+/* Configuration forms: compact rows, solid surfaces and visible requirements. */
+.configuration-form {
+  --config-label-width: 205px;
+}
+.configuration-legend {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  margin: 0 0 18px;
+  padding: 9px 12px;
+  background: var(--muted);
+  border-left: 2px solid var(--primary);
+}
+.configuration-legend > span {
+  color: var(--destructive);
+}
+.configuration-form .configuration-field {
+  display: grid;
+  grid-template-columns: var(--config-label-width) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  margin: 0;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.configuration-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  padding-top: 7px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.configuration-required,
+.configuration-optional {
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+}
+.configuration-required {
+  color: var(--destructive);
+}
+.configuration-optional {
+  color: var(--muted-foreground);
+}
+.configuration-control {
+  display: block;
+  min-width: 0;
+}
+.configuration-control > :is(input, select, textarea) {
+  margin-top: 0;
+  width: 100%;
+  border-radius: 2px;
+  background: var(--surface-raised);
+  min-height: 36px;
+  font-size: 13px;
+}
+.configuration-control > textarea {
+  min-height: 82px;
+}
+.configuration-control > :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.configuration-form > .grid,
+.configuration-panel > .grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.configuration-form > div:last-child:has(> button) {
+  position: sticky;
+  bottom: -24px;
+  z-index: 2;
+  padding: 14px 0;
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+[role="dialog"]:has(.configuration-form) {
+  width: calc(100vw - 32px);
+  max-width: 900px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  border-radius: 2px;
+  border-top: 3px solid var(--primary);
+}
+.configuration-tablist {
+  display: flex;
+  overflow-x: auto;
+  gap: 3px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.configuration-tablist > button {
+  flex-shrink: 0;
+  padding: 11px 18px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  border-bottom: 2px solid transparent;
+}
+.configuration-tablist > button[aria-selected="true"] {
+  color: var(--primary);
+  background: var(--muted);
+  border-bottom-color: var(--primary);
+}
+.configuration-tablist > button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -3px;
+}
+.configuration-panel {
+  min-height: 245px;
+  padding: 8px 0;
+}
+.configuration-panel[hidden] {
+  display: none;
+}
+.configuration-help {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  padding: 16px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.configuration-help h3 {
+  color: var(--foreground);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+@media (max-width: 640px) {
+  .configuration-form .configuration-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+  .configuration-caption {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    text-align: left;
+    gap: 8px;
+    padding-top: 0;
+  }
+  .configuration-required,
+  .configuration-optional {
+    line-height: 1.6;
+  }
+  [role="dialog"]:has(.configuration-form) {
+    padding: 18px;
+  }
+  .configuration-form > div:last-child:has(> button) {
+    bottom: -18px;
+  }
+  .configuration-tablist > button {
+    padding: 10px 12px;
+  }
+}
+
+.configuration-field > .configuration-control {
+  margin-block: 0;
+}
+.configuration-stacked .configuration-field {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+}
+.configuration-stacked .configuration-caption {
+  align-items: flex-start;
+  text-align: left;
+}
+@media (max-width: 640px) {
+  .configuration-control > :is(input, select, textarea) {
+    min-height: 44px;
+  }
+}

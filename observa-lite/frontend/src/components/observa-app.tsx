@@ -1,3 +1,4 @@
+import { ConfigurationForm, ConfigField } from "./configuration-form";
 import { StoragePage } from "./storage-page";
 import { Download } from "lucide-react";
 import { ComponentDownloads } from "./component-downloads";
@@ -882,7 +883,7 @@ function ConnectionGate({
           <div className="mt-5 inline-flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
             <KeyRound className="size-4" /> Acesso por token (modo inicial)
           </div>
-          <form onSubmit={submit} className="mt-7 space-y-3">
+          <ConfigurationForm onSubmit={submit} className="mt-7 space-y-3">
             <Label htmlFor="api-token">Token da API</Label>
             <Input
               id="api-token"
@@ -908,7 +909,7 @@ function ConnectionGate({
                 </Button>
               )}
             </div>
-          </form>
+          </ConfigurationForm>
           {unauthorized && (
             <p className="mt-4 text-xs text-danger">
               O servidor respondeu 401. Confira o token e tente novamente.
@@ -1232,14 +1233,14 @@ function AgentRoutingPage({
             precisa habilitar o modo control-plane para consultar as rotas; o
             heartbeat dos Gateways não está implementado.
           </p>
-          <form
+          <ConfigurationForm
             className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5"
             onSubmit={(e) => {
               e.preventDefault();
               saveGateway.mutate(gatewayDraft);
             }}
           >
-            <label className="space-y-1 text-xs">
+            <ConfigField className="space-y-1 text-xs">
               Identificador
               <Input
                 required
@@ -1249,8 +1250,8 @@ function AgentRoutingPage({
                   setGatewayDraft((v) => ({ ...v, id: e.target.value }))
                 }
               />
-            </label>
-            <label className="space-y-1 text-xs">
+            </ConfigField>
+            <ConfigField className="space-y-1 text-xs">
               Network Zone
               <Input
                 required
@@ -1263,8 +1264,8 @@ function AgentRoutingPage({
                   }))
                 }
               />
-            </label>
-            <label className="space-y-1 text-xs xl:col-span-2">
+            </ConfigField>
+            <ConfigField className="space-y-1 text-xs xl:col-span-2">
               URL HTTPS
               <Input
                 required
@@ -1275,8 +1276,8 @@ function AgentRoutingPage({
                   setGatewayDraft((v) => ({ ...v, url: e.target.value }))
                 }
               />
-            </label>
-            <label className="space-y-1 text-xs">
+            </ConfigField>
+            <ConfigField className="space-y-1 text-xs">
               Prioridade (menor = primeira)
               <Input
                 required
@@ -1291,8 +1292,8 @@ function AgentRoutingPage({
                   }))
                 }
               />
-            </label>
-            <label className="flex items-center gap-2 text-xs">
+            </ConfigField>
+            <ConfigField className="flex items-center gap-2 text-xs">
               <Switch
                 checked={gatewayDraft.enabled}
                 onCheckedChange={(enabled) =>
@@ -1300,7 +1301,7 @@ function AgentRoutingPage({
                 }
               />{" "}
               Rota habilitada
-            </label>
+            </ConfigField>
             <Button
               className="max-w-52"
               type="submit"
@@ -1309,7 +1310,7 @@ function AgentRoutingPage({
               <Plus className="mr-2 size-4" />
               Cadastrar
             </Button>
-          </form>
+          </ConfigurationForm>
         </section>
         <section className="mt-4 overflow-auto rounded-lg border border-border bg-surface">
           <div className="border-b border-border p-4 text-sm font-medium">
@@ -2235,15 +2236,15 @@ function MappingView({
         />
       )}
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded border border-border bg-surface p-4">
-        <label className="grid flex-1 gap-2 text-xs">
+        <ConfigField className="grid flex-1 gap-2 text-xs">
           Pesquisar nó
           <Input
             placeholder="Nome ou ID"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-        </label>
-        <label className="grid gap-2 text-xs">
+        </ConfigField>
+        <ConfigField className="grid gap-2 text-xs">
           Tipo
           <select
             className="rounded border border-input bg-background p-2"
@@ -2257,8 +2258,8 @@ function MappingView({
               </option>
             ))}
           </select>
-        </label>
-        <label className="grid gap-2 text-xs">
+        </ConfigField>
+        <ConfigField className="grid gap-2 text-xs">
           Layout
           <select
             className="rounded border border-input bg-background p-2"
@@ -2272,15 +2273,15 @@ function MappingView({
             <option value="horizontal">Horizontal</option>
             <option value="vertical">Vertical</option>
           </select>
-        </label>
-        <label className="flex items-center gap-2 py-2 text-xs">
+        </ConfigField>
+        <ConfigField className="flex items-center gap-2 py-2 text-xs">
           <input
             type="checkbox"
             checked={hideIsolated}
             onChange={(event) => setHideIsolated(event.target.checked)}
           />
           Ocultar isolados
-        </label>
+        </ConfigField>
       </div>
       <p className="mb-3 text-xs text-muted-foreground">
         {filtered.nodes.length} nós · {filtered.edges.length} relações exibidas
@@ -2558,7 +2559,7 @@ function DataSourceEditor({
         title={editing ? "Editar fonte de dados" : "Nova fonte de dados"}
         description="Não insira segredos. Informe somente o nome da variável existente no servidor."
       >
-        <form
+        <ConfigurationForm
           key={editing?.id ?? "new"}
           onSubmit={submit}
           className="space-y-4"
@@ -2592,7 +2593,7 @@ function DataSourceEditor({
           <Button className="w-full" disabled={create.isPending}>
             Salvar no servidor
           </Button>
-        </form>
+        </ConfigurationForm>
       </EditorDialog>
     </>
   );
@@ -2701,7 +2702,7 @@ function DashboardBuilder({
         title="Novo dashboard"
         description="Crie um primeiro painel stat ou HTML."
       >
-        <form onSubmit={submit} className="space-y-4">
+        <ConfigurationForm onSubmit={submit} className="space-y-4">
           <Field
             name="title"
             label="Título do dashboard"
@@ -2730,7 +2731,7 @@ function DashboardBuilder({
           <Button className="w-full" disabled={create.isPending}>
             Salvar no servidor
           </Button>
-        </form>
+        </ConfigurationForm>
       </EditorDialog>
     </>
   );
@@ -3159,8 +3160,8 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <div>
-      <Label htmlFor={name}>{label}</Label>
+    <ConfigField>
+      <span>{label}</span>
       <Input
         id={name}
         name={name}
@@ -3171,7 +3172,7 @@ function Field({
         required={required && !disabled}
         defaultValue={defaultValue}
       />
-    </div>
+    </ConfigField>
   );
 }
 function SelectField({
@@ -3186,20 +3187,27 @@ function SelectField({
   defaultValue?: string | undefined;
 }) {
   return (
-    <div>
-      <Label>{label}</Label>
-      <Select name={name} defaultValue={defaultValue ?? options[0]}>
-        <SelectTrigger className="mt-2">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option.charAt(0).toUpperCase() + option.slice(1)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="configuration-field">
+      <span className="configuration-caption">
+        <Label htmlFor={name}>{label}</Label>
+        <span aria-hidden="true" className="configuration-required">
+          * Obrigatório
+        </span>
+      </span>
+      <span className="configuration-control">
+        <Select required name={name} defaultValue={defaultValue ?? options[0]}>
+          <SelectTrigger id={name} className="mt-2">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </span>
     </div>
   );
 }

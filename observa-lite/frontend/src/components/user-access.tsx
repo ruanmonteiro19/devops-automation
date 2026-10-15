@@ -1,3 +1,4 @@
+import { ConfigurationForm, ConfigField } from "./configuration-form";
 import { useState, type ReactNode, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { request, readToken, saveToken } from "@/lib/api";
@@ -35,12 +36,12 @@ function PasswordForm({ done }: { done: () => void }) {
     }
   };
   return (
-    <form onSubmit={(e) => void submit(e)} className="space-y-4">
+    <ConfigurationForm onSubmit={(e) => void submit(e)} className="configuration-stacked space-y-4">
       <h2 className="flex items-center gap-2 font-semibold">
         <KeyRound className="text-emerald-400" />
         Alterar senha
       </h2>
-      <label className="block text-sm">
+      <ConfigField className="block text-sm">
         Senha atual
         <input
           className={input}
@@ -50,8 +51,8 @@ function PasswordForm({ done }: { done: () => void }) {
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
         />
-      </label>
-      <label className="block text-sm">
+      </ConfigField>
+      <ConfigField className="block text-sm">
         Nova senha
         <input
           className={input}
@@ -63,7 +64,7 @@ function PasswordForm({ done }: { done: () => void }) {
           value={next}
           onChange={(e) => setNext(e.target.value)}
         />
-      </label>
+      </ConfigField>
       <p className="text-xs text-zinc-400">
         Use pelo menos 8 caracteres. Após a troca, entre novamente.
       </p>
@@ -71,7 +72,7 @@ function PasswordForm({ done }: { done: () => void }) {
         Salvar nova senha
       </button>
       {message && <p role="alert">{message}</p>}
-    </form>
+    </ConfigurationForm>
   );
 }
 export function AuthGate({ children }: { children: ReactNode }) {
@@ -142,7 +143,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         ) : (
           <>
             <form onSubmit={(e) => void login(e)} className="space-y-4">
-              <label className="block text-sm">
+              <ConfigField className="block text-sm">
                 Usuário
                 <input
                   className={input}
@@ -151,8 +152,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   value={user}
                   onChange={(e) => setUser(e.target.value)}
                 />
-              </label>
-              <label className="block text-sm">
+              </ConfigField>
+              <ConfigField className="block text-sm">
                 Senha
                 <input
                   className={input}
@@ -162,7 +163,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-              </label>
+              </ConfigField>
               <button className={button} disabled={busy}>
                 Entrar
               </button>
@@ -292,20 +293,20 @@ export function UsersPage() {
               </button>
             ))}
           </section>
-          <form
+          <ConfigurationForm
             className="space-y-4 border border-zinc-800 bg-zinc-950 p-5"
             onSubmit={(e) => void save(e)}
           >
             <h2 className="font-semibold">Criar ou editar usuário</h2>
-            <label className="block text-sm">
+            <ConfigField className="block text-sm">
               Nome
               <input
                 className={input}
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               />
-            </label>
-            <label className="block text-sm">
+            </ConfigField>
+            <ConfigField className="block text-sm">
               Identificador do usuário
               <input
                 className={input}
@@ -316,25 +317,30 @@ export function UsersPage() {
                   setDraft({ ...draft, username: e.target.value })
                 }
               />
-            </label>
-            <label className="block text-sm">
+            </ConfigField>
+            <ConfigField className="block text-sm">
               Senha inicial ou redefinição
               <input
                 className={input}
                 type="password"
                 autoComplete="new-password"
+                required={
+                  !data.data?.users.some(
+                    (user) => user.username === draft.username,
+                  )
+                }
                 minLength={8}
                 value={draft.password}
                 onChange={(e) =>
                   setDraft({ ...draft, password: e.target.value })
                 }
               />
-            </label>
+            </ConfigField>
             <p className="text-xs text-zinc-400">
               Ao editar, deixe em branco para manter a senha. Uma senha
               redefinida precisa ser trocada no próximo acesso.
             </p>
-            <label className="block text-sm">
+            <ConfigField className="block text-sm">
               Perfil
               <select
                 className={input}
@@ -344,8 +350,8 @@ export function UsersPage() {
                 <option value="viewer">Leitura</option>
                 <option value="admin">Administrador</option>
               </select>
-            </label>
-            <label className="flex gap-2 text-sm">
+            </ConfigField>
+            <ConfigField className="flex gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={draft.disabled}
@@ -354,12 +360,12 @@ export function UsersPage() {
                 }
               />
               Desativar conta
-            </label>
+            </ConfigField>
             <button className={button} disabled={busy}>
               <Save size={16} />
               Salvar usuário
             </button>
-          </form>
+          </ConfigurationForm>
         </div>
       )}
       {!readToken() && (

@@ -1,3 +1,8 @@
+import {
+  ConfigurationForm,
+  ConfigField,
+  ConfigurationTabs,
+} from "./configuration-form";
 import { newID } from "@/lib/id";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -271,116 +276,155 @@ export function MonitorManager({
             </DialogDescription>
           </DialogHeader>
           {draft && (
-            <form onSubmit={submit} className="space-y-4">
-              <label className="block text-sm">
-                Nome
-                <Input
-                  required
-                  maxLength={256}
-                  value={draft.name}
-                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                />
-              </label>
-              <label className="block text-sm">
-                Protocolo
-                <select
-                  aria-label="Protocolo do monitor"
-                  className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
-                  value={draft.kind}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      kind: e.target.value as "http" | "tcp",
-                    })
-                  }
-                >
-                  <option value="http">HTTP / HTTPS</option>
-                  <option value="tcp">TCP</option>
-                </select>
-              </label>
-              <label className="block text-sm">
-                Destino
-                <Input
-                  required
-                  maxLength={1024}
-                  placeholder={
-                    draft.kind === "http"
-                      ? "https://api.exemplo/health"
-                      : "servidor.exemplo:443"
-                  }
-                  value={draft.target}
-                  onChange={(e) =>
-                    setDraft({ ...draft, target: e.target.value })
-                  }
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <label className="text-sm">
-                  Intervalo (segundos)
-                  <Input
-                    type="number"
-                    min={10}
-                    max={86400}
-                    required
-                    value={draft.interval_seconds}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        interval_seconds: Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <label className="text-sm">
-                  Timeout (segundos)
-                  <Input
-                    type="number"
-                    min={1}
-                    max={30}
-                    required
-                    value={draft.timeout_seconds}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        timeout_seconds: Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
-              </div>
-              {draft.kind === "http" && (
-                <label className="block text-sm">
-                  Status HTTP esperado
-                  <Input
-                    type="number"
-                    min={100}
-                    max={599}
-                    required
-                    value={draft.expected_status}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        expected_status: Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
-              )}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={draft.enabled}
-                  onChange={(e) =>
-                    setDraft({ ...draft, enabled: e.target.checked })
-                  }
-                />
-                Monitor habilitado
-              </label>
-              <p className="rounded-lg bg-muted p-3 text-xs leading-5 text-muted-foreground">
-                O servidor executa a verificação. Para destinos privados, o
-                administrador precisa habilitar OBSERVA_ALLOW_PRIVATE_TARGETS no
-                ambiente do servidor.
-              </p>
+            <ConfigurationForm onSubmit={submit} className="space-y-4">
+              <ConfigurationTabs
+                sections={[
+                  {
+                    id: "geral",
+                    title: "Geral",
+                    content: (
+                      <>
+                        {" "}
+                        <ConfigField className="block text-sm">
+                          Nome
+                          <Input
+                            required
+                            maxLength={256}
+                            value={draft.name}
+                            onChange={(e) =>
+                              setDraft({ ...draft, name: e.target.value })
+                            }
+                          />
+                        </ConfigField>
+                        <ConfigField className="block text-sm">
+                          Protocolo
+                          <select
+                            required
+                            aria-label="Protocolo do monitor"
+                            className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
+                            value={draft.kind}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                kind: e.target.value as "http" | "tcp",
+                              })
+                            }
+                          >
+                            <option value="http">HTTP / HTTPS</option>
+                            <option value="tcp">TCP</option>
+                          </select>
+                        </ConfigField>
+                        <ConfigField className="block text-sm">
+                          Destino
+                          <Input
+                            required
+                            maxLength={1024}
+                            placeholder={
+                              draft.kind === "http"
+                                ? "https://api.exemplo/health"
+                                : "servidor.exemplo:443"
+                            }
+                            value={draft.target}
+                            onChange={(e) =>
+                              setDraft({ ...draft, target: e.target.value })
+                            }
+                          />
+                        </ConfigField>
+                        <ConfigField className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={draft.enabled}
+                            onChange={(e) =>
+                              setDraft({ ...draft, enabled: e.target.checked })
+                            }
+                          />
+                          Monitor habilitado
+                        </ConfigField>
+                      </>
+                    ),
+                  },
+                  {
+                    id: "coleta",
+                    title: "Coleta",
+                    content: (
+                      <>
+                        {" "}
+                        <div className="grid grid-cols-2 gap-4">
+                          <ConfigField className="text-sm">
+                            Intervalo (segundos)
+                            <Input
+                              type="number"
+                              min={10}
+                              max={86400}
+                              required
+                              value={draft.interval_seconds}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  interval_seconds: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </ConfigField>
+                          <ConfigField className="text-sm">
+                            Timeout (segundos)
+                            <Input
+                              type="number"
+                              min={1}
+                              max={30}
+                              required
+                              value={draft.timeout_seconds}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  timeout_seconds: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </ConfigField>
+                        </div>
+                        {draft.kind === "http" && (
+                          <ConfigField className="block text-sm">
+                            Status HTTP esperado
+                            <Input
+                              type="number"
+                              min={100}
+                              max={599}
+                              required
+                              value={draft.expected_status}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  expected_status: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </ConfigField>
+                        )}
+                      </>
+                    ),
+                  },
+                  {
+                    id: "ajuda",
+                    title: "Ajuda",
+                    content: (
+                      <div className="configuration-help">
+                        <h3>Verificação de disponibilidade</h3>
+                        <p>
+                          HTTP verifica o código de resposta. TCP verifica a
+                          abertura da conexão. Os tempos são definidos em
+                          segundos.
+                        </p>{" "}
+                        <p className="rounded-lg bg-muted p-3 text-xs leading-5 text-muted-foreground">
+                          O servidor executa a verificação. Para destinos
+                          privados, o administrador precisa habilitar
+                          OBSERVA_ALLOW_PRIVATE_TARGETS no ambiente do servidor.
+                        </p>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
               {save.isError && (
                 <p role="alert" className="text-sm text-danger">
                   {save.error.message}
@@ -399,7 +443,7 @@ export function MonitorManager({
                   {save.isPending ? "Salvando…" : "Salvar monitor"}
                 </Button>
               </div>
-            </form>
+            </ConfigurationForm>
           )}
         </DialogContent>
       </Dialog>

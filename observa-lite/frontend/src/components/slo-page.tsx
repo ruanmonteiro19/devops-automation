@@ -1,3 +1,4 @@
+import { ConfigurationForm, ConfigField } from "./configuration-form";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, request } from "@/lib/api";
@@ -133,7 +134,7 @@ export function SLOPage({
       ) : (
         <>
           <div className="flex flex-wrap items-end gap-3">
-            <label>
+            <ConfigField>
               Intervalo
               <select
                 aria-label="Intervalo"
@@ -146,7 +147,7 @@ export function SLOPage({
                 <option value={360}>6 horas</option>
                 <option value={1440}>24 horas</option>
               </select>
-            </label>
+            </ConfigField>
             <Button
               onClick={() => setWindow(windowFor(minutes))}
               disabled={query.isFetching}
@@ -296,8 +297,8 @@ export function SLOPage({
             Defina a proporção de requisições boas na janela consultada.
           </DialogDescription>
           {editor && (
-            <form className="space-y-3" onSubmit={submit}>
-              <label className="block text-sm">
+            <ConfigurationForm className="space-y-3" onSubmit={submit}>
+              <ConfigField className="block text-sm">
                 Nome
                 <Input
                   aria-label="Nome"
@@ -308,8 +309,8 @@ export function SLOPage({
                     setEditor({ ...editor, name: e.target.value })
                   }
                 />
-              </label>
-              <label className="block text-sm">
+              </ConfigField>
+              <ConfigField className="block text-sm">
                 Serviço
                 <select
                   aria-label="Serviço"
@@ -335,7 +336,7 @@ export function SLOPage({
                     </option>
                   ))}
                 </select>
-              </label>
+              </ConfigField>
               {services.isFetching && <p role="status">Carregando serviços…</p>}
               {services.isError && (
                 <p role="alert">
@@ -345,7 +346,7 @@ export function SLOPage({
                   </button>
                 </p>
               )}
-              <label className="block text-sm">
+              <ConfigField className="block text-sm">
                 Tipo
                 <select
                   aria-label="Tipo"
@@ -361,8 +362,8 @@ export function SLOPage({
                   <option value="availability">Disponibilidade</option>
                   <option value="latency">Latência</option>
                 </select>
-              </label>
-              <label className="block text-sm">
+              </ConfigField>
+              <ConfigField className="block text-sm">
                 Meta (%)
                 <Input
                   aria-label="Meta (%)"
@@ -379,9 +380,9 @@ export function SLOPage({
                     })
                   }
                 />
-              </label>
+              </ConfigField>
               {editor.kind === "latency" && (
-                <label className="block text-sm">
+                <ConfigField className="block text-sm">
                   Limite de latência (ms)
                   <Input
                     aria-label="Limite de latência (ms)"
@@ -397,7 +398,7 @@ export function SLOPage({
                       })
                     }
                   />
-                </label>
+                </ConfigField>
               )}
               {save.isError && (
                 <p role="alert">Falha ao salvar: {errorText(save.error)}</p>
@@ -417,7 +418,7 @@ export function SLOPage({
               >
                 Cancelar
               </Button>
-            </form>
+            </ConfigurationForm>
           )}
         </DialogContent>
       </Dialog>

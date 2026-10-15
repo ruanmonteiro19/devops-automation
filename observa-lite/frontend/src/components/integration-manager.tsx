@@ -1,3 +1,8 @@
+import {
+  ConfigurationForm,
+  ConfigField,
+  ConfigurationTabs,
+} from "./configuration-form";
 import { newID } from "@/lib/id";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -448,164 +453,210 @@ export function IntegrationManager({
             </DialogDescription>
           </DialogHeader>
           {draft && (
-            <form onSubmit={submit} className="space-y-4">
-              <label className="block text-sm">
-                Nome
-                <Input
-                  required
-                  maxLength={200}
-                  value={draft.name}
-                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                />
-              </label>
-              {!devices && (
-                <label className="block text-sm">
-                  Provedor
-                  <select
-                    aria-label="Provedor cloud"
-                    className="mt-2 h-10 w-full border bg-background px-3"
-                    value={draft.kind}
-                    onChange={(e) =>
-                      setDraft({ ...draft, kind: e.target.value })
-                    }
-                  >
-                    {Object.entries(labels)
-                      .filter(([key]) => key !== "snmp_exporter")
-                      .map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              )}
-              {draft.kind === "aws" && (
-                <label className="block text-sm">
-                  Região AWS
-                  <Input
-                    required
-                    value={draft.region || ""}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        region: e.target.value.toLowerCase(),
-                      })
-                    }
-                  />
-                </label>
-              )}
-              {["azure", "gcp"].includes(draft.kind) && (
-                <label className="block text-sm">
-                  {draft.kind === "azure" ? "Subscription ID" : "Project ID"}
-                  <Input
-                    required
-                    value={draft.scope || ""}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        scope:
-                          draft.kind === "gcp"
-                            ? e.target.value.toLowerCase()
-                            : e.target.value,
-                      })
-                    }
-                  />
-                </label>
-              )}
-              {!devices && (
-                <label className="block text-sm">
-                  Prefixo das variáveis de credencial
-                  <Input
-                    required
-                    pattern="OBSERVA_[A-Z][A-Z0-9_]*"
-                    value={draft.credential_prefix || ""}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        credential_prefix: e.target.value.toUpperCase(),
-                      })
-                    }
-                  />
-                </label>
-              )}
-              {devices && (
-                <>
-                  <label className="block text-sm">
-                    URL Base do SNMP exporter
-                    <Input
-                      type="url"
-                      required
-                      placeholder="http://snmp-exporter:9116"
-                      value={draft.endpoint || ""}
-                      onChange={(e) =>
-                        setDraft({ ...draft, endpoint: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="block text-sm">
-                    IP Do equipamento
-                    <Input
-                      required
-                      placeholder="192.0.2.10"
-                      value={draft.target || ""}
-                      onChange={(e) =>
-                        setDraft({ ...draft, target: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="block text-sm">
-                    Módulos do exporter
-                    <Input
-                      required
-                      value={draft.module || ""}
-                      onChange={(e) =>
-                        setDraft({ ...draft, module: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="block text-sm">
-                    Perfil auth do exporter
-                    <Input
-                      required
-                      value={draft.auth || ""}
-                      onChange={(e) =>
-                        setDraft({ ...draft, auth: e.target.value })
-                      }
-                    />
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    Para endereços internos, habilite
-                    observa_allow_private_targets no servidor. Métricas
-                    disponíveis dependem dos mibs e módulos configurados; não há
-                    descoberta física lldp/cdp nesta versão.
-                  </p>
-                </>
-              )}
-              <div className="border bg-background p-4">
-                <p className="mb-3 text-xs font-semibold">
-                  Configurar no ambiente do servidor
-                </p>
-                <pre
-                  className="overflow-x-auto text-xs normal-case"
-                  style={{ textTransform: "none" }}
-                >
-                  {envHelp}
-                </pre>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Não cole credenciais neste formulário. consulte o guia de
-                  integrações do projeto para injetar as variáveis no container.
-                </p>
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={draft.enabled}
-                  onChange={(e) =>
-                    setDraft({ ...draft, enabled: e.target.checked })
-                  }
-                />
-                Coleta habilitada
-              </label>
+            <ConfigurationForm onSubmit={submit} className="space-y-4">
+              <ConfigurationTabs
+                sections={[
+                  {
+                    id: "geral",
+                    title: "Geral",
+                    content: (
+                      <>
+                        {" "}
+                        <ConfigField className="block text-sm">
+                          Nome
+                          <Input
+                            required
+                            maxLength={200}
+                            value={draft.name}
+                            onChange={(e) =>
+                              setDraft({ ...draft, name: e.target.value })
+                            }
+                          />
+                        </ConfigField>
+                        {!devices && (
+                          <ConfigField className="block text-sm">
+                            Provedor
+                            <select
+                              aria-label="Provedor cloud"
+                              className="mt-2 h-10 w-full border bg-background px-3"
+                              value={draft.kind}
+                              onChange={(e) =>
+                                setDraft({ ...draft, kind: e.target.value })
+                              }
+                            >
+                              {Object.entries(labels)
+                                .filter(([key]) => key !== "snmp_exporter")
+                                .map(([key, label]) => (
+                                  <option key={key} value={key}>
+                                    {label}
+                                  </option>
+                                ))}
+                            </select>
+                          </ConfigField>
+                        )}
+                        <ConfigField className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={draft.enabled}
+                            onChange={(e) =>
+                              setDraft({ ...draft, enabled: e.target.checked })
+                            }
+                          />
+                          Coleta habilitada
+                        </ConfigField>
+                      </>
+                    ),
+                  },
+                  {
+                    id: "conexao",
+                    title: "Conexão",
+                    content: (
+                      <>
+                        {" "}
+                        {draft.kind === "aws" && (
+                          <ConfigField className="block text-sm">
+                            Região AWS
+                            <Input
+                              required
+                              value={draft.region || ""}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  region: e.target.value.toLowerCase(),
+                                })
+                              }
+                            />
+                          </ConfigField>
+                        )}
+                        {["azure", "gcp"].includes(draft.kind) && (
+                          <ConfigField className="block text-sm">
+                            {draft.kind === "azure"
+                              ? "Subscription ID"
+                              : "Project ID"}
+                            <Input
+                              required
+                              value={draft.scope || ""}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  scope:
+                                    draft.kind === "gcp"
+                                      ? e.target.value.toLowerCase()
+                                      : e.target.value,
+                                })
+                              }
+                            />
+                          </ConfigField>
+                        )}
+                        {!devices && (
+                          <ConfigField className="block text-sm">
+                            Prefixo das variáveis de credencial
+                            <Input
+                              required
+                              pattern="OBSERVA_[A-Z][A-Z0-9_]*"
+                              value={draft.credential_prefix || ""}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  credential_prefix:
+                                    e.target.value.toUpperCase(),
+                                })
+                              }
+                            />
+                          </ConfigField>
+                        )}
+                        {devices && (
+                          <>
+                            <ConfigField className="block text-sm">
+                              URL base do SNMP exporter
+                              <Input
+                                type="url"
+                                required
+                                placeholder="http://snmp-exporter:9116"
+                                value={draft.endpoint || ""}
+                                onChange={(e) =>
+                                  setDraft({
+                                    ...draft,
+                                    endpoint: e.target.value,
+                                  })
+                                }
+                              />
+                            </ConfigField>
+                            <ConfigField className="block text-sm">
+                              IP ou DNS do equipamento
+                              <Input
+                                required
+                                placeholder="192.0.2.10"
+                                value={draft.target || ""}
+                                onChange={(e) =>
+                                  setDraft({ ...draft, target: e.target.value })
+                                }
+                              />
+                            </ConfigField>
+                            <ConfigField className="block text-sm">
+                              Módulos do exporter
+                              <Input
+                                required
+                                value={draft.module || ""}
+                                onChange={(e) =>
+                                  setDraft({ ...draft, module: e.target.value })
+                                }
+                              />
+                            </ConfigField>
+                            <ConfigField className="block text-sm">
+                              Perfil de autenticação do exporter
+                              <Input
+                                required
+                                value={draft.auth || ""}
+                                onChange={(e) =>
+                                  setDraft({ ...draft, auth: e.target.value })
+                                }
+                              />
+                            </ConfigField>
+                            <p className="text-xs text-muted-foreground">
+                              Para endereços internos, habilite
+                              observa_allow_private_targets no servidor.
+                              Métricas disponíveis dependem dos mibs e módulos
+                              configurados; Configure módulos e autenticação no
+                              SNMP exporter.
+                            </p>
+                          </>
+                        )}
+                      </>
+                    ),
+                  },
+                  {
+                    id: "ajuda",
+                    title: "Ajuda e credenciais",
+                    content: (
+                      <div className="configuration-help">
+                        <h3>Como funciona a coleta</h3>
+                        <p>
+                          {devices
+                            ? "O servidor consulta um SNMP exporter já configurado. Informe o endereço do exporter e o IP ou DNS do equipamento; a comunidade e as credenciais SNMPv3 ficam no exporter."
+                            : "As credenciais são lidas do ambiente do servidor. Informe o provedor e o escopo para coletar o inventário autorizado."}
+                        </p>{" "}
+                        <div className="border bg-background p-4">
+                          <p className="mb-3 text-xs font-semibold">
+                            Configurar no ambiente do servidor
+                          </p>
+                          <pre
+                            className="overflow-x-auto text-xs normal-case"
+                            style={{ textTransform: "none" }}
+                          >
+                            {envHelp}
+                          </pre>
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            Não cole credenciais neste formulário. Consulte o
+                            guia de integrações do projeto para injetar as
+                            variáveis no container.
+                          </p>
+                        </div>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
               {save.error && (
                 <p role="alert" className="text-danger">
                   {save.error.message}
@@ -624,7 +675,7 @@ export function IntegrationManager({
                   {save.isPending ? "Salvando…" : "Salvar perfil"}
                 </Button>
               </div>
-            </form>
+            </ConfigurationForm>
           )}
         </DialogContent>
       </Dialog>

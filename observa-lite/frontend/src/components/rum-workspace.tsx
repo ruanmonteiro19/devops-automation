@@ -1,3 +1,8 @@
+import {
+  ConfigurationForm,
+  ConfigField,
+  ConfigurationTabs,
+} from "./configuration-form";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -169,7 +174,7 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
       )}
       {!!list.length && (
         <section className="flex flex-wrap items-center gap-3 border bg-surface p-3">
-          <label className="text-xs">
+          <ConfigField className="text-xs">
             Frontend{" "}
             <select
               className={selectClass}
@@ -187,7 +192,7 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
                 </option>
               ))}
             </select>
-          </label>
+          </ConfigField>
           <select
             aria-label="Janela RUM"
             className={selectClass}
@@ -551,7 +556,7 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
             </DialogDescription>
           </DialogHeader>
           {draft && (
-            <form
+            <ConfigurationForm
               className="space-y-5"
               onSubmit={(e) => {
                 e.preventDefault();
@@ -570,190 +575,250 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
                 });
               }}
             >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Nome">
-                  <Input
-                    required
-                    maxLength={128}
-                    value={draft.name}
-                    onChange={(e) =>
-                      setDraft({ ...draft, name: e.target.value })
-                    }
-                  />
-                </Field>
-                <Field label="ID">
-                  <Input
-                    required
-                    disabled={list.some((a) => a.id === draft.id)}
-                    pattern="[a-zA-Z0-9_-]{1,96}"
-                    value={draft.id}
-                    onChange={(e) => setDraft({ ...draft, id: e.target.value })}
-                  />
-                </Field>
-              </div>
-              <Field label="Origens permitidas">
-                <Input
-                  required
-                  value={draft.origins.join(", ")}
-                  placeholder="https://app.exemplo.com, http://localhost:3000"
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      origins: e.target.value.split(",").map((v) => v.trim()),
-                    })
-                  }
-                />
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Amostragem RUM (%)">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={draft.sample_rate * 100}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        sample_rate: Number(e.target.value) / 100,
-                      })
-                    }
-                  />
-                </Field>
-                <Field label="Apdex T (ms)">
-                  <Input
-                    type="number"
-                    min={100}
-                    max={60000}
-                    required
-                    value={draft.apdex_t_ms}
-                    onChange={(e) =>
-                      setDraft({ ...draft, apdex_t_ms: Number(e.target.value) })
-                    }
-                  />
-                </Field>
-              </div>
-              <fieldset className="space-y-3 border p-4">
-                <legend className="px-2 text-xs font-semibold">
-                  Captura e privacidade
-                </legend>
-                {(
-                  [
-                    ["enabled", "Captura habilitada"],
-                    ["require_consent", "Exigir consentimento antes da coleta"],
-                    [
-                      "consent_banner",
-                      "Exibir aviso de consentimento da Vetra",
-                    ],
-                    ["replay_enabled", "Permitir Session Replay"],
-                    [
-                      "capture_path",
-                      "Capturar caminho das URLs (sem query string ou fragmento)",
-                    ],
-                    [
-                      "identify_users",
-                      "Permitir identificação por pseudônimo via API",
-                    ],
-                  ] as const
-                ).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-3 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={draft[key]}
-                      onChange={(e) =>
-                        setDraft({ ...draft, [key]: e.target.checked })
-                      }
-                    />
-                    {label}
-                  </label>
-                ))}
-                {!draft.require_consent && (
-                  <p className="text-xs text-warning">
-                    A coleta começará ao carregar a página. Defina essa opção
-                    conforme a política do site e o mecanismo de consentimento
-                    adotado.
-                  </p>
-                )}
-                {draft.replay_enabled && (
-                  <>
-                    <Field label="Amostragem de replay (%)">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={draft.replay_sample_rate * 100}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            replay_sample_rate: Number(e.target.value) / 100,
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field label="Mascaramento de texto">
-                      <select
-                        className={selectClass}
-                        value={draft.masking}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            masking: e.target
-                              .value as RUMApplication["masking"],
-                          })
-                        }
-                      >
-                        <option value="all">Mascarar todos os textos</option>
-                        <option value="allowlist">
-                          Permitir apenas seletores públicos revisados
-                        </option>
-                      </select>
-                    </Field>
-                    {draft.masking === "allowlist" && (
-                      <Field label="Seletores CSS de texto público (um por linha)">
-                        <textarea
-                          className="min-h-20 w-full border bg-background p-2"
-                          value={draft.public_text_selectors.join("\n")}
-                          onChange={(e) =>
-                            setDraft({
-                              ...draft,
-                              public_text_selectors: e.target.value.split("\n"),
-                            })
-                          }
-                        />
-                      </Field>
-                    )}
-                    <Field label="Bloquear elementos por seletor CSS (um por linha)">
-                      <textarea
-                        className="min-h-20 w-full border bg-background p-2"
-                        value={draft.block_selectors.join("\n")}
-                        placeholder=".dados-pessoais"
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            block_selectors: e.target.value.split("\n"),
-                          })
-                        }
-                      />
-                    </Field>
-                    <p className="text-xs text-muted-foreground">
-                      Inputs, imagens, canvas e iframes permanecem protegidos.
-                      Replay reconstrói estrutura, estilos de layout e
-                      interações; não é uma gravação de vídeo pixel a pixel.
-                    </p>
-                  </>
-                )}
-                <Field label="Excluir caminhos por prefixo (um por linha)">
-                  <textarea
-                    className="min-h-20 w-full border bg-background p-2"
-                    value={draft.exclude_paths.join("\n")}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        exclude_paths: e.target.value.split("\n"),
-                      })
-                    }
-                  />
-                </Field>
-              </fieldset>
+              <ConfigurationTabs
+                sections={[
+                  {
+                    id: "geral",
+                    title: "Geral",
+                    content: (
+                      <>
+                        {" "}
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <Field label="Nome">
+                            <Input
+                              required
+                              maxLength={128}
+                              value={draft.name}
+                              onChange={(e) =>
+                                setDraft({ ...draft, name: e.target.value })
+                              }
+                            />
+                          </Field>
+                          <Field label="ID">
+                            <Input
+                              required
+                              disabled={list.some((a) => a.id === draft.id)}
+                              pattern="[a-zA-Z0-9_-]{1,96}"
+                              value={draft.id}
+                              onChange={(e) =>
+                                setDraft({ ...draft, id: e.target.value })
+                              }
+                            />
+                          </Field>
+                        </div>
+                        <Field label="Origens permitidas">
+                          <Input
+                            required
+                            value={draft.origins.join(", ")}
+                            placeholder="https://app.exemplo.com, http://localhost:3000"
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                origins: e.target.value
+                                  .split(",")
+                                  .map((v) => v.trim()),
+                              })
+                            }
+                          />
+                        </Field>
+                      </>
+                    ),
+                  },
+                  {
+                    id: "experiencia",
+                    title: "Experiência e Apdex",
+                    content: (
+                      <>
+                        {" "}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <Field label="Amostragem RUM (%)">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={draft.sample_rate * 100}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  sample_rate: Number(e.target.value) / 100,
+                                })
+                              }
+                            />
+                          </Field>
+                          <Field label="Apdex T (ms)">
+                            <Input
+                              type="number"
+                              min={100}
+                              max={60000}
+                              required
+                              value={draft.apdex_t_ms}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  apdex_t_ms: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </Field>
+                        </div>
+                        <p className="configuration-help">
+                          A amostragem define a proporção de sessões coletadas.
+                          Apdex T define o tempo considerado satisfatório para o
+                          usuário.
+                        </p>
+                      </>
+                    ),
+                  },
+                  {
+                    id: "privacidade",
+                    title: "Replay e privacidade",
+                    content: (
+                      <>
+                        {" "}
+                        <fieldset className="space-y-3 border p-4">
+                          <legend className="px-2 text-xs font-semibold">
+                            Captura e privacidade
+                          </legend>
+                          {(
+                            [
+                              ["enabled", "Captura habilitada"],
+                              [
+                                "require_consent",
+                                "Exigir consentimento antes da coleta",
+                              ],
+                              [
+                                "consent_banner",
+                                "Exibir aviso de consentimento da Vetra",
+                              ],
+                              ["replay_enabled", "Permitir Session Replay"],
+                              [
+                                "capture_path",
+                                "Capturar caminho das URLs (sem query string ou fragmento)",
+                              ],
+                              [
+                                "identify_users",
+                                "Permitir identificação por pseudônimo via API",
+                              ],
+                            ] as const
+                          ).map(([key, label]) => (
+                            <ConfigField
+                              key={key}
+                              className="flex items-center gap-3 text-xs"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={draft[key]}
+                                onChange={(e) =>
+                                  setDraft({
+                                    ...draft,
+                                    [key]: e.target.checked,
+                                  })
+                                }
+                              />
+                              {label}
+                            </ConfigField>
+                          ))}
+                          {!draft.require_consent && (
+                            <p className="text-xs text-warning">
+                              A coleta começará ao carregar a página. Defina
+                              essa opção conforme a política do site e o
+                              mecanismo de consentimento adotado.
+                            </p>
+                          )}
+                          {draft.replay_enabled && (
+                            <>
+                              <Field label="Amostragem de replay (%)">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  value={draft.replay_sample_rate * 100}
+                                  onChange={(e) =>
+                                    setDraft({
+                                      ...draft,
+                                      replay_sample_rate:
+                                        Number(e.target.value) / 100,
+                                    })
+                                  }
+                                />
+                              </Field>
+                              <Field label="Mascaramento de texto">
+                                <select
+                                  className={selectClass}
+                                  value={draft.masking}
+                                  onChange={(e) =>
+                                    setDraft({
+                                      ...draft,
+                                      masking: e.target
+                                        .value as RUMApplication["masking"],
+                                    })
+                                  }
+                                >
+                                  <option value="all">
+                                    Mascarar todos os textos
+                                  </option>
+                                  <option value="allowlist">
+                                    Permitir apenas seletores públicos revisados
+                                  </option>
+                                </select>
+                              </Field>
+                              {draft.masking === "allowlist" && (
+                                <Field label="Seletores CSS de texto público (um por linha)">
+                                  <textarea
+                                    className="min-h-20 w-full border bg-background p-2"
+                                    value={draft.public_text_selectors.join(
+                                      "\n",
+                                    )}
+                                    onChange={(e) =>
+                                      setDraft({
+                                        ...draft,
+                                        public_text_selectors:
+                                          e.target.value.split("\n"),
+                                      })
+                                    }
+                                  />
+                                </Field>
+                              )}
+                              <Field label="Bloquear elementos por seletor CSS (um por linha)">
+                                <textarea
+                                  className="min-h-20 w-full border bg-background p-2"
+                                  value={draft.block_selectors.join("\n")}
+                                  placeholder=".dados-pessoais"
+                                  onChange={(e) =>
+                                    setDraft({
+                                      ...draft,
+                                      block_selectors:
+                                        e.target.value.split("\n"),
+                                    })
+                                  }
+                                />
+                              </Field>
+                              <p className="text-xs text-muted-foreground">
+                                Inputs, imagens, canvas e iframes permanecem
+                                protegidos. Replay reconstrói estrutura, estilos
+                                de layout e interações; não é uma gravação de
+                                vídeo pixel a pixel.
+                              </p>
+                            </>
+                          )}
+                          <Field label="Excluir caminhos por prefixo (um por linha)">
+                            <textarea
+                              className="min-h-20 w-full border bg-background p-2"
+                              value={draft.exclude_paths.join("\n")}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  exclude_paths: e.target.value.split("\n"),
+                                })
+                              }
+                            />
+                          </Field>
+                        </fieldset>
+                      </>
+                    ),
+                  },
+                ]}
+              />
               {save.error && (
                 <p role="alert" className="text-sm text-destructive">
                   {error(save.error)}
@@ -782,7 +847,7 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
                   {save.isPending ? "Salvando…" : "Salvar frontend"}
                 </Button>
               </div>
-            </form>
+            </ConfigurationForm>
           )}
         </DialogContent>
       </Dialog>
@@ -859,10 +924,10 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block space-y-2 text-xs">
+    <ConfigField className="block space-y-2 text-xs">
       <span>{label}</span>
       {children}
-    </label>
+    </ConfigField>
   );
 }
 function Installation({ app }: { app: RUMApplication }) {
@@ -967,22 +1032,22 @@ export NODE_OPTIONS="--require=/opt/vetra/vetra-node.cjs \${NODE_OPTIONS:-}"
             onChange={(e) => setUpstream(e.target.value)}
           />
         </Field>
-        <label className="flex gap-2 text-xs">
+        <ConfigField className="flex gap-2 text-xs">
           <input
             type="checkbox"
             checked={injectionEnabled}
             onChange={(e) => setInjectionEnabled(e.target.checked)}
           />
           Ativar injeção nesta rota
-        </label>
-        <label className="flex gap-2 text-xs">
+        </ConfigField>
+        <ConfigField className="flex gap-2 text-xs">
           <input
             type="checkbox"
             checked={cspApproved}
             onChange={(e) => setCSPApproved(e.target.checked)}
           />
           Revisei a CSP e confirmei que permite o SDK e o coletor
-        </label>
+        </ConfigField>
         <Button
           variant="outline"
           onClick={() => downloadJSON(`vetra-proxy-${app.id}.json`, route)}

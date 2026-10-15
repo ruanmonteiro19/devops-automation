@@ -1,3 +1,4 @@
+import { ConfigurationForm, ConfigField } from "./configuration-form";
 import { newID } from "@/lib/id";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -143,7 +144,7 @@ export function APMProblemsPage({
             Nova regra
           </Button>
         ) : (
-          <label className="flex items-center gap-2 text-sm">
+          <ConfigField className="flex items-center gap-2 text-sm">
             Estado
             <select
               className="rounded border border-input bg-background p-2"
@@ -157,7 +158,7 @@ export function APMProblemsPage({
               <option value="active">Ativos</option>
               <option value="resolved">Resolvidos</option>
             </select>
-          </label>
+          </ConfigField>
         )}
         <Button
           variant="outline"
@@ -285,8 +286,8 @@ export function APMProblemsPage({
             </DialogDescription>
           </DialogHeader>
           {draft && (
-            <form onSubmit={submit} className="space-y-4">
-              <label className="grid gap-2 text-sm">
+            <ConfigurationForm onSubmit={submit} className="space-y-4">
+              <ConfigField className="grid gap-2 text-sm">
                 Nome
                 <Input
                   required
@@ -294,8 +295,8 @@ export function APMProblemsPage({
                   value={draft.name}
                   onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                 />
-              </label>
-              <label className="grid gap-2 text-sm">
+              </ConfigField>
+              <ConfigField className="grid gap-2 text-sm">
                 Serviço
                 <select
                   required
@@ -321,14 +322,14 @@ export function APMProblemsPage({
                     </option>
                   ))}
                 </select>
-              </label>
+              </ConfigField>
               {services.isError && (
                 <p role="alert" className="text-xs text-danger">
                   Não foi possível listar serviços: {services.error.message}
                 </p>
               )}
               <div className="grid grid-cols-2 gap-3">
-                <label className="grid gap-2 text-sm">
+                <ConfigField className="grid gap-2 text-sm">
                   Métrica
                   <select
                     className="rounded border border-input bg-background p-2"
@@ -340,8 +341,8 @@ export function APMProblemsPage({
                     <option value="error_rate">Taxa de falhas (%)</option>
                     <option value="p95_ms">Latência P95 (ms)</option>
                   </select>
-                </label>
-                <label className="grid gap-2 text-sm">
+                </ConfigField>
+                <ConfigField className="grid gap-2 text-sm">
                   Limiar
                   <Input
                     type="number"
@@ -354,8 +355,8 @@ export function APMProblemsPage({
                       setDraft({ ...draft, threshold: Number(e.target.value) })
                     }
                   />
-                </label>
-                <label className="grid gap-2 text-sm">
+                </ConfigField>
+                <ConfigField className="grid gap-2 text-sm">
                   Amostra mínima
                   <Input
                     type="number"
@@ -371,8 +372,8 @@ export function APMProblemsPage({
                       })
                     }
                   />
-                </label>
-                <label className="grid gap-2 text-sm">
+                </ConfigField>
+                <ConfigField className="grid gap-2 text-sm">
                   Janela (minutos)
                   <Input
                     type="number"
@@ -388,9 +389,9 @@ export function APMProblemsPage({
                       })
                     }
                   />
-                </label>
+                </ConfigField>
               </div>
-              <label className="grid gap-2 text-sm">
+              <ConfigField className="grid gap-2 text-sm">
                 Severidade
                 <select
                   className="rounded border border-input bg-background p-2"
@@ -402,8 +403,8 @@ export function APMProblemsPage({
                   <option value="warning">Aviso</option>
                   <option value="critical">Crítica</option>
                 </select>
-              </label>
-              <label className="flex gap-2 text-sm">
+              </ConfigField>
+              <ConfigField className="flex gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={draft.enabled}
@@ -412,7 +413,7 @@ export function APMProblemsPage({
                   }
                 />
                 Habilitada
-              </label>
+              </ConfigField>
               <Button
                 type="submit"
                 disabled={demo || save.isPending || !draft.service_id}
@@ -424,7 +425,7 @@ export function APMProblemsPage({
                   Falha ao salvar: {save.error.message}
                 </p>
               )}
-            </form>
+            </ConfigurationForm>
           )}
         </DialogContent>
       </Dialog>

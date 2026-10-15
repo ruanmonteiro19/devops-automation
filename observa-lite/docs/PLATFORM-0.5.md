@@ -161,3 +161,12 @@ Testes Go e frontend, Chromium com origem HTTP sem randomUUID, cadastro de integ
 A coleta SNMP foi exercitada com um exporter HTTP de laboratório. Não houve credencial cloud real para certificar AWS/Azure/GCP externos nesta sessão. Perfis cadastrados sem credenciais não são apresentados como coleta bem-sucedida.
 
 Docker não está disponível neste ambiente. Os binários foram compilados/executados e os YAML foram analisados; as imagens Web/PostgreSQL e o profile de componentes não foram iniciados aqui. ARM64 e Windows foram compilados, sem execução nesses sistemas. Não houve alteração remota na VM do usuário.
+
+
+## Formulários de configuração
+
+Os editores de integrações, monitores e RUM usam abas com painéis preservados, navegação por setas/Home/End e abertura da seção que contém um campo inválido. O padrão de linhas compactas também é compartilhado por regras APM, SLOs, dashboards, usuários, campos de editores antigos e Workspace Studio. Buscas e filtros continuam controles de consulta.
+
+Obrigatório/opcional acompanha o atributo real `required` do controle; senha inicial é obrigatória ao criar usuário e opcional ao editar. Checkboxes não recebem indicação de obrigatoriedade artificial. A ajuda de rede mantém explícita a dependência do SNMP exporter; a interface não oferece parâmetros SNMP diretos inexistentes no backend.
+
+A consultoria visual foi solicitada ao projeto Observa Lite UI no Lovable (mensagem `umsg_01m50ctd6tf5wt0khv5xx45fmz`). Foram aproveitadas as recomendações de alinhamento, controles sólidos de 36 px/44 px no mobile, ações visíveis e preservação das validações. A implementação e a verificação foram feitas neste repositório, não na cópia antiga do Lovable.

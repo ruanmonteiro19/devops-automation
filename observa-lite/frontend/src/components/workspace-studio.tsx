@@ -1,3 +1,4 @@
+import { ConfigurationSection, ConfigField } from "./configuration-form";
 import { newID } from "@/lib/id";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -219,7 +220,7 @@ export function WorkspaceStudio({
       ),
     });
   return (
-    <div className="space-y-5 text-zinc-100">
+    <ConfigurationSection className="space-y-5 text-zinc-100">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-3">
@@ -428,7 +429,7 @@ export function WorkspaceStudio({
           </p>
           {candidate && (
             <div className="space-y-3 border-t border-zinc-800 pt-4">
-              <label className="block text-sm">
+              <ConfigField className="block text-sm">
                 Origem pública da aplicação
                 <input
                   className={input}
@@ -436,7 +437,7 @@ export function WorkspaceStudio({
                   value={origin}
                   onChange={(e) => setOrigin(e.target.value)}
                 />
-              </label>
+              </ConfigField>
               <button
                 className={button}
                 disabled={busy || !origin}
@@ -500,7 +501,7 @@ export function WorkspaceStudio({
       {path === "vulnerabilidades" && (
         <section className={box}>
           <h2 className="font-semibold">Importar inventário</h2>
-          <label className="block text-sm">
+          <ConfigField className="block text-sm">
             CycloneDX JSON ou package-lock v2/v3
             <input
               className={input}
@@ -523,7 +524,7 @@ export function WorkspaceStudio({
                   }, "Inventário importado. Selecione o perfil e execute a avaliação.");
               }}
             />
-          </label>
+          </ConfigField>
           <div className="flex gap-2">
             <input
               className={input}
@@ -590,16 +591,17 @@ export function WorkspaceStudio({
           <main className="space-y-5">
             {editing ? (
               <section className={box}>
-                <label className="block text-sm">
+                <ConfigField className="block text-sm">
                   Nome
                   <input
                     className={input}
+                    required
                     value={editing.name}
                     onChange={(e) =>
                       setEditing({ ...editing, name: e.target.value })
                     }
                   />
-                </label>
+                </ConfigField>
                 {editing.kind === "notebook" && (
                   <>
                     <p className="text-xs text-zinc-400">
@@ -720,10 +722,12 @@ export function WorkspaceStudio({
                 {editing.kind === "database" && (
                   <>
                     <p>PostgreSQL · Transação somente leitura</p>
-                    <label className="block text-sm">
+                    <ConfigField className="block text-sm">
                       Variável de ambiente com a conexão
                       <input
                         className={input}
+                        required
+                        pattern="OBSERVA_DB_[A-Z0-9_]+_DSN"
                         value={editing.credential_env ?? ""}
                         onChange={(e) =>
                           setEditing({
@@ -733,7 +737,7 @@ export function WorkspaceStudio({
                         }
                         placeholder="OBSERVA_DB_PRINCIPAL_DSN"
                       />
-                    </label>
+                    </ConfigField>
                     <p className="text-sm text-zinc-400">
                       Defina essa variável no servidor e repasse-a ao container.
                       O DSN e a senha não são gravados neste formulário. São
@@ -823,7 +827,7 @@ export function WorkspaceStudio({
                 )}
                 {editing.kind === "workflow" && (
                   <>
-                    <label className="flex gap-2 text-sm">
+                    <ConfigField className="flex gap-2 text-sm">
                       <input
                         type="checkbox"
                         checked={editing.enabled}
@@ -832,8 +836,8 @@ export function WorkspaceStudio({
                         }
                       />
                       Ativar agendamento
-                    </label>
-                    <label className="block text-sm">
+                    </ConfigField>
+                    <ConfigField className="block text-sm">
                       Intervalo em segundos (0 para execução manual)
                       <input
                         type="number"
@@ -848,7 +852,7 @@ export function WorkspaceStudio({
                           })
                         }
                       />
-                    </label>
+                    </ConfigField>
                     {(editing.steps ?? []).map((s, i) => (
                       <div
                         className="border border-zinc-800 bg-black p-4 space-y-3"
@@ -907,7 +911,7 @@ export function WorkspaceStudio({
                             }
                           />
                         ) : s.kind === "condition" ? (
-                          <label className="block text-sm">
+                          <ConfigField className="block text-sm">
                             Continuar quando a consulta anterior retornar ao
                             menos
                             <input
@@ -922,7 +926,7 @@ export function WorkspaceStudio({
                                 })
                               }
                             />
-                          </label>
+                          </ConfigField>
                         ) : (
                           <select
                             aria-label={`Perfil da etapa ${i + 1}`}
@@ -1072,6 +1076,6 @@ export function WorkspaceStudio({
           </main>
         </div>
       )}
-    </div>
+    </ConfigurationSection>
   );
 }

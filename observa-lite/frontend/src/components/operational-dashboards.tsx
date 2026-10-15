@@ -1,3 +1,4 @@
+import { ConfigurationForm, ConfigField } from "./configuration-form";
 import { newID } from "@/lib/id";
 import {
   ArrowUp,
@@ -214,7 +215,7 @@ export function OperationalDashboards({
         </p>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <label>
+          <ConfigField>
             Intervalo
             <select
               aria-label="Intervalo"
@@ -227,7 +228,7 @@ export function OperationalDashboards({
               <option value={360}>6 horas</option>
               <option value={1440}>24 horas</option>
             </select>
-          </label>
+          </ConfigField>
           <Button onClick={() => setRange(rangeFor(minutes))}>Atualizar</Button>
           <Button
             onClick={() => {
@@ -522,8 +523,8 @@ export function OperationalDashboards({
             preservados.
           </DialogDescription>
           {draft && (
-            <form onSubmit={submit} className="space-y-4">
-              <label>
+            <ConfigurationForm onSubmit={submit} className="space-y-4">
+              <ConfigField>
                 Título
                 <Input
                   aria-label="Título do dashboard"
@@ -534,7 +535,7 @@ export function OperationalDashboards({
                     setDraft({ ...draft, title: e.target.value })
                   }
                 />
-              </label>
+              </ConfigField>
               {services.isError && (
                 <p role="alert">
                   Falha ao carregar serviços: {error(services.error)}
@@ -598,7 +599,7 @@ export function OperationalDashboards({
                         Duplicar painel {i + 1}
                       </Button>
                     </div>
-                    <label className="block text-sm">
+                    <ConfigField className="block text-sm">
                       Largura
                       <select
                         aria-label={`Largura do painel ${i + 1}`}
@@ -613,8 +614,8 @@ export function OperationalDashboards({
                         <option value="half">Meia largura</option>
                         <option value="full">Largura completa</option>
                       </select>
-                    </label>
-                    <label>
+                    </ConfigField>
+                    <ConfigField>
                       Título
                       <Input
                         aria-label={`Título do painel ${i + 1}`}
@@ -624,10 +625,10 @@ export function OperationalDashboards({
                           updatePanel(i, { title: e.target.value })
                         }
                       />
-                    </label>
+                    </ConfigField>
                     {live ? (
                       <>
-                        <label>
+                        <ConfigField>
                           Visualização
                           <select
                             aria-label={`Visualização ${i + 1}`}
@@ -639,8 +640,8 @@ export function OperationalDashboards({
                             <option value="apm-stat">Indicador</option>
                             <option value="apm-series">Série temporal</option>
                           </select>
-                        </label>
-                        <label className="block">
+                        </ConfigField>
+                        <ConfigField className="block">
                           Serviço
                           <select
                             aria-label={`Serviço ${i + 1}`}
@@ -671,8 +672,8 @@ export function OperationalDashboards({
                               </option>
                             ))}
                           </select>
-                        </label>
-                        <label className="block">
+                        </ConfigField>
+                        <ConfigField className="block">
                           Métrica
                           <select
                             aria-label={`Métrica ${i + 1}`}
@@ -693,7 +694,7 @@ export function OperationalDashboards({
                               </option>
                             ))}
                           </select>
-                        </label>
+                        </ConfigField>
                       </>
                     ) : (
                       <p className="text-xs">
@@ -760,7 +761,7 @@ export function OperationalDashboards({
                   Cancelar
                 </Button>
               </div>
-            </form>
+            </ConfigurationForm>
           )}
         </DialogContent>
       </Dialog>

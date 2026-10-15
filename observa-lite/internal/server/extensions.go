@@ -83,7 +83,7 @@ func (s *Server) extensions(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 	write(w, 200, map[string]interface{}{
-		"version":        "0.2.0",
+		"version":        "0.4.0",
 		"authentication": map[string]interface{}{"mode": "api_token", "sso": false, "mfa": false, "rbac": false, "description": "Autenticação administrativa por token. SSO e MFA dependem de implementação de backend e provedor de identidade."},
 		"features": map[string]bool{
 			"rum_web":                          true,
@@ -92,7 +92,13 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 			"experience_vitals_web":            true,
 			"apdex_page_load":                  true,
 			"rum_native_mobile_sdk":            false,
-			"vulnerability_scanning":           false,
+			"vulnerability_scanning":           true,
+			"vulnerability_runtime_analysis":   false,
+			"notebooks_vql":                    true,
+			"workflows_interval":               true,
+			"database_postgresql_read_only":    true,
+			"agent_frontend_discovery":         true,
+			"mcp_configuration":                true,
 			"cloud_inventory_aws_ec2":          true,
 			"cloud_inventory_azure_arm":        true,
 			"cloud_inventory_gcp_compute":      true,
@@ -111,7 +117,7 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 			"grafana_dashboard_import":         false,
 			"gateway_manual_routes":            true,
 			"gateway_heartbeat":                false,
-			"mcp_read_only":                    true,
+			"mcp_read_only":                    false,
 			"oidc_sso":                         false,
 			"mfa":                              false,
 			"rbac":                             false,

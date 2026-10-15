@@ -60,6 +60,8 @@ services:
     environment:
       OBSERVA_AGENT_TOKEN: ${OBSERVA_AGENT_TOKEN:?Execute ./scripts/docker-init.sh primeiro}
       OBSERVA_DISCOVER_PROCESSES: ${OBSERVA_DISCOVER_PROCESSES:-true}
+      OBSERVA_DISCOVER_FRONTENDS: ${OBSERVA_DISCOVER_FRONTENDS:-true}
+      OBSERVA_DISCOVER_SOFTWARE: ${OBSERVA_DISCOVER_SOFTWARE:-true}
     volumes:
       - /etc/machine-id:/etc/machine-id:ro
       - /etc/os-release:/etc/os-release:ro

@@ -52,12 +52,15 @@ func TestRUMOriginConsentAuthenticationAndApdex(t *testing.T) {
 	}
 	w := call("GET", "/api/v1/rum/analysis?app_id=web", srv.AdminToken, "", nil)
 	var out struct {
-		Apdex    float64 `json:"apdex"`
-		Pages    int     `json:"pages"`
-		Sessions int     `json:"sessions_total"`
+		Apdex       float64 `json:"apdex"`
+		SessionList []struct {
+			Apdex *float64 `json:"apdex"`
+		} `json:"sessions"`
+		Pages    int `json:"pages"`
+		Sessions int `json:"sessions_total"`
 	}
 	_ = json.Unmarshal(w.Body.Bytes(), &out)
-	if out.Apdex != 0.5 || out.Pages != 3 || out.Sessions != 1 {
+	if out.Apdex != 0.5 || out.Pages != 3 || out.Sessions != 1 || len(out.SessionList) != 1 || out.SessionList[0].Apdex == nil || *out.SessionList[0].Apdex != 0.5 {
 		t.Fatalf("incorrect analysis: %s", w.Body.String())
 	}
 	if w := call("DELETE", "/api/v1/rum/apps/web/sessions/session", srv.AdminToken, "", nil); w.Code != 200 {

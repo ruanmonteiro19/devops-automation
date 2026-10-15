@@ -5,16 +5,18 @@ import "time"
 // Discovery is a point-in-time passive observation. All relationships remain
 // observations until resolved by the inventory/correlation engine.
 type Discovery struct {
-	HostID         string       `json:"host_id"`
-	Hostname       string       `json:"hostname"`
-	OS             string       `json:"os"`
-	Addresses      []string     `json:"addresses"`
-	CapturedAt     time.Time    `json:"captured_at"`
-	HostGroup      string       `json:"host_group,omitempty"`
-	NetworkZone    string       `json:"network_zone,omitempty"`
-	MonitoringMode string       `json:"monitoring_mode,omitempty"`
-	Processes      []Process    `json:"processes"`
-	Connections    []Connection `json:"connections"`
+	Frontends      []FrontendCandidate `json:"frontends,omitempty"`
+	Packages       []SoftwarePackage   `json:"packages,omitempty"`
+	HostID         string              `json:"host_id"`
+	Hostname       string              `json:"hostname"`
+	OS             string              `json:"os"`
+	Addresses      []string            `json:"addresses"`
+	CapturedAt     time.Time           `json:"captured_at"`
+	HostGroup      string              `json:"host_group,omitempty"`
+	NetworkZone    string              `json:"network_zone,omitempty"`
+	MonitoringMode string              `json:"monitoring_mode,omitempty"`
+	Processes      []Process           `json:"processes"`
+	Connections    []Connection        `json:"connections"`
 }
 type Process struct {
 	DisplayName string `json:"display_name,omitempty"`
@@ -33,16 +35,18 @@ type Connection struct {
 	State      string `json:"state"`
 }
 type Host struct {
-	ID             string       `json:"id"`
-	Name           string       `json:"name"`
-	OS             string       `json:"os"`
-	Addresses      []string     `json:"addresses"`
-	LastSeen       time.Time    `json:"last_seen"`
-	HostGroup      string       `json:"host_group,omitempty"`
-	NetworkZone    string       `json:"network_zone,omitempty"`
-	MonitoringMode string       `json:"monitoring_mode,omitempty"`
-	Processes      []Process    `json:"processes"`
-	Connections    []Connection `json:"connections"`
+	Frontends      []FrontendCandidate `json:"frontends,omitempty"`
+	Packages       []SoftwarePackage   `json:"packages,omitempty"`
+	ID             string              `json:"id"`
+	Name           string              `json:"name"`
+	OS             string              `json:"os"`
+	Addresses      []string            `json:"addresses"`
+	LastSeen       time.Time           `json:"last_seen"`
+	HostGroup      string              `json:"host_group,omitempty"`
+	NetworkZone    string              `json:"network_zone,omitempty"`
+	MonitoringMode string              `json:"monitoring_mode,omitempty"`
+	Processes      []Process           `json:"processes"`
+	Connections    []Connection        `json:"connections"`
 }
 type Node struct {
 	ID        string `json:"id"`

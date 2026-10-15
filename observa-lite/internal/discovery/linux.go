@@ -53,6 +53,14 @@ func Detect() (model.Discovery, error) {
 		}
 		cmd, _ := os.ReadFile(procRoot + "/cmdline")
 		service, kind := serviceName(name, string(cmd))
+		if kind == "process" {
+			if executable, err := os.Readlink(procRoot + "/exe"); err == nil {
+				detectedService, detectedKind := serviceName(filepath.Base(strings.TrimSuffix(executable, " (deleted)")), string(cmd))
+				if detectedKind != "process" {
+					service, kind = detectedService, detectedKind
+				}
+			}
+		}
 		rss := residentBytes(procRoot + "/statm")
 		d.Processes = append(d.Processes, model.Process{PID: pid, Name: name, Service: service, Runtime: kind, RSSBytes: rss})
 		fds, e := os.ReadDir(procRoot + "/fd")

@@ -165,6 +165,7 @@ func (s *Server) rumBeacon(w http.ResponseWriter, r *http.Request) {
 }
 
 type rumSession struct {
+	Apdex   *float64  `json:"apdex"`
 	ID      string    `json:"id"`
 	AppID   string    `json:"app_id"`
 	Started time.Time `json:"started"`
@@ -219,6 +220,8 @@ func (s *Server) rumAnalysis(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	satisfied, tolerated, frustrated := 0, 0, 0
+	sessionScores := map[string]float64{}
+	sessionSamples := map[string]int{}
 	for _, e := range filtered {
 		k := e.AppID + ":" + e.SessionID
 		v := sessions[k]
@@ -251,10 +254,15 @@ func (s *Server) rumAnalysis(w http.ResponseWriter, r *http.Request) {
 			}
 			if e.Error || errorsByPage[e.AppID+":"+e.SessionID+":"+e.PageID] || e.Duration > 4*t {
 				frustrated++
+				sessionSamples[k]++
 			} else if e.Duration <= t {
 				satisfied++
+				sessionScores[k]++
+				sessionSamples[k]++
 			} else {
 				tolerated++
+				sessionScores[k] += 0.5
+				sessionSamples[k]++
 			}
 		case "request":
 			requests++
@@ -280,7 +288,11 @@ func (s *Server) rumAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 	list := []rumSession{}
 	users := map[string]bool{}
-	for _, v := range sessions {
+	for key, v := range sessions {
+		if sessionSamples[key] > 0 {
+			score := sessionScores[key] / float64(sessionSamples[key])
+			v.Apdex = &score
+		}
 		list = append(list, *v)
 		if v.User != "" {
 			users[v.User] = true

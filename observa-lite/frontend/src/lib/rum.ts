@@ -35,6 +35,7 @@ export type RUMEvent = {
   user_id?: string;
 };
 export type RUMSession = {
+  apdex: number | null;
   id: string;
   app_id: string;
   started: string;

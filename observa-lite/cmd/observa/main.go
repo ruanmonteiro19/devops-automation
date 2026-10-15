@@ -4,20 +4,20 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"regexp"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/ruanmonteiro19/observa-lite/internal/discovery"
-    "github.com/ruanmonteiro19/observa-lite/internal/model"
+	"github.com/ruanmonteiro19/observa-lite/internal/model"
+	"github.com/ruanmonteiro19/observa-lite/internal/routing"
 	"github.com/ruanmonteiro19/observa-lite/internal/server"
- "github.com/ruanmonteiro19/observa-lite/internal/routing"
 	"github.com/ruanmonteiro19/observa-lite/internal/store"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -65,43 +65,56 @@ func runServer(args []string) error {
 	defer stop()
 	return server.New(st, os.Getenv("OBSERVA_ADMIN_TOKEN"), os.Getenv("OBSERVA_AGENT_TOKEN"), server.AllowPrivateFromEnv()).Listen(ctx, *addr)
 }
+
 // runHealth is a shell-free health check for distroless Docker images.
 func runHealth(args []string) error {
-    fs := flag.NewFlagSet("health", flag.ContinueOnError)
-    endpoint := fs.String("url", env("OBSERVA_HEALTH_URL", "http://127.0.0.1:8080/healthz"), "healthcheck URL")
-    if err := fs.Parse(args); err != nil { return err }
-    client := &http.Client{Timeout: 3 * time.Second}
-    resp, err := client.Get(*endpoint)
-    if err != nil { return err }
-    defer resp.Body.Close()
-    _, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
-    if resp.StatusCode != http.StatusOK {
-        return fmt.Errorf("healthcheck failed: HTTP %d", resp.StatusCode)
-    }
-    return nil
+	fs := flag.NewFlagSet("health", flag.ContinueOnError)
+	endpoint := fs.String("url", env("OBSERVA_HEALTH_URL", "http://127.0.0.1:8080/healthz"), "healthcheck URL")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get(*endpoint)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("healthcheck failed: HTTP %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func runAgent(args []string) error {
 	fs := flag.NewFlagSet("agent", flag.ContinueOnError)
+	discoverFrontends := fs.Bool("discover-frontends", env("OBSERVA_DISCOVER_FRONTENDS", "true") == "true", "probe owned loopback HTTP listeners for HTML")
+	discoverSoftware := fs.Bool("discover-software", env("OBSERVA_DISCOVER_SOFTWARE", "true") == "true", "read Go build metadata and production Node lockfiles")
 	endpoint := fs.String("server", env("OBSERVA_SERVER", "http://127.0.0.1:8080"), "Observa server root URL")
 	interval := fs.Duration("interval", 30*time.Second, "discovery interval; minimum 10s")
- hostGroup := fs.String("host-group",env("OBSERVA_HOST_GROUP",""),"logical host group")
- networkZone := fs.String("network-zone",env("OBSERVA_NETWORK_ZONE","default"),"network routing zone")
- mode := fs.String("mode",env("OBSERVA_MONITORING_MODE","discovery"),"supported: discovery, off; infrastructure/deep planned")
- caFile := fs.String("ca-file",env("OBSERVA_CA_FILE",""),"PEM CA bundle for trusted gateway")
- clientCert := fs.String("client-cert",env("OBSERVA_CLIENT_CERT",""),"optional PEM client certificate for mTLS")
- clientKey := fs.String("client-key",env("OBSERVA_CLIENT_KEY",""),"optional PEM client private key for mTLS")
- discoverProcesses := fs.Bool("discover-processes",env("OBSERVA_DISCOVER_PROCESSES","true")=="true","include processes and TCP sockets")
- controlPlane := fs.String("control-plane",env("OBSERVA_CONTROL_PLANE",""),"optional authenticated endpoint-discovery server; requires HTTPS remotely")
- allowZoneFallback:=fs.Bool("allow-default-zone-fallback",env("OBSERVA_DEFAULT_ZONE_FALLBACK","false")=="true","allow explicitly configured fallback to the default zone")
- legacyPayload := fs.Bool("legacy-payload",env("OBSERVA_LEGACY_PAYLOAD","false")=="true","send old schema without group/zone, for older servers only")
+	hostGroup := fs.String("host-group", env("OBSERVA_HOST_GROUP", ""), "logical host group")
+	networkZone := fs.String("network-zone", env("OBSERVA_NETWORK_ZONE", "default"), "network routing zone")
+	mode := fs.String("mode", env("OBSERVA_MONITORING_MODE", "discovery"), "supported: discovery, off; infrastructure/deep planned")
+	caFile := fs.String("ca-file", env("OBSERVA_CA_FILE", ""), "PEM CA bundle for trusted gateway")
+	clientCert := fs.String("client-cert", env("OBSERVA_CLIENT_CERT", ""), "optional PEM client certificate for mTLS")
+	clientKey := fs.String("client-key", env("OBSERVA_CLIENT_KEY", ""), "optional PEM client private key for mTLS")
+	discoverProcesses := fs.Bool("discover-processes", env("OBSERVA_DISCOVER_PROCESSES", "true") == "true", "include processes and TCP sockets")
+	controlPlane := fs.String("control-plane", env("OBSERVA_CONTROL_PLANE", ""), "optional authenticated endpoint-discovery server; requires HTTPS remotely")
+	allowZoneFallback := fs.Bool("allow-default-zone-fallback", env("OBSERVA_DEFAULT_ZONE_FALLBACK", "false") == "true", "allow explicitly configured fallback to the default zone")
+	legacyPayload := fs.Bool("legacy-payload", env("OBSERVA_LEGACY_PAYLOAD", "false") == "true", "send old schema without group/zone, for older servers only")
 	if e := fs.Parse(args); e != nil {
 		return e
 	}
-	if *mode=="off" {return fmt.Errorf("monitoring is disabled; do not start agent until enabled")}
- if *mode!="discovery" {return fmt.Errorf("mode %q is not implemented yet; only discovery mode is functional",*mode)}
- namePattern:=regexp.MustCompile("^[A-Za-z0-9][A-Za-z0-9_.-]*$")
- if (*hostGroup!=""&&(len(*hostGroup)>100||!namePattern.MatchString(*hostGroup)))||(*networkZone!=""&&(len(*networkZone)>256||!namePattern.MatchString(*networkZone))){return fmt.Errorf("invalid host-group or network-zone")}
+	if *mode == "off" {
+		return fmt.Errorf("monitoring is disabled; do not start agent until enabled")
+	}
+	if *mode != "discovery" {
+		return fmt.Errorf("mode %q is not implemented yet; only discovery mode is functional", *mode)
+	}
+	namePattern := regexp.MustCompile("^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+	if (*hostGroup != "" && (len(*hostGroup) > 100 || !namePattern.MatchString(*hostGroup))) || (*networkZone != "" && (len(*networkZone) > 256 || !namePattern.MatchString(*networkZone))) {
+		return fmt.Errorf("invalid host-group or network-zone")
+	}
 	if *interval < 10*time.Second {
 		return fmt.Errorf("minimum interval 10s")
 	}
@@ -114,38 +127,66 @@ func runAgent(args []string) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
-	tr:=http.DefaultTransport.(*http.Transport).Clone()
- tr.TLSClientConfig=&tls.Config{MinVersion:tls.VersionTLS12}
- if *caFile!=""{
-  pem,err:=os.ReadFile(*caFile);if err!=nil{return err}
-  roots,err:=x509.SystemCertPool();if err!=nil||roots==nil{roots=x509.NewCertPool()}
-  if !roots.AppendCertsFromPEM(pem){return fmt.Errorf("invalid PEM CA file")}
-  tr.TLSClientConfig.RootCAs=roots
- }
- if (*clientCert=="")!=(*clientKey==""){return fmt.Errorf("client-cert and client-key must both be set")}
- if *clientCert!=""{
-  cert,err:=tls.LoadX509KeyPair(*clientCert,*clientKey);if err!=nil{return err}
-  tr.TLSClientConfig.Certificates=[]tls.Certificate{cert}
- }
- client := newAgentHTTPClient(tr)
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+	if *caFile != "" {
+		pem, err := os.ReadFile(*caFile)
+		if err != nil {
+			return err
+		}
+		roots, err := x509.SystemCertPool()
+		if err != nil || roots == nil {
+			roots = x509.NewCertPool()
+		}
+		if !roots.AppendCertsFromPEM(pem) {
+			return fmt.Errorf("invalid PEM CA file")
+		}
+		tr.TLSClientConfig.RootCAs = roots
+	}
+	if (*clientCert == "") != (*clientKey == "") {
+		return fmt.Errorf("client-cert and client-key must both be set")
+	}
+	if *clientCert != "" {
+		cert, err := tls.LoadX509KeyPair(*clientCert, *clientKey)
+		if err != nil {
+			return err
+		}
+		tr.TLSClientConfig.Certificates = []tls.Certificate{cert}
+	}
+	client := newAgentHTTPClient(tr)
 	for {
 		d, e := discovery.Detect()
 		if e == nil {
-           d.HostGroup=*hostGroup
-           d.NetworkZone=*networkZone
-           d.MonitoringMode=*mode
-           if !*discoverProcesses {d.Processes=[]model.Process{};d.Connections=[]model.Connection{}}
-           if *legacyPayload {d.HostGroup="";d.NetworkZone="";d.MonitoringMode=""}
+			if *discoverProcesses && *discoverFrontends {
+				d.Frontends = discovery.DiscoverFrontends(ctx, d)
+			}
+			if *discoverProcesses && *discoverSoftware {
+				d.Packages = discovery.DiscoverSoftware(d)
+			}
+			d.HostGroup = *hostGroup
+			d.NetworkZone = *networkZone
+			d.MonitoringMode = *mode
+			if !*discoverProcesses {
+				d.Processes = []model.Process{}
+				d.Connections = []model.Connection{}
+			}
+			if *legacyPayload {
+				d.Frontends = nil
+				d.Packages = nil
+				d.HostGroup = ""
+				d.NetworkZone = ""
+				d.MonitoringMode = ""
+			}
 			var b []byte
 			b, e = json.Marshal(d)
 			if e == nil {
-                targets:=[]string{*endpoint}
-                if *controlPlane!="" {
-                  targets,e=routing.Discover(ctx,client,*controlPlane,token,*networkZone,*allowZoneFallback)
-                }
-                if e==nil{
-                  _,e=routing.Deliver(ctx,client,targets,token,b)
-                }
+				targets := []string{*endpoint}
+				if *controlPlane != "" {
+					targets, e = routing.Discover(ctx, client, *controlPlane, token, *networkZone, *allowZoneFallback)
+				}
+				if e == nil {
+					_, e = routing.Deliver(ctx, client, targets, token, b)
+				}
 			}
 		}
 		if e != nil {
@@ -168,5 +209,7 @@ func env(k, fallback string) string {
 }
 
 func newAgentHTTPClient(tr *http.Transport) *http.Client {
- return &http.Client{Timeout:15*time.Second,Transport:tr,CheckRedirect:func(*http.Request,[]*http.Request)error{return fmt.Errorf("agent ingestion redirects are forbidden")}}
+	return &http.Client{Timeout: 15 * time.Second, Transport: tr, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return fmt.Errorf("agent ingestion redirects are forbidden")
+	}}
 }

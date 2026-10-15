@@ -14,6 +14,8 @@ import (
 )
 
 type persisted struct {
+	Workspace          map[string]model.WorkspaceObject   `json:"workspace,omitempty"`
+	OperationRuns      []model.OperationRun               `json:"operation_runs,omitempty"`
 	RUMApplications    map[string]model.RUMApplication    `json:"rum_applications,omitempty"`
 	RUMEvents          []model.RUMEvent                   `json:"rum_events,omitempty"`
 	RUMReplay          []model.RUMReplayChunk             `json:"rum_replay,omitempty"`
@@ -76,6 +78,13 @@ func New(file string) (*Store, error) {
 	if s.data.Dashboards == nil {
 		s.data.Dashboards = map[string]model.Dashboard{}
 	}
+	for i := range s.data.OperationRuns {
+		if s.data.OperationRuns[i].Status == "running" {
+			s.data.OperationRuns[i].Status = "error"
+			s.data.OperationRuns[i].Error = "Execução interrompida pelo reinício do servidor"
+			s.data.OperationRuns[i].FinishedAt = time.Now().UTC()
+		}
+	}
 	return s, nil
 }
 func (s *Store) persist() error {
@@ -114,8 +123,18 @@ func (s *Store) ResolveLocked(entity, summary string) {
 	}
 }
 func (s *Store) Ingest(d model.Discovery) error {
-	if strings.TrimSpace(d.HostID) == "" || len(d.HostID) > 128 || len(d.Processes) > 100000 || len(d.Connections) > 200000 || len(d.HostGroup) > 100 || len(d.NetworkZone) > 256 || len(d.MonitoringMode) > 40 {
+	if strings.TrimSpace(d.HostID) == "" || len(d.HostID) > 128 || len(d.Frontends) > 20 || len(d.Packages) > 500 || len(d.Processes) > 100000 || len(d.Connections) > 200000 || len(d.HostGroup) > 100 || len(d.NetworkZone) > 256 || len(d.MonitoringMode) > 40 {
 		return fmt.Errorf("invalid or oversized discovery")
+	}
+	for _, f := range d.Frontends {
+		if f.HostID != d.HostID || f.Port < 1 || f.Port > 65535 || len(f.ID) > 128 || len(f.Service) > 256 || len(f.Evidence) > 512 || len(f.HostName) > 256 || (f.Scheme != "http" && f.Scheme != "https") {
+			return fmt.Errorf("invalid frontend evidence")
+		}
+	}
+	for _, p := range d.Packages {
+		if len(p.Name) > 256 || len(p.Version) > 128 || len(p.Ecosystem) > 40 || len(p.Source) > 100 {
+			return fmt.Errorf("invalid package metadata")
+		}
 	}
 	// Keep the wire contract stable when a host has zero processes or zero sockets.
 	if d.Processes == nil {
@@ -130,7 +149,7 @@ func (s *Store) Ingest(d model.Discovery) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// PID disappearance cannot establish an application outage. Do not synthesize APM alerts from process churn.
-	s.data.Hosts[d.HostID] = model.Host{ID: d.HostID, Name: d.Hostname, OS: d.OS, Addresses: d.Addresses, LastSeen: time.Now().UTC(), Processes: d.Processes, Connections: d.Connections, HostGroup: d.HostGroup, NetworkZone: d.NetworkZone, MonitoringMode: d.MonitoringMode}
+	s.data.Hosts[d.HostID] = model.Host{Frontends: d.Frontends, Packages: d.Packages, ID: d.HostID, Name: d.Hostname, OS: d.OS, Addresses: d.Addresses, LastSeen: time.Now().UTC(), Processes: d.Processes, Connections: d.Connections, HostGroup: d.HostGroup, NetworkZone: d.NetworkZone, MonitoringMode: d.MonitoringMode}
 	return s.persist()
 }
 func (s *Store) PutTemplate(v model.Template) error {

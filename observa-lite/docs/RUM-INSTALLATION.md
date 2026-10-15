@@ -4,7 +4,7 @@
 
 Captura real em navegadores, CRUD de frontends, origens permitidas, consentimento, amostragem, identificação opcional por pseudônimo, sessões, erros técnicos, tempos/status de fetch e XHR, navegação SPA, replay web mascarado, Apdex por carregamento inicial e p75 de Web Vitals. Menu em seções compactas com a seção atual aberta. Os dados não são simulados no modo demo.
 
-Não inclui SDK Android/iOS nativo, crash/ANR nativo, replay nativo, varredura de vulnerabilidades, geolocalização por IP, fingerprinting, correlação automática com spans backend ou instrumentação automática de todos os runtimes web. O proxy de injeção é um componente explícito, distinto do agente de descoberta de hosts.
+Não inclui SDK Android/iOS nativo, crash/ANR nativo, replay nativo, análise de vulnerabilidades de código em execução, geolocalização por IP, fingerprinting, correlação automática com spans backend ou instrumentação automática de todos os runtimes web. O proxy de injeção é um componente explícito, distinto do agente de descoberta de hosts.
 
 ## Atualizar a instalação existente
 
@@ -120,3 +120,5 @@ go vet ./internal/... ./cmd/...
 # Com Playwright e Chromium instalados no ambiente de teste:
 node scripts/smoke-rum.mjs /caminho/observa /caminho/vetra-injector
 ```
+
+A descoberta de candidatos frontend pelo agente e a satisfação por sessão estão descritas em [WORKSPACE-OPERATIONS.md](WORKSPACE-OPERATIONS.md).

@@ -1,3 +1,4 @@
+import { WorkspaceStudio } from "./workspace-studio";
 import { RUMWorkspace } from "./rum-workspace";
 import { InventoryEditor } from "./inventory-editor";
 import { IntegrationManager } from "@/components/integration-manager";
@@ -160,6 +161,7 @@ const navGroups: NavGroup[] = [
       [
         ["Visão geral", "", LayoutDashboard],
         ["Dashboards", "dashboards", PanelRight],
+        ["Notebooks", "notebooks", Code2],
         ["Problemas APM", "problemas-apm", AlertTriangle],
       ] satisfies [string, string, LucideIcon][]
     ).map(toNav),
@@ -181,6 +183,7 @@ const navGroups: NavGroup[] = [
     label: "Experiência digital",
     items: (
       [
+        ["Frontends descobertos", "frontends", Globe2],
         ["RUM", "rum", Globe2],
         ["Session Replay", "session-replay", Activity],
         ["Apdex", "apdex", Activity],
@@ -192,6 +195,7 @@ const navGroups: NavGroup[] = [
     label: "Infraestrutura",
     items: (
       [
+        ["Databases", "databases", Database],
         ["Hosts", "hosts", Server],
         ["Processos", "processos", Activity],
         ["Mapa de processos", "process-mapping", GitBranch],
@@ -216,6 +220,8 @@ const navGroups: NavGroup[] = [
     label: "Confiabilidade",
     items: (
       [
+        ["Workflows", "workflows", Workflow],
+        ["Vulnerabilidades", "vulnerabilidades", KeyRound],
         ["Objetivos SLO", "slos", HeartPulse],
         ["Regras de alerta", "correlacao", Bell],
         ["Monitores HTTP / TCP", "templates", Globe2],
@@ -227,6 +233,7 @@ const navGroups: NavGroup[] = [
     label: "Configuração",
     items: (
       [
+        ["Assistente MCP", "mcp", Code2],
         ["Agentes", "agentes", Radio],
         ["Gateways", "gateways", Network],
         ["Host Groups", "host-groups", Server],
@@ -584,7 +591,7 @@ function SidebarNav({
           </span>
           {!collapsed && (
             <span className="text-xs text-muted-foreground">
-              Workspace · Vetra 0.3
+              Workspace · Vetra 0.4
             </span>
           )}
         </div>
@@ -961,6 +968,17 @@ function PageRouter({
   };
   if (["rum", "session-replay", "experience-vitals", "apdex"].includes(rawPath))
     return <RUMWorkspace path={rawPath} demo={demo} />;
+  if (
+    [
+      "notebooks",
+      "workflows",
+      "databases",
+      "vulnerabilidades",
+      "frontends",
+      "mcp",
+    ].includes(rawPath)
+  )
+    return <WorkspaceStudio key={rawPath} path={rawPath} demo={demo} />;
   const initialCreate = rawPath.endsWith("/novo");
   const path = initialCreate ? rawPath.slice(0, -5) : rawPath;
   if (path === "clouds" || path === "dispositivos-rede")

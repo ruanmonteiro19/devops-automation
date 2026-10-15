@@ -291,7 +291,10 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
               ["Sessões", a.sessions_total],
               ["Page views", a.pages],
               ["Erros técnicos", a.errors],
-              ["Apdex", a.apdex == null ? "—" : a.apdex.toFixed(3)],
+              [
+                "Satisfação estimada (Apdex)",
+                a.apdex == null ? "—" : `${(a.apdex * 100).toFixed(1)}%`,
+              ],
             ].map(([label, value]) => (
               <section key={label} className="border bg-surface p-5">
                 <p className="text-xs text-muted-foreground">{label}</p>
@@ -415,6 +418,7 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
                         "Navegador / Sistema",
                         "Páginas",
                         "Erros",
+                        "Satisfação (Apdex)",
                         "Último evento",
                         "Ações",
                       ].map((h) => (
@@ -441,6 +445,11 @@ export function RUMWorkspace({ path, demo }: { path: string; demo: boolean }) {
                         </td>
                         <td className="p-4">{s.pages}</td>
                         <td className="p-4">{s.errors}</td>
+                        <td className="p-4">
+                          {s.apdex == null
+                            ? "—"
+                            : `${(s.apdex * 100).toFixed(1)}%`}
+                        </td>
                         <td className="p-4">{date(s.last)}</td>
                         <td className="p-4">
                           <Button

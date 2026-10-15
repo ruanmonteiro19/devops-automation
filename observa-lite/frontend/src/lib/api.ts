@@ -165,13 +165,16 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         ...init?.headers,
       },
     });
-    if (!response.ok)
+    if (!response.ok) {
+      const detail =
+        response.status === 400 ? (await response.text()).slice(0, 300) : "";
       throw new ApiError(
         response.status,
         response.status === 401
           ? "Token inválido ou ausente"
-          : `Falha na API (${response.status})`,
+          : detail || `Falha na API (${response.status})`,
       );
+    }
     if (response.status === 204) return undefined as T;
     return (await response.json()) as T;
   } catch (error) {

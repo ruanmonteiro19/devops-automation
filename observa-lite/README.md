@@ -1,3 +1,5 @@
+> Atualização Vetra 0.4: [Frontends pelo agente, satisfação, notebooks VQL, workflows, PostgreSQL, vulnerabilidades OSV e MCP](docs/WORKSPACE-OPERATIONS.md). Limites e evidências de validação documentados.
+
 # Vetra Observability
 
 Nome atual da interface do projeto Observa Lite. [Instalação RUM, Replay, Apdex e Experience Vitals](docs/RUM-INSTALLATION.md) · [Investigação frontend/mobile](docs/research/DYNATRACE-DIGITAL-EXPERIENCE.md). Consulte [Inventário e escalabilidade](docs/VETRA-INVENTORY-SCALING.md) para as alterações recentes e os limites do backend.
@@ -15,7 +17,7 @@ Comece pelo [guia da entrega](docs/RELEASE-0.3.0.md). Consulte a [cobertura func
 As seções históricas abaixo descrevem fases anteriores do MVP. Afirmações antigas de ausência de tracing se referem a essas fases; funcionalidades como gRPC, autoinstrumentação, RCA causal, SSO e RBAC continuam ausentes nesta branch.
 
 
-MVP de observabilidade em português com **agente Linux passivo**, descoberta de serviços, **Service Mapping**, **Network Mapping (fluxos IP)**, templates HTTP/TCP, Data Sources Prometheus/JSON, dashboards personalizáveis, HTML Graphics isolado e ferramentas MCP de leitura.
+MVP de observabilidade em português com **agente Linux passivo**, descoberta de serviços, **Service Mapping**, **Network Mapping (fluxos IP)**, templates HTTP/TCP, Data Sources Prometheus/JSON, dashboards personalizáveis, HTML Graphics isolado e ferramentas MCP de consulta e configuração.
 
 > **Estado:** protótipo funcional e validado localmente em Linux amd64. **Não é** substituto de Dynatrace/OneAgent, Zabbix ou Grafana em produção. Seu mapa de rede representa conexões IP, não topologia física. Não há instrumentação de runtime, eBPF, SNMP, LLD, distributed tracing, RCA avançado nem provedor LLM neste marco.
 
@@ -94,9 +96,9 @@ Conectores implementados: `prometheus` (query instantânea PromQL) e `json` (GET
 
 O MVP oferece painéis `stat` e `html`. O painel HTML usa iframe com sandbox `allow-scripts`, sem `allow-same-origin`. O código HTML/CSS/JS editado por um administrador fica isolado do aplicativo; não trate como permissão de execução de código no servidor. Recursos Grafana completos (grid redimensionável, gráficos históricos, múltiplos painéis de visualização) permanecem no roadmap.
 
-### MCP — somente leitura
+### MCP — consulta e configuração
 
-O endpoint `POST /mcp` implementa um subconjunto stateless de MCP sobre JSON-RPC, com `initialize`, `tools/list`, `tools/call` e `ping`. A compatibilidade com clientes MCP de produção ainda não está certificada; usa token administrativo na versão inicial. Ferramentas disponíveis: `list_hosts`, `list_services`, `service_dependencies`, `network_flows`, `list_incidents`.
+O endpoint `POST /mcp` implementa um subconjunto stateless de MCP sobre JSON-RPC, com `initialize`, `tools/list`, `tools/call` e `ping`. A compatibilidade com clientes MCP de produção ainda não está certificada; usa token administrativo na versão inicial. Além das consultas, oferece `configure_workspace`, `configure_rum`, `configure_host` e `run_operation`, com prévia por padrão e aplicação por `apply: true`. Consulte [WORKSPACE-OPERATIONS.md](docs/WORKSPACE-OPERATIONS.md) para notebooks VQL, workflows, PostgreSQL, frontends pelo agente, satisfação e avaliação de versões no OSV.
 
 ```bash
 curl -s http://127.0.0.1:8080/mcp -H "X-API-Key: $OBSERVA_ADMIN_TOKEN" \
@@ -116,7 +118,7 @@ curl -s http://127.0.0.1:8080/mcp -H "X-API-Key: $OBSERVA_ADMIN_TOKEN" \
 | `/api/v1/datasources` | POST | Token admin | Criar fonte |
 | `/api/v1/query?source=&expr=` | GET | Token admin | Consulta fonte |
 | `/api/v1/dashboards` | POST | Token admin | Salvar dashboard |
-| `/mcp` | POST | Token admin | MCP stateless somente leitura |
+| `/mcp` | POST | Token admin | MCP stateless de consulta e configuração |
 
 ## Segurança e limitações
 

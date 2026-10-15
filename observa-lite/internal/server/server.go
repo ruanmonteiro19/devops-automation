@@ -40,6 +40,7 @@ func New(st *store.Store, admin, agent string, allowPrivate bool) *Server {
 func (s *Server) Handler() http.Handler {
 	m := http.NewServeMux()
 	s.rumRoutes(m)
+	s.workspaceRoutes(m)
 	m.HandleFunc("GET /api/v1/integrations", s.adminAuth(s.integrationList))
 	m.HandleFunc("POST /api/v1/integrations", s.adminAuth(s.integrationSave))
 	m.HandleFunc("DELETE /api/v1/integrations/{id}", s.adminAuth(s.integrationDelete))
@@ -293,6 +294,7 @@ func (s *Server) Poll(ctx context.Context) {
 }
 func (s *Server) pollOnce(ctx context.Context) {
 	s.pollIntegrations(ctx)
+	s.pollWorkflows(ctx)
 	for _, t := range s.Store.Templates() {
 		if !t.Enabled || time.Since(t.LastRun) < time.Duration(t.IntervalSeconds)*time.Second {
 			continue

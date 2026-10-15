@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ruanmonteiro19/observa-lite/internal/instrumentation"
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
 	"github.com/ruanmonteiro19/observa-lite/internal/store"
 	"io"
@@ -19,6 +20,16 @@ type rumBudget struct {
 }
 
 func (s *Server) rumRoutes(m *http.ServeMux) {
+	m.HandleFunc("GET /api/v1/rum/instrumentation/node", s.adminAuth(func(w http.ResponseWriter, r *http.Request) {
+		write(w, 200, map[string]string{"source": string(instrumentation.NodeModule)})
+	}))
+	m.HandleFunc("GET /api/v1/rum/instrumentation/node.cjs", s.adminAuth(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		w.Header().Set("Content-Disposition", `attachment; filename="vetra-node.cjs"`)
+		w.Header().Set("Cache-Control", "no-store")
+		w.Write(instrumentation.NodeModule)
+	}))
+
 	m.HandleFunc("GET /api/v1/rum/apps", s.adminAuth(func(w http.ResponseWriter, r *http.Request) {
 		write(w, 200, map[string]any{"applications": s.Store.RUMApplications()})
 	}))

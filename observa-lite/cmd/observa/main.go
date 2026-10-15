@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ruanmonteiro19/observa-lite/internal/discovery"
+	"github.com/ruanmonteiro19/observa-lite/internal/instrumentation"
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
 	"github.com/ruanmonteiro19/observa-lite/internal/routing"
 	"github.com/ruanmonteiro19/observa-lite/internal/server"
@@ -25,7 +26,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: observa server|agent|once")
+		fmt.Fprintln(os.Stderr, "usage: observa server|agent|once|instrumentation|health")
 		os.Exit(2)
 	}
 	var err error
@@ -36,6 +37,16 @@ func main() {
 		err = runHealth(os.Args[2:])
 	case "agent":
 		err = runAgent(os.Args[2:])
+	case "instrumentation":
+		fs := flag.NewFlagSet("instrumentation", flag.ContinueOnError)
+		dir := fs.String("directory", "", "export Node preload module to this directory without overwriting")
+		if err = fs.Parse(os.Args[2:]); err == nil {
+			var path string
+			path, err = instrumentation.Export(*dir)
+			if err == nil {
+				fmt.Println(path)
+			}
+		}
 	case "once":
 		d, e := discovery.Detect()
 		if e != nil {

@@ -76,7 +76,11 @@ func DiscoverFrontends(ctx context.Context, d model.Discovery) []model.FrontendC
 			continue
 		}
 		sum := sha256.Sum256([]byte(fmt.Sprintf("%s:%d:%s", d.HostID, c.LocalPort, p.Service)))
-		out = append(out, model.FrontendCandidate{ID: fmt.Sprintf("web-%x", sum[:6]), HostID: d.HostID, HostName: d.Hostname, Service: p.Service, PID: p.PID, Port: c.LocalPort, Scheme: scheme, Evidence: "HTTP GET loopback: resposta HTML 2xx de porta vinculada ao processo", ObservedAt: time.Now().UTC()})
+		status := resp.Header.Get("X-Vetra-Injection")
+		if len(status) > 100 {
+			status = ""
+		}
+		out = append(out, model.FrontendCandidate{InjectionStatus: status, ID: fmt.Sprintf("web-%x", sum[:6]), HostID: d.HostID, HostName: d.Hostname, Service: p.Service, PID: p.PID, Port: c.LocalPort, Scheme: scheme, Evidence: "HTTP GET loopback: resposta HTML 2xx de porta vinculada ao processo", ObservedAt: time.Now().UTC()})
 	}
 	return out
 }

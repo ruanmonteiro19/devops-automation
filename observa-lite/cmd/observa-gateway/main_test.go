@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -179,5 +182,70 @@ func TestRelayBackpressureSignalsRetry(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != 503 || w.Header().Get("Retry-After") != "1" {
 		t.Fatalf("missing overload signal: %d %v", w.Code, w.Header())
+	}
+}
+
+func TestRelayPublicRUMDoesNotExposeAdminOrTruncateSDK(t *testing.T) {
+	const token = "agent-token-12345678901234567890"
+	sdk := strings.Repeat("x", 200000)
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-API-Key") != "" || r.Header.Get("Authorization") != "" || r.Header.Get("Cookie") != "" {
+			t.Error("browser credentials leaked")
+		}
+		if r.Header.Get("Origin") != "https://portal.example" {
+			t.Error("lost CORS origin")
+		}
+		w.Header().Set("Access-Control-Allow-Origin", "https://portal.example")
+		w.Header().Set("Vary", "Origin")
+		w.Header().Set("Content-Type", "application/javascript")
+		if r.URL.Path == "/rum/vetra.js" {
+			io.WriteString(w, sdk)
+		} else {
+			w.WriteHeader(202)
+		}
+	}))
+	defer backend.Close()
+	u, _ := url.Parse(backend.URL)
+	gateway := &relay{upstream: u, httpClient: backend.Client(), token: token, slots: make(chan struct{}, 2)}
+	for _, tc := range []struct {
+		method, path string
+		status       int
+	}{{"GET", "/rum/vetra.js?app=portal", 200}, {"GET", "/rum/config/portal", 202}, {"POST", "/rum/beacon/portal", 202}, {"OPTIONS", "/rum/beacon/portal", 202}, {"GET", "/api/v1/snapshot", 404}, {"POST", "/mcp", 404}, {"GET", "/rum/config/../admin", 404}, {"POST", "/rum/config/portal", 404}, {"GET", "/rum/beacon/portal", 404}} {
+		q := httptest.NewRequest(tc.method, tc.path, strings.NewReader("{}"))
+		q.Header.Set("Origin", "https://portal.example")
+		q.Header.Set("Cookie", "session=private")
+		q.Header.Set("Authorization", "Bearer secret")
+		w := httptest.NewRecorder()
+		gateway.ServeHTTP(w, q)
+		if w.Code != tc.status {
+			t.Fatalf("%s %s: %d", tc.method, tc.path, w.Code)
+		}
+		if tc.path == "/rum/vetra.js?app=portal" && (w.Body.String() != sdk || w.Header().Get("Access-Control-Allow-Origin") != "https://portal.example") {
+			t.Fatal("SDK/CORS changed")
+		}
+	}
+}
+
+func TestPublicRUMWithMTLSStillRequiresAgentCertificate(t *testing.T) {
+	const token = "agent-token-12345678901234567890"
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(202) }))
+	defer backend.Close()
+	u, _ := url.Parse(backend.URL)
+	gateway := &relay{upstream: u, httpClient: backend.Client(), token: token, slots: make(chan struct{}, 2), requireClientCertificate: true}
+	for _, tc := range []struct {
+		path string
+		cert bool
+		want int
+	}{{"/api/v1/ingest", false, 403}, {"/v1/traces", false, 403}, {"/api/v1/ingest", true, 202}, {"/rum/beacon/portal", false, 202}} {
+		q := httptest.NewRequest("POST", tc.path, strings.NewReader("{}"))
+		q.Header.Set("X-API-Key", token)
+		if tc.cert {
+			q.TLS = &tls.ConnectionState{VerifiedChains: [][]*x509.Certificate{{{}}}}
+		}
+		w := httptest.NewRecorder()
+		gateway.ServeHTTP(w, q)
+		if w.Code != tc.want {
+			t.Errorf("%s cert=%t: %d", tc.path, tc.cert, w.Code)
+		}
 	}
 }

@@ -114,6 +114,55 @@ services:
     mem_limit: 256m
     cpus: '0.5'
 
+  rum-proxy:
+    profiles: [rum]
+    image: ${VETRA_RUM_PROXY_IMAGE:-vetra/rum-proxy:local}
+    build:
+      context: .
+      target: rum-proxy
+    restart: unless-stopped
+    init: true
+    read_only: true
+    extra_hosts: [host.docker.internal:host-gateway]
+    command: [--listen, ':8080', --config, /etc/vetra/routes.json, --max-inflight, '8']
+    ports:
+      - '${VETRA_RUM_BIND_ADDR:-127.0.0.1}:${VETRA_RUM_PORT:-8081}:8080'
+    volumes:
+      - ./deploy/rum:/etc/vetra:ro
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 512m
+    pids_limit: 128
+
+  gateway:
+    profiles: [gateway]
+    image: ${VETRA_GATEWAY_IMAGE:-vetra/gateway:local}
+    build:
+      context: .
+      target: gateway
+    restart: unless-stopped
+    init: true
+    read_only: true
+    network_mode: host
+    env_file: [.env]
+    command:
+      - --listen
+      - '${VETRA_GATEWAY_LISTEN:-127.0.0.1:18443}'
+      - --upstream
+      - '${VETRA_GATEWAY_UPSTREAM:-http://127.0.0.1:8080}'
+      - --tls-cert
+      - /etc/vetra/tls/tls.crt
+      - --tls-key
+      - /etc/vetra/tls/tls.key
+      - --max-inflight
+      - '32'
+    volumes:
+      - ./deploy/gateway/tls:/etc/vetra/tls:ro
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 256m
+    pids_limit: 128
+
 volumes:
   observa-data: {}
   loki-data: {}

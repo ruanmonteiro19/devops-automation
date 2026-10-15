@@ -38,3 +38,22 @@ COPY --from=builder /out/observa /usr/local/bin/observa
 USER 0:0
 ENTRYPOINT ["/usr/local/bin/observa"]
 CMD ["agent", "--server", "http://127.0.0.1:8080", "--interval", "30s"]
+
+FROM builder AS gateway-build
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags='-s -w' -o /out/observa-gateway ./cmd/observa-gateway
+FROM gcr.io/distroless/static-debian12:nonroot AS gateway
+COPY --from=gateway-build /out/observa-gateway /usr/local/bin/observa-gateway
+USER 65532:65532
+EXPOSE 18443
+ENTRYPOINT ["/usr/local/bin/observa-gateway"]
+
+FROM builder AS rum-proxy-build
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags='-s -w' -o /out/vetra-injector ./cmd/vetra-injector
+FROM gcr.io/distroless/static-debian12:nonroot AS rum-proxy
+COPY --from=rum-proxy-build /out/vetra-injector /usr/local/bin/vetra-injector
+USER 65532:65532
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/vetra-injector"]
+
+# Preserve the historical default image when docker build has no --target.
+FROM server AS default

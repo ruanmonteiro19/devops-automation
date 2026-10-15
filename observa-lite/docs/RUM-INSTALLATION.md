@@ -1,3 +1,5 @@
+> Atualização: consulte [AUTO-INJECTION-AND-PROXIES.md](AUTO-INJECTION-AND-PROXIES.md) para o preload Node, proxy com rotas e gateway RUM.
+
 # Vetra — instalação RUM, Replay, Apdex e Experience Vitals
 
 ## O que está disponível

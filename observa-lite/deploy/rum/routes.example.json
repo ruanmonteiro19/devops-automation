@@ -1,0 +1,14 @@
+{
+  "routes": [
+    {
+      "id": "portal",
+      "host": "portal.example.com",
+      "path_prefix": "/",
+      "upstreams": ["http://app-a:3000", "http://app-b:3000"],
+      "script_url": "https://collector.example.com/rum/vetra.js?app=portal",
+      "excluded_paths": ["/login", "/auth", "/checkout", "/payment"],
+      "csp_approved": false,
+      "injection_enabled": true
+    }
+  ]
+}

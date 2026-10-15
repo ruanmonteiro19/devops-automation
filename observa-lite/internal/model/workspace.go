@@ -3,15 +3,16 @@ package model
 import "time"
 
 type FrontendCandidate struct {
-	ID         string    `json:"id"`
-	HostID     string    `json:"host_id"`
-	HostName   string    `json:"host_name"`
-	Service    string    `json:"service"`
-	PID        int       `json:"pid"`
-	Port       int       `json:"port"`
-	Scheme     string    `json:"scheme"`
-	Evidence   string    `json:"evidence"`
-	ObservedAt time.Time `json:"observed_at"`
+	InjectionStatus string    `json:"injection_status,omitempty"`
+	ID              string    `json:"id"`
+	HostID          string    `json:"host_id"`
+	HostName        string    `json:"host_name"`
+	Service         string    `json:"service"`
+	PID             int       `json:"pid"`
+	Port            int       `json:"port"`
+	Scheme          string    `json:"scheme"`
+	Evidence        string    `json:"evidence"`
+	ObservedAt      time.Time `json:"observed_at"`
 }
 type SoftwarePackage struct {
 	Name      string `json:"name"`

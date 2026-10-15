@@ -866,6 +866,51 @@ function Field({
 function Installation({ app }: { app: RUMApplication }) {
   const [origin, setOrigin] = useState(location.origin);
   const sdk = `${origin.replace(/\/$/, "")}/rum/vetra.js?app=${encodeURIComponent(app.id)}`;
+  const [moduleError, setModuleError] = useState("");
+  const [upstream, setUpstream] = useState("http://host.docker.internal:3000");
+  const [cspApproved, setCSPApproved] = useState(false);
+  const [injectionEnabled, setInjectionEnabled] = useState(true);
+  const shell = (v: string) => "'" + v.replaceAll("'", "'\"'\"'") + "'";
+  const route = {
+    routes: [
+      {
+        id: app.id,
+        host: new URL(app.origins[0] ?? "http://localhost").hostname,
+        path_prefix: "/",
+        upstreams: upstream
+          .split("\n")
+          .map((v) => v.trim())
+          .filter(Boolean),
+        script_url: sdk,
+        excluded_paths: app.exclude_paths.length
+          ? app.exclude_paths
+          : ["/login", "/auth", "/checkout", "/payment"],
+        csp_approved: cspApproved,
+        injection_enabled: injectionEnabled,
+      },
+    ],
+  };
+  const downloadModule = async () => {
+    try {
+      setModuleError("");
+      const data = await request<{ source: string }>(
+        "/api/v1/rum/instrumentation/node",
+      );
+      const url = URL.createObjectURL(
+        new Blob([data.source], { type: "application/javascript" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "vetra-node.cjs";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setModuleError(
+        e instanceof Error ? e.message : "Não foi possível baixar o módulo",
+      );
+    }
+  };
+
   return (
     <div className="space-y-4 text-sm">
       <Field label="Endereço público da Vetra">
@@ -883,6 +928,84 @@ function Installation({ app }: { app: RUMApplication }) {
         Respostas HTML com CSP são preservadas e não recebem injeção até o
         operador revisar a política. Consulte docs/RUM-INSTALLATION.md.
       </p>
+      <section className="space-y-3 border border-emerald-900 bg-emerald-950/30 p-4">
+        <h3 className="font-semibold">Injeção no processo Node.js</h3>
+        <p className="text-xs text-muted-foreground">
+          Carregue o módulo antes de iniciar a aplicação. Não precisa editar o
+          código. É necessário reiniciar o processo com as variáveis abaixo.
+          HTTP/1 e respostas HTML finalizadas em end() são suportados;
+          streaming, HTTP/2 e respostas com cabeçalhos já enviados passam sem
+          alteração.
+        </p>
+        <Button variant="outline" onClick={() => void downloadModule()}>
+          <Download />
+          Baixar módulo Node.js
+        </Button>
+        {moduleError && <p role="alert">{moduleError}</p>}
+        <pre className="overflow-auto whitespace-pre-wrap border bg-background p-3 text-xs">{`# Salve o módulo em /opt/vetra/vetra-node.cjs
+export VETRA_RUM_SCRIPT_URL=${shell(sdk)}
+export VETRA_RUM_HOSTS=${shell(route.routes[0]!.host)}
+export VETRA_RUM_EXCLUDE_PATHS=${shell(route.routes[0]!.excluded_paths.join(","))}
+export NODE_OPTIONS="--require=/opt/vetra/vetra-node.cjs \${NODE_OPTIONS:-}"
+# Reinicie o serviço Node com essas variáveis no gerenciador de processos.`}</pre>
+        <p className="text-xs text-muted-foreground">
+          Para desativar, remova o preload de NODE_OPTIONS e reinicie. A CSP não
+          é enfraquecida. O SDK mantém consentimento, amostragem e mascaramento
+          definidos nesta aplicação.
+        </p>
+      </section>
+      <section className="space-y-3 border border-emerald-900 bg-emerald-950/30 p-4">
+        <h3 className="font-semibold">
+          Proxy de aplicações com múltiplos backends
+        </h3>
+        <Field label="Upstreams da aplicação (um por linha)">
+          <textarea
+            className="min-h-20 w-full border bg-background p-2 font-mono text-xs"
+            value={upstream}
+            onChange={(e) => setUpstream(e.target.value)}
+          />
+        </Field>
+        <label className="flex gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={injectionEnabled}
+            onChange={(e) => setInjectionEnabled(e.target.checked)}
+          />
+          Ativar injeção nesta rota
+        </label>
+        <label className="flex gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={cspApproved}
+            onChange={(e) => setCSPApproved(e.target.checked)}
+          />
+          Revisei a CSP e confirmei que permite o SDK e o coletor
+        </label>
+        <Button
+          variant="outline"
+          onClick={() => downloadJSON(`vetra-proxy-${app.id}.json`, route)}
+        >
+          <Download />
+          Baixar configuração do proxy
+        </Button>
+        <pre className="overflow-auto whitespace-pre-wrap border bg-background p-3 text-xs">{`vetra-injector --listen :8081 --config /etc/vetra/routes.json --max-inflight 8`}</pre>
+        <p className="text-xs text-muted-foreground">
+          Inclua as rotas de outras aplicações no mesmo arquivo. A configuração
+          válida é recarregada a cada 5 segundos. injection_enabled=false
+          interrompe apenas a injeção, mantendo o encaminhamento. Tráfego deve
+          passar pelo proxy; configure DNS/ingress e TLS antes de usá-lo.
+        </p>
+      </section>
+      <section className="space-y-2 border p-4">
+        <h3 className="font-semibold">Coletor via gateway</h3>
+        <p className="text-xs text-muted-foreground">
+          O gateway atualizado entrega o SDK e encaminha configuração e beacons
+          do RUM, sem expor as APIs administrativas. Informe seu endereço HTTPS
+          no campo acima para usar esse caminho. Várias réplicas de gateway
+          podem compartilhar um balanceador; a persistência do servidor central
+          continua sendo de uma instância.
+        </p>
+      </section>
       <h3 className="font-semibold">Consentimento e identidade</h3>
       <pre className="overflow-auto border bg-background p-3 text-xs">{`// Integração opcional com seu gerenciador de consentimento\nwindow.Vetra.setConsent({ rum: true, replay: false });\n// Revogar a captura e descartar buffers locais\nwindow.Vetra.setConsent(false);\n// Opcional, após login; habilite pseudônimos na configuração\nawait window.Vetra.identify("ID-INTERNO-OPACO");\nwindow.Vetra.resetIdentity();`}</pre>
       <p className="text-xs text-muted-foreground">

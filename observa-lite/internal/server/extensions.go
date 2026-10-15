@@ -87,6 +87,9 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		"authentication": map[string]interface{}{"mode": "api_token", "sso": false, "mfa": false, "rbac": false, "description": "Autenticação administrativa por token. SSO e MFA dependem de implementação de backend e provedor de identidade."},
 		"features": map[string]bool{
 			"rum_web":                          true,
+			"rum_node_preload_end_response":    true,
+			"gateway_rum_forwarding":           true,
+			"rum_proxy_multi_routes":           true,
 			"rum_html_proxy_injection":         true,
 			"session_replay_web_masked":        true,
 			"experience_vitals_web":            true,

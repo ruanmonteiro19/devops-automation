@@ -127,7 +127,7 @@ func (s *Store) Ingest(d model.Discovery) error {
 		return fmt.Errorf("invalid or oversized discovery")
 	}
 	for _, f := range d.Frontends {
-		if f.HostID != d.HostID || f.Port < 1 || f.Port > 65535 || len(f.ID) > 128 || len(f.Service) > 256 || len(f.Evidence) > 512 || len(f.HostName) > 256 || (f.Scheme != "http" && f.Scheme != "https") {
+		if f.HostID != d.HostID || f.Port < 1 || f.Port > 65535 || len(f.ID) > 128 || len(f.Service) > 256 || len(f.Evidence) > 512 || len(f.InjectionStatus) > 100 || len(f.HostName) > 256 || (f.Scheme != "http" && f.Scheme != "https") {
 			return fmt.Errorf("invalid frontend evidence")
 		}
 	}

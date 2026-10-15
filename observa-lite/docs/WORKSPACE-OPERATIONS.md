@@ -10,7 +10,7 @@ Limites: até 20 portas por ciclo, 400 ms por requisição, 4 s no total, sem re
 
 `OBSERVA_DISCOVER_FRONTENDS=false` desativa as sondagens. `OBSERVA_DISCOVER_SOFTWARE=false` desativa o inventário de pacotes. `OBSERVA_DISCOVER_PROCESSES=false` desativa ambos. O modo legacy omite os campos novos.
 
-**Descoberta não é instrumentação do navegador.** Depois de criar o frontend, instale o SDK ou configure explicitamente o proxy de injeção conforme [RUM-INSTALLATION.md](RUM-INSTALLATION.md). Não há alteração automática de nginx/Apache nem injeção em todos os runtimes pelo agente.
+**Descoberta não é instrumentação do navegador.** Depois de criar o frontend, instale o SDK ou configure explicitamente o proxy de injeção conforme [RUM-INSTALLATION.md](RUM-INSTALLATION.md). Há agora um preload Node e um proxy com rotas, descritos em [AUTO-INJECTION-AND-PROXIES.md](AUTO-INJECTION-AND-PROXIES.md). Não há alteração automática de nginx/Apache nem attach em todos os runtimes pelo agente.
 
 ## Satisfação
 

@@ -11,3 +11,7 @@
 /internal/server/public/app/
 /deploy/snmp/snmp.yml
 /deploy/snmp/snmp.yml.*
+
+# Local injection routes and gateway TLS credentials
+/deploy/rum/routes.json
+/deploy/gateway/tls/

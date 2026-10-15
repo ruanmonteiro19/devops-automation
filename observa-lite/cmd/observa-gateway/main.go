@@ -16,16 +16,33 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 )
 
+var rumPublicPath = regexp.MustCompile(`^/rum/(config|beacon)/[A-Za-z0-9_-]{1,96}$`)
+
+func publicRUM(method, path string) bool {
+	if method == http.MethodGet && path == "/rum/vetra.js" {
+		return true
+	}
+	if !rumPublicPath.MatchString(path) {
+		return false
+	}
+	if strings.HasPrefix(path, "/rum/config/") {
+		return method == http.MethodGet
+	}
+	return method == http.MethodPost || method == http.MethodOptions
+}
+
 type relay struct {
-	upstream   *url.URL
-	httpClient *http.Client
-	token      string
-	slots      chan struct{}
+	upstream                 *url.URL
+	httpClient               *http.Client
+	token                    string
+	slots                    chan struct{}
+	requireClientCertificate bool
 }
 
 func (r *relay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -34,16 +51,21 @@ func (r *relay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		_, _ = w.Write([]byte("{\"ok\":true}"))
 		return
 	}
+	isRUM := publicRUM(req.Method, req.URL.Path)
 	isOTLP := req.URL.Path == "/v1/traces" || req.URL.Path == "/v1/logs" || req.URL.Path == "/v1/metrics"
-	if req.Method != http.MethodPost || (req.URL.Path != "/api/v1/ingest" && !isOTLP) {
+	if !isRUM && (req.Method != http.MethodPost || (req.URL.Path != "/api/v1/ingest" && !isOTLP)) {
 		http.NotFound(w, req)
+		return
+	}
+	if !isRUM && r.requireClientCertificate && (req.TLS == nil || len(req.TLS.VerifiedChains) == 0) {
+		http.Error(w, "verified agent client certificate required", 403)
 		return
 	}
 	key := req.Header.Get("X-API-Key")
 	if isOTLP && strings.HasPrefix(strings.ToLower(req.Header.Get("Authorization")), "bearer ") {
 		key = req.Header.Get("Authorization")[7:]
 	}
-	if len(key) != len(r.token) || subtle.ConstantTimeCompare([]byte(key), []byte(r.token)) != 1 {
+	if !isRUM && (len(key) != len(r.token) || subtle.ConstantTimeCompare([]byte(key), []byte(r.token)) != 1) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -62,11 +84,15 @@ func (r *relay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	upstream := r.upstream.JoinPath("api", "v1", "ingest")
+	if isRUM {
+		upstream = r.upstream.JoinPath(req.URL.Path)
+		upstream.RawQuery = req.URL.RawQuery
+	}
 	if isOTLP {
 		upstream = r.upstream.JoinPath("v1", strings.TrimPrefix(req.URL.Path, "/v1/"))
 		upstream.RawQuery = req.URL.RawQuery
 	}
-	forwarded, err := http.NewRequestWithContext(req.Context(), http.MethodPost, upstream.String(), bytes.NewReader(body))
+	forwarded, err := http.NewRequestWithContext(req.Context(), req.Method, upstream.String(), bytes.NewReader(body))
 	if err != nil {
 		http.Error(w, "invalid forwarding request", http.StatusBadGateway)
 		return
@@ -78,7 +104,16 @@ func (r *relay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			forwarded.Header.Set("Content-Encoding", encoding)
 		}
 	}
-	forwarded.Header.Set("X-API-Key", r.token)
+	if isRUM {
+		for _, key := range []string{"Content-Type", "Origin", "Referer", "Accept", "User-Agent"} {
+			if v := req.Header.Get(key); v != "" {
+				forwarded.Header.Set(key, v)
+			}
+		}
+		// Browser credentials and administrative tokens are never forwarded to the public collector.
+	} else {
+		forwarded.Header.Set("X-API-Key", r.token)
+	}
 	resp, err := r.httpClient.Do(forwarded)
 	if err != nil {
 		log.Printf("gateway upstream failure: %v", err)
@@ -86,6 +121,16 @@ func (r *relay) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
+	if isRUM {
+		for _, key := range []string{"Content-Type", "Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers", "Access-Control-Max-Age", "Vary", "Cache-Control", "X-Content-Type-Options", "Retry-After"} {
+			for _, v := range resp.Header.Values(key) {
+				w.Header().Add(key, v)
+			}
+		}
+		w.WriteHeader(resp.StatusCode)
+		_, _ = io.Copy(w, io.LimitReader(resp.Body, 8<<20))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	if isOTLP {
 		w.Header().Del("Content-Type")
@@ -123,6 +168,7 @@ func localURL(u *url.URL) bool {
 	return strings.EqualFold(host, "localhost") || (ip != nil && ip.IsLoopback())
 }
 func main() {
+	publicRUMWithMTLS := flag.Bool("public-rum-with-mtls", false, "allow public browser RUM without client certificate while enforcing verified mTLS on agent/OTLP routes")
 	maxInflight := flag.Int("max-inflight", 32, "maximum concurrent forwarding requests per replica (1..4096)")
 	listen := flag.String("listen", ":18443", "TCP listen address")
 	upstreamRaw := flag.String("upstream", "http://127.0.0.1:8080", "backend server URL (HTTPS required remotely)")
@@ -165,8 +211,11 @@ func main() {
 		}
 		auth.ClientCAs = roots
 		auth.ClientAuth = tls.RequireAndVerifyClientCert
+		if *publicRUMWithMTLS {
+			auth.ClientAuth = tls.VerifyClientCertIfGiven
+		}
 	}
-	h := &relay{upstream: u, httpClient: client, token: token, slots: make(chan struct{}, *maxInflight)}
+	h := &relay{requireClientCertificate: *clientCA != "" && *publicRUMWithMTLS, upstream: u, httpClient: client, token: token, slots: make(chan struct{}, *maxInflight)}
 	srv := &http.Server{Addr: *listen, Handler: h, TLSConfig: auth, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 20 * time.Second, MaxHeaderBytes: 16384}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

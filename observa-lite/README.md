@@ -1,3 +1,5 @@
+> Injeção RUM: [Módulo Node sem edição de código, proxy de aplicações e gateway RUM](docs/AUTO-INJECTION-AND-PROXIES.md).
+
 > Atualização Vetra 0.4: [Frontends pelo agente, satisfação, notebooks VQL, workflows, PostgreSQL, vulnerabilidades OSV e MCP](docs/WORKSPACE-OPERATIONS.md). Limites e evidências de validação documentados.
 
 # Vetra Observability
@@ -17,7 +19,7 @@ Comece pelo [guia da entrega](docs/RELEASE-0.3.0.md). Consulte a [cobertura func
 As seções históricas abaixo descrevem fases anteriores do MVP. Afirmações antigas de ausência de tracing se referem a essas fases; funcionalidades como gRPC, autoinstrumentação, RCA causal, SSO e RBAC continuam ausentes nesta branch.
 
 
-MVP de observabilidade em português com **agente Linux passivo**, descoberta de serviços, **Service Mapping**, **Network Mapping (fluxos IP)**, templates HTTP/TCP, Data Sources Prometheus/JSON, dashboards personalizáveis, HTML Graphics isolado e ferramentas MCP de consulta e configuração.
+MVP de observabilidade em português com **agente Linux de descoberta**, descoberta de serviços, **Service Mapping**, **Network Mapping (fluxos IP)**, templates HTTP/TCP, Data Sources Prometheus/JSON, dashboards personalizáveis, HTML Graphics isolado e ferramentas MCP de consulta e configuração.
 
 > **Estado:** protótipo funcional e validado localmente em Linux amd64. **Não é** substituto de Dynatrace/OneAgent, Zabbix ou Grafana em produção. Seu mapa de rede representa conexões IP, não topologia física. Não há instrumentação de runtime, eBPF, SNMP, LLD, distributed tracing, RCA avançado nem provedor LLM neste marco.
 

@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     init: true
     read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
     env_file:
       - .env
     environment:

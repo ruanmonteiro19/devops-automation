@@ -31,16 +31,16 @@ func (s *Server) mcp(w http.ResponseWriter, r *http.Request) {
 	var rpcErr interface{}
 	switch req.Method {
 	case "initialize":
-		result = map[string]interface{}{"protocolVersion": "2025-03-26", "capabilities": map[string]interface{}{"tools": map[string]bool{"listChanged": false}}, "serverInfo": map[string]string{"name": "observa-lite", "version": "0.1.0"}}
+		result = map[string]interface{}{"protocolVersion": "2025-03-26", "capabilities": map[string]interface{}{"tools": map[string]bool{"listChanged": false}}, "serverInfo": map[string]string{"name": "observa-lite", "version": "0.3.0-lab"}}
 	case "ping":
 		result = map[string]interface{}{}
 	case "tools/list":
 		result = map[string]interface{}{"tools": []map[string]interface{}{
 			{"name": "list_hosts", "description": "List discovered Linux hosts and their freshness", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
-			{"name": "list_services", "description": "List automatically discovered service nodes", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
-			{"name": "service_dependencies", "description": "List observed TCP application-to-application relationships", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
+			{"name": "list_services", "description": "List logical services observed in retained instrumented spans", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
+			{"name": "service_dependencies", "description": "List cross-service parent-child relationships observed in retained traces", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
 			{"name": "network_flows", "description": "List observed host-to-host flows (not physical topology)", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
-			{"name": "list_incidents", "description": "List evidence-based host disappearance and template failures", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
+			{"name": "list_incidents", "description": "List evidence-based monitor events", "inputSchema": map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}},
 		}}
 	case "tools/call":
 		var params struct {
@@ -54,7 +54,13 @@ func (s *Server) mcp(w http.ResponseWriter, r *http.Request) {
 		case "list_hosts":
 			data = snap.Hosts
 		case "list_services":
-			data = snap.ServiceMap.Nodes
+			services := []model.Node{}
+			for _, node := range snap.ServiceMap.Nodes {
+				if node.Kind == "service" {
+					services = append(services, node)
+				}
+			}
+			data = services
 		case "service_dependencies":
 			data = snap.ServiceMap.Edges
 		case "network_flows":

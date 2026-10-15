@@ -2,8 +2,8 @@
 # Multi-stage, multi-platform build: React UI and statically linked Go server/agent.
 FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
 WORKDIR /src
-COPY frontend/package.json ./package.json
-RUN npm install --no-audit --no-fund --legacy-peer-deps
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund --legacy-peer-deps
 COPY frontend/ ./
 RUN npm run build
 
@@ -11,7 +11,8 @@ FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS builder
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 WORKDIR /build
-COPY go.mod ./
+COPY go.mod go.sum ./
+RUN go mod download
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY --from=frontend /src/dist/ ./internal/server/public/app/

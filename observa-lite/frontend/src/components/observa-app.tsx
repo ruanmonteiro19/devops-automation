@@ -1,3 +1,4 @@
+import { filterTopology, layoutTopology, type TopologyLayout } from "@/lib/topology";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
@@ -23,6 +24,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api, ApiError, readToken, saveToken, type Dashboard, type DataSource, type GatewayEndpoint, type MapNode, type MonitorTemplate, type Snapshot, type TopologyMap } from "@/lib/api";
 import { createDemoSnapshot } from "@/lib/demo-data";
+import { TelemetryPage } from "@/components/telemetry-page";
+import { APMProblemsPage } from "@/components/apm-problems-page";
+import { OperationalDashboards } from "@/components/operational-dashboards";
+import { SLOPage } from "@/components/slo-page";
+import { APMPage } from "@/components/apm-page";
 import { LogsPage } from "@/components/logs-page";
 import { navText, validLanguage, type ObservaLanguage } from "@/lib/i18n";
 import { extensionManifest, type ExtensionCategory, type ExtensionManifest } from "@/lib/extensions";
@@ -32,18 +38,18 @@ type NavItem = { label: string; path: string; icon: LucideIcon; favorite?: boole
 type NavGroup = { label: string; items: NavItem[] };
 
 const navGroups: NavGroup[] = [
-  { label: "Início", items: [["Visão geral", "", LayoutDashboard, true], ["Prioridades agora", "prioridades", AlertTriangle, true], ["Saúde do ambiente", "saude", HeartPulse]].map(toNav) },
-  { label: "Aplicações / APM", items: [["Aplicações", "aplicacoes", Boxes], ["Serviços", "servicos", Server, true], ["Service Mapping", "service-mapping", Workflow, true], ["Dependências", "dependencias", GitBranch], ["Traces", "traces", Activity], ["Requisições", "requisicoes", Radio], ["Erros & exceções", "erros", AlertTriangle], ["SLOs", "slos", Gauge]].map(toNav) },
-  { label: "Infraestrutura", items: [["Hosts", "hosts", Server, true], ["Processos", "processos", Activity], ["Process Mapping", "process-mapping", GitBranch], ["Containers", "containers", Boxes], ["Kubernetes/OpenShift", "kubernetes", Cloud], ["Network Mapping", "network-mapping", Network, true], ["Dispositivos de rede", "dispositivos-rede", Globe2], ["Interfaces", "interfaces", Radio]].map(toNav) },
-  { label: "Monitoramento", items: [["Templates", "templates", ListFilter, true], ["Descobertas", "descobertas", Search], ["Itens & métricas", "itens-metricas", Gauge], ["Alertas", "alertas", Bell], ["Incidentes", "incidentes", AlertTriangle, true], ["Regras de correlação", "correlacao", GitBranch]].map(toNav) },
-  { label: "Explorar", items: [["Data Sources", "data-sources", Database, true], ["Logs", "logs", ListFilter], ["Métricas", "metricas", Activity], ["Consultas", "consultas", Code2]].map(toNav) },
-  { label: "Visualização", items: [["Dashboards", "dashboards", LayoutDashboard, true], ["Editor de painéis", "editor-paineis", PanelRight], ["HTML Graphics", "html-graphics", Code2], ["Modo TV", "modo-tv", Play]].map(toNav) },
-  { label: "Automação", items: [["IA & RCA", "ia-rca", Bot], ["MCP Hub", "mcp-hub", Bot], ["Integrações", "integracoes", Workflow], ["Webhooks", "webhooks", Radio]].map(toNav) },
-  { label: "Extensões", items: [["Hub de Extensões", "extensoes", Boxes, true], ["Minhas extensões", "minhas-extensoes", Star]].map(toNav) },
-  { label: "Administração", items: [["Usuários & acesso", "usuarios-acesso", Users, true], ["Autenticação (SSO/MFA)", "autenticacao", ShieldCheck], ["Chaves de API", "chaves-api", KeyRound], ["Agentes", "agentes", Radio], ["Gateways", "gateways", Network], ["Host Groups", "host-groups", Server], ["Network Zones", "network-zones", Network], ["Configurações", "configuracoes", Settings], ["Auditoria", "auditoria", ListFilter], ["Ajuda", "ajuda", CircleHelp]].map(toNav) },
+  { label: "Início", items: ([["Visão geral", "", LayoutDashboard, true], ["Prioridades agora", "prioridades", AlertTriangle, true], ["Saúde do ambiente", "saude", HeartPulse]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Aplicações / APM", items: ([["Aplicações", "aplicacoes", Boxes], ["Serviços", "servicos", Server, true], ["Service Mapping", "service-mapping", Workflow, true], ["Dependências", "dependencias", GitBranch], ["Traces", "traces", Activity], ["Requisições", "requisicoes", Radio], ["Erros & exceções", "erros", AlertTriangle], ["SLOs", "slos", Gauge]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Infraestrutura", items: ([["Hosts", "hosts", Server, true], ["Processos", "processos", Activity], ["Process Mapping", "process-mapping", GitBranch], ["Containers", "containers", Boxes], ["Kubernetes/OpenShift", "kubernetes", Cloud], ["Network Mapping", "network-mapping", Network, true], ["Dispositivos de rede", "dispositivos-rede", Globe2], ["Interfaces", "interfaces", Radio]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Monitoramento", items: ([["Templates", "templates", ListFilter, true], ["Descobertas", "descobertas", Search], ["Itens & métricas", "itens-metricas", Gauge], ["Alertas", "alertas", Bell], ["Incidentes", "incidentes", AlertTriangle, true], ["Problemas APM", "problemas-apm", AlertTriangle], ["Regras APM", "correlacao", GitBranch]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Explorar", items: ([["Data Sources", "data-sources", Database, true], ["Logs OTLP", "telemetria-logs", ListFilter], ["Logs Loki", "logs", ListFilter], ["Métricas", "metricas", Activity], ["Consultas", "consultas", Code2]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Visualização", items: ([["Dashboards", "dashboards", LayoutDashboard, true], ["Editor de painéis", "editor-paineis", PanelRight], ["HTML Graphics", "html-graphics", Code2], ["Modo TV", "modo-tv", Play]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Automação", items: ([["IA & RCA", "ia-rca", Bot], ["MCP Hub", "mcp-hub", Bot], ["Integrações", "integracoes", Workflow], ["Webhooks", "webhooks", Radio]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Extensões", items: ([["Hub de Extensões", "extensoes", Boxes, true], ["Minhas extensões", "minhas-extensoes", Star]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
+  { label: "Administração", items: ([["Usuários & acesso", "usuarios-acesso", Users, true], ["Autenticação (SSO/MFA)", "autenticacao", ShieldCheck], ["Chaves de API", "chaves-api", KeyRound], ["Agentes", "agentes", Radio], ["Gateways", "gateways", Network], ["Host Groups", "host-groups", Server], ["Network Zones", "network-zones", Network], ["Configurações", "configuracoes", Settings], ["Auditoria", "auditoria", ListFilter], ["Ajuda", "ajuda", CircleHelp]] satisfies [string, string, LucideIcon, boolean?][]).map(toNav) },
 ];
 
-function toNav(tuple: [string, string, LucideIcon, boolean?]): NavItem { return { label: tuple[0], path: tuple[1], icon: tuple[2], favorite: tuple[3] }; }
+function toNav(tuple: [string, string, LucideIcon, boolean?]): NavItem { return { label: tuple[0], path: tuple[1], icon: tuple[2], favorite: tuple[3] ?? false }; }
 const labels = new Map(navGroups.flatMap((group) => group.items.map((item) => [item.path, item.label])));
 
 function routePath(path: string) { return path ? `/${path}` : "/"; }
@@ -98,7 +104,7 @@ function DemoBanner({ onExit }: { onExit: () => void }) {
   return <div className="fixed inset-x-0 top-0 z-[60] flex h-9 items-center justify-center gap-3 bg-demo px-3 text-xs font-semibold text-demo-foreground"><span className="rounded-sm border border-current px-1.5 py-0.5 text-[10px]">DEMO</span><span className="truncate">Dados ilustrativos — nenhuma telemetria real está sendo exibida.</span><Button variant="ghost" size="sm" className="h-7 text-demo-foreground hover:bg-demo-foreground/10" onClick={onExit}>Sair</Button></div>;
 }
 
-function SidebarNav({ collapsed, search, setSearch, current, onNavigate, language }: { collapsed: boolean; search: string; setSearch: (value: string) => void; current: string; onNavigate?: () => void; language:ObservaLanguage }) {
+function SidebarNav({ collapsed, search, setSearch, current, onNavigate, language }: { collapsed: boolean; search: string; setSearch: (value: string) => void; current: string; onNavigate?: (() => void) | undefined; language:ObservaLanguage }) {
   const filtered = navGroups.map((group) => ({ ...group, items: group.items.filter((item) => item.label.toLowerCase().includes(search.toLowerCase())) })).filter((group) => group.items.length);
   return <>
     <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-4">
@@ -116,7 +122,7 @@ function SidebarNav({ collapsed, search, setSearch, current, onNavigate, languag
   </>;
 }
 
-function NavLink({ item, active, collapsed, onNavigate, language }: { item: NavItem; active: boolean; collapsed: boolean; onNavigate?: () => void; language:ObservaLanguage }) {
+function NavLink({ item, active, collapsed, onNavigate, language }: { item: NavItem; active: boolean; collapsed: boolean; onNavigate?: (() => void) | undefined; language:ObservaLanguage }) {
   const content = <Link to="/$" params={{ _splat: item.path }} onClick={onNavigate} className={cn("group flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground", active && "bg-sidebar-accent text-primary", collapsed && "justify-center px-0")}><item.icon className="size-4 shrink-0" />{!collapsed && <><span className="min-w-0 flex-1 truncate">{navText(item.label,language)}</span>{item.favorite && <Star className="size-3 fill-current opacity-0 group-hover:opacity-60" />}</>}</Link>;
   return collapsed ? <Tooltip><TooltipTrigger asChild>{content}</TooltipTrigger><TooltipContent side="right">{navText(item.label,language)}</TooltipContent></Tooltip> : content;
 }
@@ -153,15 +159,20 @@ function ConnectionGate({ unauthorized, unreachable, error, onDemo, onRetry }: {
 function LoadingState() { return <div className="space-y-5"><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map((i) => <div key={i} className="h-28 animate-pulse rounded-lg border border-border bg-surface" />)}</div><div className="h-[480px] animate-pulse rounded-lg border border-border bg-surface" /></div>; }
 
 function PageRouter({ path, snapshot, demo, globalSearch }: { path: string; snapshot: Snapshot; demo: boolean; globalSearch: string }) {
+  if (/^traces\/[a-fA-F0-9]{32}$/.test(path)) return <APMPage key={path} path="traces" initialTrace={path.split("/")[1]!} demo={demo} globalSearch={globalSearch} />;
+  if (["problemas-apm","correlacao"].includes(path)) return <APMProblemsPage key={path} path={path} demo={demo} />;
+  if (path === "slos") return <SLOPage demo={demo} />;
+  if (["telemetria-logs","metricas","itens-metricas"].includes(path)) return <TelemetryPage key={path} path={path} demo={demo} />;
+  if (path === "dependencias") return <MappingView kind="service" map={snapshot.service_map} demo={demo} />;
+  if (["servicos", "aplicacoes", "requisicoes", "erros", "traces"].includes(path)) return <APMPage key={path} path={path} demo={demo} globalSearch={globalSearch} />;
   if (["service-mapping", "network-mapping", "process-mapping"].includes(path)) return <MappingView kind={path === "service-mapping" ? "service" : path === "process-mapping" ? "process" : "network"} map={path === "service-mapping" ? snapshot.service_map : path === "process-mapping" ? (snapshot.process_map ?? {nodes:[],edges:[]}) : snapshot.network_map} demo={demo} />;
   if (path === "extensoes" || path === "minhas-extensoes") return <ExtensionHub configuredOnly={path === "minhas-extensoes"} />;
   if (path === "usuarios-acesso" || path === "autenticacao" || path === "chaves-api") return <AuthSettings section={path} />;
   if (path === "templates") return <TemplateEditor items={snapshot.templates} demo={demo} />;
   if (path === "data-sources") return <DataSourceEditor items={snapshot.datasources} demo={demo} />;
   if (path === "logs") return <LogsPage sources={snapshot.datasources} demo={demo} />;
-  if (["dashboards", "editor-paineis", "html-graphics"].includes(path)) return <DashboardBuilder items={snapshot.dashboards} demo={demo} />;
-  if (["incidentes", "prioridades", "alertas", "erros"].includes(path)) return <IncidentList events={snapshot.events} />;
-  if (path === "servicos" || path === "aplicacoes") return <ServicesPage snapshot={snapshot} filter={globalSearch} />;
+  if (["dashboards", "editor-paineis", "html-graphics"].includes(path)) return <OperationalDashboards items={snapshot.dashboards} demo={demo} />;
+  if (["incidentes", "prioridades", "alertas"].includes(path)) return <IncidentList events={snapshot.events} />;
   if (["agentes","gateways","host-groups","network-zones"].includes(path)) return <AgentRoutingPage snapshot={snapshot} path={path} />;
   if (path === "hosts" || path === "processos" || path === "containers" || path === "kubernetes") return <InfrastructurePage snapshot={snapshot} path={path} />;
   if (!path || path === "saude") return <Overview snapshot={snapshot} demo={demo} />;
@@ -217,7 +228,7 @@ function PageHeader({ eyebrow, title, description, actions }: { eyebrow?: string
 function KPIStats({ items }: { items: Array<{ label: string; value: string | number; detail: string; tone?: string; icon: LucideIcon }> }) { return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map((item) => <div key={item.label} className="rounded-lg border border-border bg-surface p-4"><div className="flex items-center justify-between"><span className="text-xs font-medium text-muted-foreground">{item.label}</span><item.icon className={cn("size-4", item.tone ?? "text-primary")} /></div><div className="mt-3 text-2xl font-semibold tabular-nums">{item.value}</div><div className="mt-1 text-xs text-muted-foreground">{item.detail}</div></div>)}</div>; }
 
 function Overview({ snapshot, demo }: { snapshot: Snapshot; demo: boolean }) {
-  const services = snapshot.service_map.nodes.length; const issues = snapshot.events.filter((event) => event.status !== "resolvido").length;
+  const services = snapshot.service_map.nodes.filter(node=>node.kind==="service").length; const issues = snapshot.events.filter((event) => event.status === "open").length;
   return <><PageHeader eyebrow="Visão geral" title="Saúde do ambiente" description="Estado consolidado da telemetria Linux, dependências e eventos recentes." actions={<span className="flex items-center gap-2 text-xs text-muted-foreground"><span className="size-2 rounded-full bg-success" />{demo ? "Amostra demonstrativa" : `Gerado ${formatDate(snapshot.generated_at)}`}</span>} /><KPIStats items={[{ label: "Hosts observados", value: snapshot.hosts.length, detail: "Com inventário recente", icon: Server }, { label: "Serviços APM confirmados", value: services, detail: `${snapshot.process_map?.nodes.length ?? 0} entidades no Process Mapping`, icon: Workflow }, { label: "Prioridades abertas", value: issues, detail: "Requerem análise", icon: AlertTriangle, tone: issues ? "text-warning" : "text-success" }, { label: "Monitores ativos", value: snapshot.templates.filter((item) => item.enabled).length, detail: `${snapshot.templates.length} templates configurados`, icon: HeartPulse }]}/>
     <div className="mt-5 grid gap-5 xl:grid-cols-[1.45fr_.75fr]"><section className="rounded-lg border border-border bg-surface"><SectionTitle title="Prioridades agora" subtitle="Eventos ordenados por impacto operacional" link="/incidentes" />{snapshot.events.length ? <IncidentRows events={snapshot.events.slice(0, 5)} /> : <EmptyState icon={ShieldCheck} title="Nenhuma prioridade aberta" description="Eventos do backend aparecerão aqui quando forem detectados." />}</section><section className="rounded-lg border border-border bg-surface"><SectionTitle title="Inventário recente" subtitle="Últimos hosts observados" />{snapshot.hosts.length ? snapshot.hosts.slice(0, 5).map((host) => <div key={host.id} className="flex items-center gap-3 border-t border-border px-4 py-3"><div className="grid size-8 place-items-center rounded bg-muted"><Server className="size-4" /></div><div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{host.name}</div><div className="truncate text-xs text-muted-foreground">{host.os} · {host.addresses.join(", ")}</div></div><span className="size-2 rounded-full bg-success" /></div>) : <EmptyState icon={Server} title="Sem hosts" description="Instale ou conecte um agente para começar a descoberta." />}</section></div>
   </>;
@@ -238,18 +249,299 @@ function DataTable({ headers, children }: { headers: string[]; children: ReactNo
 function Cell({ children, strong }: { children: ReactNode; strong?: boolean }) { return <td className={cn("px-4 py-3 text-muted-foreground", strong && "font-medium text-foreground")}>{children}</td>; }
 function Status({ value }: { value: string }) { const ok = ["ok", "healthy", "ativo"].includes(value.toLowerCase()); return <span className={cn("inline-flex items-center gap-1.5 text-xs", ok ? "text-success" : "text-warning")}><span className="size-1.5 rounded-full bg-current" />{value}</span>; }
 
-type FlowData = MapNode & Record<string, unknown> & { selected?: boolean };
-const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => <div className="min-w-44 rounded-md border border-map-node-border bg-map-node p-3 shadow-map"><Handle type="target" position={Position.Left} className="!bg-primary" /><div className="flex items-center gap-2"><span className={cn("size-2 rounded-full", data.status === "ok" ? "bg-success" : "bg-warning")} /><div className="text-xs font-semibold">{data.name}</div></div><div className="mt-1.5 text-[10px] text-muted-foreground">{data.kind}{data.runtime ? ` · ${data.runtime}` : ""}</div><Handle type="source" position={Position.Right} className="!bg-primary" /></div>);
+type FlowData = MapNode & Record<string, unknown> & { layout?: TopologyLayout };
+const TopologyNode = memo(({ data }: NodeProps<Node<FlowData>>) => {
+  const Icon =
+    data.kind === "database"
+      ? Database
+      : data.kind === "messaging"
+        ? Radio
+        : data.kind === "external"
+          ? Globe2
+          : Server;
+  return (
+    <div className="min-w-44 max-w-60 rounded-md border border-map-node-border bg-map-node p-3 shadow-map">
+      <Handle
+        type="target"
+        position={data.layout === "vertical" ? Position.Top : Position.Left}
+        className="!bg-primary"
+      />
+      <div className="flex items-center gap-2">
+        <Icon className="size-4 shrink-0 text-primary" />
+        <span
+          title={data.status === "unknown" ? "Saúde não avaliada" : data.status}
+          className={cn(
+            "size-2 shrink-0 rounded-full",
+            data.status === "ok"
+              ? "bg-success"
+              : data.status === "warning"
+                ? "bg-warning"
+                : data.status === "error" || data.status === "critical"
+                  ? "bg-danger"
+                  : "bg-muted-foreground",
+          )}
+        />
+        <div className="break-words text-xs font-semibold">{data.name}</div>
+      </div>
+      <div className="mt-1.5 text-[10px] text-muted-foreground">
+        {data.kind}
+        {data.runtime ? ` · ${data.runtime}` : ""}
+      </div>
+      <Handle
+        type="source"
+        position={data.layout === "vertical" ? Position.Bottom : Position.Right}
+        className="!bg-primary"
+      />
+    </div>
+  );
+});
 TopologyNode.displayName = "TopologyNode";
-
-function MappingView({ kind, map, demo }: { kind: "service" | "network" | "process"; map: TopologyMap; demo: boolean }) {
-  const [selected, setSelected] = useState<MapNode | null>(null);
-  const nodes: Node<FlowData>[] = useMemo(() => map.nodes.map((node, index) => ({ id: node.id, type: "topology", position: { x: 80 + (index % 3) * 310, y: 80 + Math.floor(index / 3) * 180 }, data: { ...node } })), [map.nodes]);
-  const edges: Edge[] = useMemo(() => map.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: `${edge.kind} · ${edge.count}`, animated: edge.confidence === "observed", style: { strokeWidth: 1.5 }, labelStyle: { fontSize: 10 } })), [map.edges]);
-  const selectedEdges = selected ? map.edges.filter((edge) => edge.from === selected.id || edge.to === selected.id) : [];
-  return <><PageHeader eyebrow={kind === "service" ? "Aplicações / APM" : "Infraestrutura"} title={kind === "service" ? "Service Mapping" : kind === "process" ? "Process Mapping" : "Network Mapping"} description={kind === "service" ? "Somente serviços APM instrumentados. Processos e sockets permanecem na visão Process Mapping." : kind === "process" ? "Agrupamentos inferidos de processos Linux/Windows, sem garantia de vínculo APM." : "Fluxos IP observados; topologia física SNMP não disponível."} actions={<div className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground"><span className="size-2 rounded-full bg-success" /> Evidência real {demo && "(amostra demo)"}</div>} />
-    <div className="grid min-h-[610px] overflow-hidden rounded-lg border border-border bg-surface lg:grid-cols-[1fr_310px]"><div className="relative min-h-[460px] border-b border-border lg:border-b-0 lg:border-r"><div className="absolute left-3 top-3 z-10 flex gap-2 rounded-md border border-border bg-surface-raised p-2 text-[10px] text-muted-foreground"><span>Confiança: </span><span className="text-success">● alta</span><span className="text-warning">● média</span></div>{map.nodes.length ? <ReactFlow nodes={nodes} edges={edges} nodeTypes={{ topology: TopologyNode }} fitView minZoom={0.3} maxZoom={2} onNodeClick={(_, node) => setSelected(node.data as MapNode)} colorMode="dark"><Background gap={24} size={1} /><Controls /><MiniMap pannable zoomable /></ReactFlow> : <EmptyState icon={Workflow} title={kind === "service" ? "Nenhum serviço APM instrumentado" : "Nenhuma relação observada"} description={kind === "service" ? "Processos e portas não são serviços APM. Configure instrumentação OpenTelemetry e ingestão compatível quando disponível." : "Quando agentes reportarem processos e conexões, o mapa será construído aqui."} />}</div><aside className="p-5">{selected ? <><div className="flex items-start justify-between"><div><div className="text-[10px] font-semibold uppercase text-primary">{selected.kind}</div><h2 className="mt-1 font-semibold">{selected.name}</h2></div><Button variant="ghost" size="icon" className="size-7" onClick={() => setSelected(null)}><X /></Button></div><div className="mt-5 space-y-3 text-xs"><Detail label="Estado" value={selected.status} /><Detail label="Runtime" value={selected.runtime ?? "Não informado"} /><Detail label="Host" value={selected.host ?? "Não informado"} /><Detail label="Instâncias" value={String(selected.instances ?? 1)} /></div><div className="mt-6 border-t border-border pt-5"><h3 className="text-xs font-semibold">Evidências relacionadas</h3>{selectedEdges.length ? selectedEdges.map((edge) => <div key={edge.id} className="mt-3 rounded-md border border-border bg-muted/30 p-3"><div className="text-xs font-medium">{edge.kind} · {edge.count} observações</div><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{edge.evidence}</p><div className="mt-2 text-[10px] text-primary">Confiança {edge.confidence}</div></div>) : <p className="mt-2 text-xs text-muted-foreground">Nenhuma aresta relacionada.</p>}</div></> : <EmptyState icon={PanelRight} title="Selecione um nó" description="Veja runtime, host, relações, evidência e confiança." />}</aside></div>
-  </>;
+const topologyNodeTypes = { topology: TopologyNode };
+function MappingView({
+  kind,
+  map,
+  demo,
+}: {
+  kind: "service" | "network" | "process";
+  map: TopologyMap;
+  demo: boolean;
+}) {
+  const [selectedID, setSelectedID] = useState(""),
+    [layout, setLayout] = useState<TopologyLayout>("horizontal"),
+    [search, setSearch] = useState(""),
+    [nodeKind, setNodeKind] = useState(""),
+    [hideIsolated, setHideIsolated] = useState(false);
+  const filtered = useMemo(
+    () => filterTopology(map, { search, kind: nodeKind, hideIsolated }),
+    [map, search, nodeKind, hideIsolated],
+  );
+  const kinds = useMemo(
+    () => [...new Set(map.nodes.map((node) => node.kind))].sort(),
+    [map.nodes],
+  );
+  const nodes: Node<FlowData>[] = useMemo(() => {
+    const positions = layoutTopology(filtered, layout);
+    return filtered.nodes.map((node) => ({
+      id: node.id,
+      type: "topology",
+      position: positions.get(node.id)!,
+      data: { ...node, layout },
+    }));
+  }, [filtered, layout]);
+  const edges: Edge[] = useMemo(
+    () =>
+      filtered.edges.map((edge) => ({
+        id: edge.id,
+        source: edge.from,
+        target: edge.to,
+        label: `${edge.kind} · ${edge.count}`,
+        style: { strokeWidth: 1.5 },
+        labelStyle: { fontSize: 10 },
+      })),
+    [filtered.edges],
+  );
+  const selected = filtered.nodes.find((node) => node.id === selectedID);
+  const selectedEdges = selected
+    ? filtered.edges.filter(
+        (edge) => edge.from === selected.id || edge.to === selected.id,
+      )
+    : [];
+  return (
+    <>
+      <PageHeader
+        eyebrow={kind === "service" ? "Aplicações / APM" : "Infraestrutura"}
+        title={
+          kind === "service"
+            ? "Service Mapping"
+            : kind === "process"
+              ? "Process Mapping"
+              : "Network Mapping"
+        }
+        description={
+          kind === "service"
+            ? "Serviços e dependências observados em spans OpenTelemetry. A topologia não determina a saúde nem a causa raiz."
+            : kind === "process"
+              ? "Agrupamentos inferidos de processos Linux/Windows, sem garantia de vínculo APM."
+              : "Fluxos IP observados; topologia física SNMP não disponível."
+        }
+      />
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded border border-border bg-surface p-4">
+        <label className="grid flex-1 gap-2 text-xs">
+          Pesquisar nó
+          <Input
+            placeholder="Nome ou ID"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </label>
+        <label className="grid gap-2 text-xs">
+          Tipo
+          <select
+            className="rounded border border-input bg-background p-2"
+            value={nodeKind}
+            onChange={(event) => setNodeKind(event.target.value)}
+          >
+            <option value="">Todos</option>
+            {kinds.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-2 text-xs">
+          Layout
+          <select
+            className="rounded border border-input bg-background p-2"
+            value={layout}
+            onChange={(event) =>
+              setLayout(event.target.value as TopologyLayout)
+            }
+          >
+            <option value="grid">Grade</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 py-2 text-xs">
+          <input
+            type="checkbox"
+            checked={hideIsolated}
+            onChange={(event) => setHideIsolated(event.target.checked)}
+          />
+          Ocultar isolados
+        </label>
+      </div>
+      <p className="mb-3 text-xs text-muted-foreground">
+        {filtered.nodes.length} nós · {filtered.edges.length} relações exibidas
+        · {map.nodes.length} nós e {map.edges.length} relações recebidas
+        {demo ? " · Amostra demonstrativa" : ""} · Cinza: saúde não avaliada
+      </p>
+      {filtered.truncated && (
+        <p
+          role="status"
+          className="mb-3 rounded border border-warning/40 p-3 text-sm text-warning"
+        >
+          Exibindo {filtered.limit} de {filtered.matchedNodes} nós após os
+          filtros. Refine a pesquisa para investigar outros nós.
+        </p>
+      )}
+      <div className="grid min-h-[610px] overflow-hidden rounded-lg border border-border bg-surface lg:grid-cols-[1fr_310px]">
+        <div className="relative min-h-[460px] border-b border-border lg:border-b-0 lg:border-r">
+          {nodes.length ? (
+            <ReactFlow
+              key={layout + ":" + search + ":" + nodeKind + ":" + hideIsolated}
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={topologyNodeTypes}
+              fitView
+              minZoom={0.1}
+              maxZoom={2}
+              onNodeClick={(_, node) => setSelectedID(node.id)}
+              colorMode="dark"
+            >
+              <Background gap={24} size={1} />
+              <Controls />
+              <MiniMap pannable zoomable />
+            </ReactFlow>
+          ) : (
+            <EmptyState
+              icon={Workflow}
+              title="Nenhum nó encontrado"
+              description={
+                map.nodes.length
+                  ? "Ajuste a pesquisa, o tipo ou a opção de ocultar isolados."
+                  : kind === "service"
+                    ? "Envie spans para o receptor OpenTelemetry. Processos e portas não representam serviços APM."
+                    : "Os agentes precisam reportar processos e conexões para construir este mapa."
+              }
+            />
+          )}
+        </div>
+        <aside className="p-5">
+          {selected ? (
+            <>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase text-primary">
+                    {selected.kind}
+                  </p>
+                  <h2 className="mt-1 break-all font-semibold">
+                    {selected.name}
+                  </h2>
+                </div>
+                <Button
+                  aria-label="Fechar detalhes do nó"
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  onClick={() => setSelectedID("")}
+                >
+                  <X />
+                </Button>
+              </div>
+              <p className="mt-2 break-all font-mono text-[10px] text-muted-foreground">
+                {selected.id}
+              </p>
+              <div className="mt-5 space-y-3 text-xs">
+                <Detail
+                  label="Estado"
+                  value={
+                    selected.status === "unknown"
+                      ? "Não avaliado"
+                      : selected.status
+                  }
+                />
+                <Detail
+                  label="Runtime"
+                  value={selected.runtime ?? "Não informado"}
+                />
+                <Detail label="Host" value={selected.host ?? "Não informado"} />
+                <Detail
+                  label="Instâncias"
+                  value={
+                    selected.instances === undefined
+                      ? "Não informado"
+                      : String(selected.instances)
+                  }
+                />
+              </div>
+              <div className="mt-6 border-t border-border pt-5">
+                <h3 className="text-xs font-semibold">
+                  Evidências relacionadas no mapa exibido
+                </h3>
+                {selectedEdges.length ? (
+                  selectedEdges.map((edge) => (
+                    <div
+                      key={edge.id}
+                      className="mt-3 rounded border border-border bg-muted/30 p-3"
+                    >
+                      <p className="text-xs font-medium">
+                        {edge.kind} · {edge.count} observações
+                      </p>
+                      <p className="mt-1 break-all text-[11px] leading-5 text-muted-foreground">
+                        {edge.evidence || "Evidência não informada"}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Nenhuma relação no recorte exibido.
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon={PanelRight}
+              title="Selecione um nó"
+              description="Inspecione atributos recebidos e evidências das relações observadas."
+            />
+          )}
+        </aside>
+      </div>
+    </>
+  );
 }
 
 function Detail({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-3 border-b border-border pb-2"><span className="text-muted-foreground">{label}</span><span className="text-right font-medium">{value}</span></div>; }
@@ -265,14 +557,14 @@ function TemplateEditor({ items, demo }: { items: MonitorTemplate[]; demo: boole
 function DataSourceEditor({ items, demo }: { items: DataSource[]; demo: boolean }) {
   const queryClient = useQueryClient(); const [open, setOpen] = useState(false);
   const create = useMutation({ mutationFn: api.createDataSource, onSuccess: () => { toast.success("Fonte registrada no servidor"); setOpen(false); void queryClient.invalidateQueries({ queryKey: ["snapshot"] }); }, onError: (error) => toast.error(error.message) });
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (demo) { toast.info("A gravação não está disponível no modo demonstração"); return; } const data = new FormData(event.currentTarget); create.mutate({ id: crypto.randomUUID(), name: String(data.get("name")), kind: String(data.get("kind")) as "prometheus" | "json", url: String(data.get("url")), secret_env: String(data.get("secret_env")) || undefined }); }
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (demo) { toast.info("A gravação não está disponível no modo demonstração"); return; } const data = new FormData(event.currentTarget); create.mutate({ id: crypto.randomUUID(), name: String(data.get("name")), kind: String(data.get("kind")) as "prometheus" | "json", url: String(data.get("url")), ...(String(data.get("secret_env")) ? {secret_env: String(data.get("secret_env"))} : {}) }); }
   return <><PageHeader eyebrow="Explorar" title="Data Sources" description="Fontes Prometheus, JSON e Loki configuradas no backend. Segredos permanecem no servidor por variável de ambiente." actions={<Button onClick={() => setOpen(true)}><Plus /> Nova fonte</Button>} /><div className="grid gap-3 lg:grid-cols-2">{items.map((item) => <div key={item.id} className="rounded-lg border border-border bg-surface p-5"><div className="flex items-start justify-between"><div className="flex gap-3"><div className="grid size-9 place-items-center rounded bg-muted"><Database className="size-4 text-primary" /></div><div><h2 className="text-sm font-semibold">{item.name}</h2><p className="mt-0.5 text-xs uppercase text-muted-foreground">{item.kind}</p></div></div><span className="rounded-sm border border-success/30 bg-success/10 px-2 py-1 text-[10px] text-success">CONFIGURADA</span></div><p className="mt-5 truncate font-mono text-xs text-muted-foreground">{item.url}</p><div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">Credencial: {item.secret_env ? `variável ${item.secret_env}` : "não informada"}</div></div>)}{!items.length && <div className="lg:col-span-2"><EmptyState icon={Database} title="Nenhuma fonte configurada" description="Adicione uma fonte Prometheus ou JSON suportada pelo backend." /></div>}</div><EditorDialog open={open} setOpen={setOpen} title="Nova fonte de dados" description="Não insira segredos. Informe somente o nome da variável existente no servidor."><form onSubmit={submit} className="space-y-4"><Field name="name" label="Nome" placeholder="Prometheus principal" /><SelectField name="kind" label="Tipo" options={["prometheus", "json", "loki"]} /><Field name="url" label="URL" placeholder="http://prometheus:9090" /><Field name="secret_env" label="Variável de segredo (opcional)" placeholder="PROMETHEUS_TOKEN" /><Button className="w-full" disabled={create.isPending}>Salvar no servidor</Button></form></EditorDialog></>;
 }
 
 function DashboardBuilder({ items, demo }: { items: Dashboard[]; demo: boolean }) {
   const queryClient = useQueryClient(); const [open, setOpen] = useState(false);
   const create = useMutation({ mutationFn: api.createDashboard, onSuccess: () => { toast.success("Dashboard salvo"); setOpen(false); void queryClient.invalidateQueries({ queryKey: ["snapshot"] }); }, onError: (error) => toast.error(error.message) });
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (demo) { toast.info("A gravação não está disponível no modo demonstração"); return; } const data = new FormData(event.currentTarget); create.mutate({ id: crypto.randomUUID(), title: String(data.get("title")), panels: [{ id: crypto.randomUUID(), title: String(data.get("panelTitle")), kind: String(data.get("kind")), html: String(data.get("html")) || undefined, query: String(data.get("query")) || undefined }] }); }
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (demo) { toast.info("A gravação não está disponível no modo demonstração"); return; } const data = new FormData(event.currentTarget); create.mutate({ id: crypto.randomUUID(), title: String(data.get("title")), panels: [{ id: crypto.randomUUID(), title: String(data.get("panelTitle")), kind: String(data.get("kind")), ...(String(data.get("html")) ? {html: String(data.get("html"))} : {}), ...(String(data.get("query")) ? {query: String(data.get("query"))} : {}) }] }); }
   return <><PageHeader eyebrow="Visualização" title="Dashboards" description="Painéis salvos pelo backend, incluindo estatísticas e HTML isolado em sandbox." actions={<Button onClick={() => setOpen(true)}><Plus /> Novo dashboard</Button>} />{items.length ? <div className="grid gap-4 xl:grid-cols-2">{items.map((dashboard) => <section key={dashboard.id} className="rounded-lg border border-border bg-surface p-4"><h2 className="text-sm font-semibold">{dashboard.title}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">{dashboard.panels.map((panel) => <div key={panel.id} className="min-h-36 rounded-md border border-border bg-surface-raised p-3"><div className="text-xs font-medium text-muted-foreground">{panel.title}</div>{panel.kind === "html" && panel.html ? <iframe title={panel.title} sandbox="" srcDoc={`<style>${panel.css ?? ""}</style>${panel.html}`} className="mt-3 h-28 w-full border-0 bg-transparent" /> : <div className="mt-7 text-center text-3xl font-semibold text-primary">{panel.query ?? "—"}</div>}</div>)}</div></section>)}</div> : <EmptyState icon={LayoutDashboard} title="Nenhum dashboard" description="Crie um dashboard e salve a definição no backend." />}<EditorDialog open={open} setOpen={setOpen} title="Novo dashboard" description="Crie um primeiro painel stat ou HTML."><form onSubmit={submit} className="space-y-4"><Field name="title" label="Título do dashboard" placeholder="Operação Linux" /><Field name="panelTitle" label="Título do painel" placeholder="Disponibilidade" /><SelectField name="kind" label="Tipo" options={["stat", "html"]} /><Field name="query" label="Consulta ou valor" placeholder={'up{job="api"}'} /><div><Label htmlFor="html">HTML (opcional)</Label><Textarea id="html" name="html" className="mt-2 min-h-28 font-mono text-xs" placeholder="<strong>Estado operacional</strong>" /></div><Button className="w-full" disabled={create.isPending}>Salvar no servidor</Button></form></EditorDialog></>;
 }
 
@@ -320,13 +612,13 @@ function ExtensionHub({ configuredOnly }: { configuredOnly: boolean }) {
 }
 function ExtensionDetail({ item, onClose }: { item: HubEntry | null; onClose: () => void }) {
   const navigate = useNavigate();
-  const destination = item?.integration === "datasource" ? "data-sources" : item?.integration === "template" ? "templates" : item?.integration === "mcp" ? "mcp-hub" : "agentes";
+  const destination = item?.integration === "datasource" ? "data-sources" : item?.integration === "template" ? "templates" : item?.integration === "mcp" ? "mcp-hub" : item?.integration === "otlp" ? "servicos" : "agentes";
   return <Sheet open={Boolean(item)} onOpenChange={(open) => { if (!open) onClose(); }}>
     <SheetContent className="w-full border-border bg-surface sm:max-w-lg">
       {item && <><SheetHeader><SheetTitle>{item.name}</SheetTitle><SheetDescription>{item.description}</SheetDescription></SheetHeader>
         <div className="mt-6 space-y-3 text-sm"><Detail label="Categoria" value={item.category} /><Detail label="Versão" value={item.version} /><Detail label="Estado" value={item.configured ? "Configurada" : item.available ? "Disponível" : "Planejada"} /></div>
-        <div className="mt-6 rounded-md border border-border bg-muted/40 p-4 text-xs text-muted-foreground">{item.available ? "Esta capacidade é reconhecida pelo backend. Configure-a no módulo correspondente." : "Este conector está no roteiro de desenvolvimento e ainda não pode ser ativado."}</div>
-        <Button className="mt-5 w-full" disabled={!item.available} onClick={() => { onClose(); void navigate({to:"/$", params:{_splat:destination}}); }}>{item.configured ? "Abrir" : item.available ? "Configurar" : "Em desenvolvimento"}</Button>
+        <div className="mt-6 rounded-md border border-border bg-muted/40 p-4 text-xs text-muted-foreground">{item.integration === "otlp" ? "Envie traces OpenTelemetry ao endpoint /v1/traces usando o token do agente. JSON, protobuf e gzip são aceitos. Logs e métricas OTLP ainda não são recebidos." : item.available ? "Esta capacidade é reconhecida pelo backend. Configure-a no módulo correspondente." : "Este conector está no roteiro de desenvolvimento e ainda não pode ser ativado."}</div>
+        <Button className="mt-5 w-full" disabled={!item.available} onClick={() => { onClose(); void navigate({to:"/$", params:{_splat:destination}}); }}>{item.integration === "otlp" ? "Serviços" : item.configured ? "Abrir" : item.available ? "Configurar" : "Em desenvolvimento"}</Button>
       </>}
     </SheetContent>
   </Sheet>;

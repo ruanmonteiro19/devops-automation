@@ -13,14 +13,14 @@ export function createDemoSnapshot(): Snapshot {
       { id: "api", name: "API de pedidos", kind: "service", runtime: "Go", status: "warning", instances: 3 },
       { id: "postgres", name: "PostgreSQL", kind: "database", host: "db-linux-01", status: "ok", instances: 1 },
     ], edges: [
-      { id: "gw-api", from: "gateway", to: "api", kind: "http", count: 1284, evidence: "Conexões TCP e cabeçalhos HTTP observados", confidence: 0.96 },
-      { id: "api-db", from: "api", to: "postgres", kind: "tcp", count: 488, evidence: "Fluxos TCP na porta 5432", confidence: 0.91 },
+      { id: "gw-api", from: "gateway", to: "api", kind: "http", count: 1284, evidence: "Conexões TCP e cabeçalhos HTTP observados", confidence: "illustrative" },
+      { id: "api-db", from: "api", to: "postgres", kind: "tcp", count: 488, evidence: "Fluxos TCP na porta 5432", confidence: "illustrative" },
     ] },
     network_map: { nodes: [
       { id: "net-a", name: "app-linux-01", kind: "host", status: "ok" },
       { id: "net-b", name: "db-linux-01", kind: "host", status: "ok" },
-    ], edges: [{ id: "net-ab", from: "net-a", to: "net-b", kind: "tcp/5432", count: 488, evidence: "Fluxos IP observados", confidence: 0.9 }] },
-    templates: [{ id: "demo-http", name: "Saúde da API", kind: "http", target: "https://api.exemplo.local/health", interval_seconds: 60, timeout_seconds: 5, expected_status: 200, enabled: true, last_run: now, last_value: "200 em 84 ms", last_error: "", status: "ok" }],
+    ], edges: [{ id: "net-ab", from: "net-a", to: "net-b", kind: "tcp/5432", count: 488, evidence: "Fluxos IP observados", confidence: "illustrative" }] },
+    templates: [{ id: "demo-http", name: "Saúde da API", kind: "http", target: "https://api.exemplo.local/health", interval_seconds: 60, timeout_seconds: 5, expected_status: 200, enabled: true, last_run: now, last_value: 200, last_error: "", status: "ok" }],
     datasources: [{ id: "demo-prom", name: "Prometheus principal", kind: "prometheus", url: "http://prometheus:9090", secret_env: "PROMETHEUS_TOKEN" }],
     dashboards: [{ id: "demo-ops", title: "Operação Linux", panels: [{ id: "p1", title: "Hosts observados", kind: "stat", query: "2" }] }],
     events: [

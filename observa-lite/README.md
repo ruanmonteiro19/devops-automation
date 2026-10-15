@@ -1,5 +1,16 @@
 # Observa Lite
 
+## Estado desta branch: Observa Lite APM 0.3.0-lab
+
+Esta branch tem ingestão **OTLP HTTP JSON/protobuf/gzip para traces, logs e métricas gauge/sum/histogram**, serviços e endpoints RED, análise de falhas/banco/chamadas externas/mensageria, waterfall com logs correlacionados, Service Mapping por spans, SLOs, regras por limiar com histórico de problemas e dashboards com indicadores/séries reais.
+
+O agente de processos permanece separado: ele não injeta instrumentação nas aplicações. A aplicação é uma implementação original de funcionalidades observáveis, com escopo de laboratório; não é uma reprodução completa do Dynatrace.
+
+Comece pelo [guia da entrega](docs/RELEASE-0.3.0.md). Consulte a [cobertura funcional](docs/FEATURE-COVERAGE.md), [configuração OTLP](docs/APM-OTLP.md) e [investigação do playground](docs/reverse-engineering/DYNATRACE-PLAYGROUND-2026-10-15.md).
+
+As seções históricas abaixo descrevem fases anteriores do MVP. Afirmações antigas de ausência de tracing se referem a essas fases; funcionalidades como gRPC, autoinstrumentação, RCA causal, SSO e RBAC continuam ausentes nesta branch.
+
+
 MVP de observabilidade em português com **agente Linux passivo**, descoberta de serviços, **Service Mapping**, **Network Mapping (fluxos IP)**, templates HTTP/TCP, Data Sources Prometheus/JSON, dashboards personalizáveis, HTML Graphics isolado e ferramentas MCP de leitura.
 
 > **Estado:** protótipo funcional e validado localmente em Linux amd64. **Não é** substituto de Dynatrace/OneAgent, Zabbix ou Grafana em produção. Seu mapa de rede representa conexões IP, não topologia física. Não há instrumentação de runtime, eBPF, SNMP, LLD, distributed tracing, RCA avançado nem provedor LLM neste marco.

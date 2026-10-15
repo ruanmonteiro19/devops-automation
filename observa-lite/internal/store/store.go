@@ -2,9 +2,9 @@ package store
 
 import (
 	"encoding/json"
- "net/url"
 	"fmt"
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,12 +14,18 @@ import (
 )
 
 type persisted struct {
-	Hosts      map[string]model.Host       `json:"hosts"`
- Gateways map[string]model.GatewayEndpoint `json:"gateways,omitempty"`
-	Templates  map[string]model.Template   `json:"templates"`
-	Sources    map[string]model.DataSource `json:"sources"`
-	Dashboards map[string]model.Dashboard  `json:"dashboards"`
-	Events     []model.Event               `json:"events"`
+	APMRules     map[string]model.APMRule         `json:"apm_rules,omitempty"`
+	Problems     []model.RuleProblem              `json:"rule_problems,omitempty"`
+	SLOs         map[string]model.SLOPolicy       `json:"slos,omitempty"`
+	Logs         []model.LogRecord                `json:"logs,omitempty"`
+	MetricPoints []model.MetricPoint              `json:"metric_points,omitempty"`
+	Spans        []model.Span                     `json:"spans,omitempty"`
+	Hosts        map[string]model.Host            `json:"hosts"`
+	Gateways     map[string]model.GatewayEndpoint `json:"gateways,omitempty"`
+	Templates    map[string]model.Template        `json:"templates"`
+	Sources      map[string]model.DataSource      `json:"sources"`
+	Dashboards   map[string]model.Dashboard       `json:"dashboards"`
+	Events       []model.Event                    `json:"events"`
 }
 type Store struct {
 	mu   sync.RWMutex
@@ -28,7 +34,7 @@ type Store struct {
 }
 
 func New(file string) (*Store, error) {
-	s := &Store{file: file, data: persisted{Hosts: map[string]model.Host{}, Gateways: map[string]model.GatewayEndpoint{}, Templates: map[string]model.Template{}, Sources: map[string]model.DataSource{}, Dashboards: map[string]model.Dashboard{}, Events: []model.Event{}}}
+	s := &Store{file: file, data: persisted{APMRules: map[string]model.APMRule{}, Problems: []model.RuleProblem{}, SLOs: map[string]model.SLOPolicy{}, Hosts: map[string]model.Host{}, Gateways: map[string]model.GatewayEndpoint{}, Templates: map[string]model.Template{}, Sources: map[string]model.DataSource{}, Dashboards: map[string]model.Dashboard{}, Events: []model.Event{}}}
 	if b, e := os.ReadFile(file); e == nil {
 		if err := json.Unmarshal(b, &s.data); err != nil {
 			return nil, fmt.Errorf("read database: %w", err)
@@ -36,7 +42,15 @@ func New(file string) (*Store, error) {
 	} else if !os.IsNotExist(e) {
 		return nil, e
 	}
-	if s.data.Gateways == nil {s.data.Gateways=map[string]model.GatewayEndpoint{}}
+	if s.data.APMRules == nil {
+		s.data.APMRules = map[string]model.APMRule{}
+	}
+	if s.data.SLOs == nil {
+		s.data.SLOs = map[string]model.SLOPolicy{}
+	}
+	if s.data.Gateways == nil {
+		s.data.Gateways = map[string]model.GatewayEndpoint{}
+	}
 	if s.data.Hosts == nil {
 		s.data.Hosts = map[string]model.Host{}
 	}
@@ -87,17 +101,23 @@ func (s *Store) ResolveLocked(entity, summary string) {
 	}
 }
 func (s *Store) Ingest(d model.Discovery) error {
-	if strings.TrimSpace(d.HostID) == "" || len(d.HostID) > 128 || len(d.Processes) > 100000 || len(d.Connections) > 200000 || len(d.HostGroup)>100 || len(d.NetworkZone)>256 || len(d.MonitoringMode)>40 {
+	if strings.TrimSpace(d.HostID) == "" || len(d.HostID) > 128 || len(d.Processes) > 100000 || len(d.Connections) > 200000 || len(d.HostGroup) > 100 || len(d.NetworkZone) > 256 || len(d.MonitoringMode) > 40 {
 		return fmt.Errorf("invalid or oversized discovery")
 	}
 	// Keep the wire contract stable when a host has zero processes or zero sockets.
-	if d.Processes == nil { d.Processes = []model.Process{} }
-	if d.Connections == nil { d.Connections = []model.Connection{} }
-	if d.Addresses == nil { d.Addresses = []string{} }
+	if d.Processes == nil {
+		d.Processes = []model.Process{}
+	}
+	if d.Connections == nil {
+		d.Connections = []model.Connection{}
+	}
+	if d.Addresses == nil {
+		d.Addresses = []string{}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// PID disappearance cannot establish an application outage. Do not synthesize APM alerts from process churn.
-	s.data.Hosts[d.HostID] = model.Host{ID: d.HostID, Name: d.Hostname, OS: d.OS, Addresses: d.Addresses, LastSeen: time.Now().UTC(), Processes: d.Processes, Connections: d.Connections,HostGroup:d.HostGroup,NetworkZone:d.NetworkZone,MonitoringMode:d.MonitoringMode}
+	s.data.Hosts[d.HostID] = model.Host{ID: d.HostID, Name: d.Hostname, OS: d.OS, Addresses: d.Addresses, LastSeen: time.Now().UTC(), Processes: d.Processes, Connections: d.Connections, HostGroup: d.HostGroup, NetworkZone: d.NetworkZone, MonitoringMode: d.MonitoringMode}
 	return s.persist()
 }
 func (s *Store) PutTemplate(v model.Template) error {
@@ -173,20 +193,11 @@ func (s *Store) Source(id string) (model.DataSource, bool) {
 	v, ok := s.data.Sources[id]
 	return v, ok
 }
-func (s *Store) PutDashboard(v model.Dashboard) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if v.ID == "" {
-		v.ID = fmt.Sprintf("dash-%d", time.Now().UnixNano())
-	}
-	s.data.Dashboards[v.ID] = v
-	return s.persist()
-}
 func (s *Store) Dashboard(id string) (model.Dashboard, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.data.Dashboards[id]
-	return v, ok
+	return cloneDashboard(v), ok
 }
 func (s *Store) Snapshot() model.Snapshot {
 	s.mu.RLock()
@@ -194,9 +205,15 @@ func (s *Store) Snapshot() model.Snapshot {
 	v := model.Snapshot{GeneratedAt: time.Now().UTC(), Hosts: []model.Host{}, Templates: []model.Template{}, DataSources: []model.DataSource{}, Dashboards: []model.Dashboard{}, Events: append([]model.Event{}, s.data.Events...)}
 	for _, h := range s.data.Hosts {
 		// Normalize legacy JSON state as well as newly ingested snapshots.
-		if h.Processes == nil { h.Processes = []model.Process{} }
-		if h.Connections == nil { h.Connections = []model.Connection{} }
-		if h.Addresses == nil { h.Addresses = []string{} }
+		if h.Processes == nil {
+			h.Processes = []model.Process{}
+		}
+		if h.Connections == nil {
+			h.Connections = []model.Connection{}
+		}
+		if h.Addresses == nil {
+			h.Addresses = []string{}
+		}
 		v.Hosts = append(v.Hosts, h)
 	}
 	for _, t := range s.data.Templates {
@@ -207,69 +224,88 @@ func (s *Store) Snapshot() model.Snapshot {
 		v.DataSources = append(v.DataSources, d)
 	}
 	for _, d := range s.data.Dashboards {
-		v.Dashboards = append(v.Dashboards, d)
+		v.Dashboards = append(v.Dashboards, cloneDashboard(d))
 	}
 	sort.Slice(v.Hosts, func(i, j int) bool { return v.Hosts[i].Name < v.Hosts[j].Name })
 	sort.Slice(v.Templates, func(i, j int) bool { return v.Templates[i].Name < v.Templates[j].Name })
 	v.ProcessMap, v.NetworkMap = BuildMaps(v.Hosts)
- for i:=range v.ProcessMap.Nodes{
-  if v.ProcessMap.Nodes[i].Kind=="service"{v.ProcessMap.Nodes[i].Kind="process-group"}
- }
- // Passive OS observations never become confirmed APM service entities.
- v.ServiceMap=model.Map{Nodes:[]model.Node{},Edges:[]model.Edge{}}
+	for i := range v.ProcessMap.Nodes {
+		if v.ProcessMap.Nodes[i].Kind == "service" {
+			v.ProcessMap.Nodes[i].Kind = "process-group"
+		}
+	}
+	// Passive OS observations never become confirmed APM service entities.
+	v.ServiceMap = apmMap(s.data.Spans, time.Now().Add(-time.Hour), time.Now())
 	return v
 }
 
- // UpsertGateway registers only administrator-approved relay destinations.
- func (s *Store) UpsertGateway(g model.GatewayEndpoint) error {
-   if len(g.ID)<1 || len(g.ID)>80 || len(g.NetworkZone)<1 || len(g.NetworkZone)>120 ||
-     g.Priority<0 || g.Priority>1000 {
-     return fmt.Errorf("invalid gateway id, zone or priority")
-   }
-   for _,v:=range []string{g.ID,g.NetworkZone}{
-     for _,c:=range v{
-       if !((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='.'||c=='_'||c=='-'){
-         return fmt.Errorf("invalid gateway or zone identifier")
-       }
-     }
-   }
-   u,err:=url.Parse(g.URL)
-   if err!=nil || u.Scheme!="https" || u.Hostname()=="" || u.User!=nil ||
-     u.RawQuery!="" || u.Fragment!="" || (u.Path!="" && u.Path!="/") || len(g.URL)>512 {
-     return fmt.Errorf("gateway URL must be an HTTPS origin without path, query or credentials")
-   }
-   g.URL="https://"+u.Host
-   s.mu.Lock();defer s.mu.Unlock()
-   s.data.Gateways[g.ID]=g
-   return s.persist()
- }
- func (s *Store) DeleteGateway(id string) error {
-   s.mu.Lock();defer s.mu.Unlock()
-   delete(s.data.Gateways,id);return s.persist()
- }
- func (s *Store) Gateways() []model.GatewayEndpoint {
-   s.mu.RLock();defer s.mu.RUnlock()
-   res:=make([]model.GatewayEndpoint,0,len(s.data.Gateways))
-   for _,v:=range s.data.Gateways {res=append(res,v)}
-   sort.Slice(res,func(i,j int)bool {if res[i].Priority==res[j].Priority{return res[i].ID<res[j].ID};return res[i].Priority<res[j].Priority})
-   return res
- }
- func (s *Store) ConnectionInfo(zone string,allowFallback bool) model.ConnectionInfo {
-   if zone=="" {zone="default"}
-   result:=model.ConnectionInfo{NetworkZone:zone,Endpoints:[]string{},ValidForSeconds:60}
-   seen:=map[string]bool{}
-   for _,g:=range s.Gateways(){
-     if !g.Enabled || g.NetworkZone!=zone || seen[g.URL]{continue}
-     result.Endpoints=append(result.Endpoints,g.URL)
-     seen[g.URL]=true
-   }
-   if zone!="default"&&allowFallback{
-     for _,g:=range s.Gateways(){
-       if !g.Enabled || g.NetworkZone!="default"||seen[g.URL]{continue}
-       result.Endpoints=append(result.Endpoints,g.URL)
-       seen[g.URL]=true
-       result.DefaultZoneFallback=true
-     }
-   }
-   return result
- }
+// UpsertGateway registers only administrator-approved relay destinations.
+func (s *Store) UpsertGateway(g model.GatewayEndpoint) error {
+	if len(g.ID) < 1 || len(g.ID) > 80 || len(g.NetworkZone) < 1 || len(g.NetworkZone) > 120 ||
+		g.Priority < 0 || g.Priority > 1000 {
+		return fmt.Errorf("invalid gateway id, zone or priority")
+	}
+	for _, v := range []string{g.ID, g.NetworkZone} {
+		for _, c := range v {
+			if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-') {
+				return fmt.Errorf("invalid gateway or zone identifier")
+			}
+		}
+	}
+	u, err := url.Parse(g.URL)
+	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil ||
+		u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") || len(g.URL) > 512 {
+		return fmt.Errorf("gateway URL must be an HTTPS origin without path, query or credentials")
+	}
+	g.URL = "https://" + u.Host
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.Gateways[g.ID] = g
+	return s.persist()
+}
+func (s *Store) DeleteGateway(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.data.Gateways, id)
+	return s.persist()
+}
+func (s *Store) Gateways() []model.GatewayEndpoint {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make([]model.GatewayEndpoint, 0, len(s.data.Gateways))
+	for _, v := range s.data.Gateways {
+		res = append(res, v)
+	}
+	sort.Slice(res, func(i, j int) bool {
+		if res[i].Priority == res[j].Priority {
+			return res[i].ID < res[j].ID
+		}
+		return res[i].Priority < res[j].Priority
+	})
+	return res
+}
+func (s *Store) ConnectionInfo(zone string, allowFallback bool) model.ConnectionInfo {
+	if zone == "" {
+		zone = "default"
+	}
+	result := model.ConnectionInfo{NetworkZone: zone, Endpoints: []string{}, ValidForSeconds: 60}
+	seen := map[string]bool{}
+	for _, g := range s.Gateways() {
+		if !g.Enabled || g.NetworkZone != zone || seen[g.URL] {
+			continue
+		}
+		result.Endpoints = append(result.Endpoints, g.URL)
+		seen[g.URL] = true
+	}
+	if zone != "default" && allowFallback {
+		for _, g := range s.Gateways() {
+			if !g.Enabled || g.NetworkZone != "default" || seen[g.URL] {
+				continue
+			}
+			result.Endpoints = append(result.Endpoints, g.URL)
+			seen[g.URL] = true
+			result.DefaultZoneFallback = true
+		}
+	}
+	return result
+}

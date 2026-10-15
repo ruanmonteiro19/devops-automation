@@ -6,7 +6,7 @@ export type ExtensionManifest = { id: string; name: string; description: string;
 
 const catalog: Array<[string, ExtensionCategory, LucideIcon, string]> = [
   ["Prometheus", "Observabilidade", Gauge, "Consulte séries temporais e indicadores PromQL."], ["Zabbix", "Observabilidade", Activity, "Integre eventos e inventário monitorado."],
-  ["Grafana", "Observabilidade", Gauge, "Referencie dashboards e painéis existentes."], ["OpenTelemetry", "APM", Radio, "Receba traces, métricas e contexto distribuído."],
+  ["Grafana", "Observabilidade", Gauge, "Referencie dashboards e painéis existentes."], ["OpenTelemetry", "APM", Radio, "Receba traces OTLP HTTP com atributos e eventos."],
   ["SNMP", "Rede", Network, "Descoberta física e métricas de dispositivos de rede."], ["PostgreSQL", "Banco de dados", Database, "Saúde, sessões e consultas PostgreSQL."],
   ["Oracle", "Banco de dados", Database, "Telemetria operacional para Oracle Database."], ["MySQL", "Banco de dados", Database, "Métricas e disponibilidade de instâncias MySQL."],
   ["SQL Server", "Banco de dados", Database, "Indicadores operacionais do Microsoft SQL Server."], ["Elasticsearch", "Observabilidade", Database, "Saúde de clusters, shards e índices."],

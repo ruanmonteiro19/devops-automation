@@ -12,11 +12,11 @@ import (
 	"github.com/ruanmonteiro19/observa-lite/internal/model"
 	"github.com/ruanmonteiro19/observa-lite/internal/store"
 	"io"
-	"mime"
-	"path"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -41,13 +41,37 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { write(w, 200, map[string]bool{"ok": true}) })
 	m.HandleFunc("GET /", s.serveUI)
 	m.HandleFunc("POST /api/v1/ingest", s.agentAuth(s.ingest))
- m.HandleFunc("GET /api/v1/agent/connectioninfo",s.agentAuth(s.agentConnectionInfo))
- m.HandleFunc("GET /api/v1/gateways",s.adminAuth(func(w http.ResponseWriter,r *http.Request){write(w,200,map[string]any{"gateways":s.Store.Gateways()})}))
- m.HandleFunc("POST /api/v1/gateways",s.adminAuth(s.registerGateway))
- m.HandleFunc("DELETE /api/v1/gateways/{id}",s.adminAuth(func(w http.ResponseWriter,r *http.Request){
-  if err:=s.Store.DeleteGateway(r.PathValue("id"));err!=nil{fail(w,500,err);return}
-  write(w,200,map[string]bool{"deleted":true})
- }))
+	m.HandleFunc("POST /v1/traces", s.agentAuth(s.ingestTraces))
+	m.HandleFunc("POST /v1/logs", s.agentAuth(s.ingestLogs))
+	m.HandleFunc("POST /v1/metrics", s.agentAuth(s.ingestMetrics))
+	m.HandleFunc("GET /api/v1/telemetry/logs", s.adminAuth(s.telemetryLogs))
+	m.HandleFunc("GET /api/v1/telemetry/metrics", s.adminAuth(s.telemetryMetrics))
+	m.HandleFunc("GET /api/v1/apm/analysis", s.adminAuth(s.apmAnalysis))
+	m.HandleFunc("GET /api/v1/slos", s.adminAuth(s.sloEvaluations))
+	m.HandleFunc("POST /api/v1/slos", s.adminAuth(s.saveSLO))
+	m.HandleFunc("DELETE /api/v1/slos/{id}", s.adminAuth(s.deleteSLO))
+	m.HandleFunc("GET /api/v1/apm/rules", s.adminAuth(s.apmRules))
+	m.HandleFunc("POST /api/v1/apm/rules", s.adminAuth(s.saveAPMRule))
+	m.HandleFunc("DELETE /api/v1/apm/rules/{id}", s.adminAuth(s.deleteAPMRule))
+	m.HandleFunc("POST /api/v1/apm/rules/evaluate", s.adminAuth(s.evaluateAPMRules))
+	m.HandleFunc("GET /api/v1/apm/problems", s.adminAuth(s.apmProblems))
+	m.HandleFunc("GET /api/v1/apm/services", s.adminAuth(s.apmServices))
+	m.HandleFunc("GET /api/v1/apm/timeseries", s.adminAuth(s.apmTimeseries))
+	m.HandleFunc("GET /api/v1/apm/traces", s.adminAuth(s.apmTraces))
+	m.HandleFunc("GET /api/v1/apm/traces/{id}", s.adminAuth(s.apmTrace))
+	m.HandleFunc("GET /api/v1/apm/map", s.adminAuth(s.apmMap))
+	m.HandleFunc("GET /api/v1/agent/connectioninfo", s.agentAuth(s.agentConnectionInfo))
+	m.HandleFunc("GET /api/v1/gateways", s.adminAuth(func(w http.ResponseWriter, r *http.Request) {
+		write(w, 200, map[string]any{"gateways": s.Store.Gateways()})
+	}))
+	m.HandleFunc("POST /api/v1/gateways", s.adminAuth(s.registerGateway))
+	m.HandleFunc("DELETE /api/v1/gateways/{id}", s.adminAuth(func(w http.ResponseWriter, r *http.Request) {
+		if err := s.Store.DeleteGateway(r.PathValue("id")); err != nil {
+			fail(w, 500, err)
+			return
+		}
+		write(w, 200, map[string]bool{"deleted": true})
+	}))
 	m.HandleFunc("GET /api/v1/snapshot", s.adminAuth(func(w http.ResponseWriter, r *http.Request) { write(w, 200, s.Store.Snapshot()) }))
 	m.HandleFunc("GET /api/v1/extensions", s.adminAuth(s.extensions))
 	m.HandleFunc("GET /api/v1/capabilities", s.adminAuth(s.capabilities))
@@ -61,39 +85,58 @@ func (s *Server) Handler() http.Handler {
 	}))
 	m.HandleFunc("POST /api/v1/datasources", s.adminAuth(s.upsertSource))
 	m.HandleFunc("POST /api/v1/dashboards", s.adminAuth(s.upsertDashboard))
+	m.HandleFunc("DELETE /api/v1/dashboards/{id}", s.adminAuth(s.deleteDashboard))
 	m.HandleFunc("GET /api/v1/query", s.adminAuth(s.query))
 	m.HandleFunc("GET /api/v1/logs", s.adminAuth(s.logs))
 	m.HandleFunc("POST /mcp", s.adminAuth(s.mcp))
 	return m
 }
+
 // serveUI embeds the compiled Lovable React SPA when available.
 // During source-only development, the original HTML page remains the fallback.
 func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
-    requested:=path.Clean("/"+r.URL.Path)
-    index:=requested=="/" || requested=="/index.html" || !strings.Contains(path.Base(requested), ".")
-    name:="public/app"+requested
-    if index { name="public/app/index.html" }
-    body,err:=public.ReadFile(name)
-    modern:=err==nil
-    if err!=nil {
-        if !index {http.NotFound(w,r);return}
-        body,err=public.ReadFile("public/index.html")
-        if err!=nil {http.Error(w,"frontend indisponível",http.StatusServiceUnavailable);return}
-        name="public/index.html"
-    }
-    typ:=mime.TypeByExtension(path.Ext(name))
-    if typ=="" {typ="application/octet-stream"}
-    if path.Ext(name)==".html" {typ="text/html; charset=utf-8"}
-    w.Header().Set("Content-Type",typ)
-    w.Header().Set("X-Content-Type-Options","nosniff")
-    w.Header().Set("Referrer-Policy","same-origin")
-    if strings.HasPrefix(name,"public/app/assets/") {w.Header().Set("Cache-Control","public, max-age=31536000, immutable")} else {w.Header().Set("Cache-Control","no-store")}
-    if modern {
-        w.Header().Set("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'")
-    } else {
-        w.Header().Set("Content-Security-Policy","default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
-    }
-    w.WriteHeader(200);_,_=w.Write(body)
+	requested := path.Clean("/" + r.URL.Path)
+	index := requested == "/" || requested == "/index.html" || !strings.Contains(path.Base(requested), ".")
+	name := "public/app" + requested
+	if index {
+		name = "public/app/index.html"
+	}
+	body, err := public.ReadFile(name)
+	modern := err == nil
+	if err != nil {
+		if !index {
+			http.NotFound(w, r)
+			return
+		}
+		body, err = public.ReadFile("public/index.html")
+		if err != nil {
+			http.Error(w, "frontend indisponível", http.StatusServiceUnavailable)
+			return
+		}
+		name = "public/index.html"
+	}
+	typ := mime.TypeByExtension(path.Ext(name))
+	if typ == "" {
+		typ = "application/octet-stream"
+	}
+	if path.Ext(name) == ".html" {
+		typ = "text/html; charset=utf-8"
+	}
+	w.Header().Set("Content-Type", typ)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Referrer-Policy", "same-origin")
+	if strings.HasPrefix(name, "public/app/assets/") {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		w.Header().Set("Cache-Control", "no-store")
+	}
+	if modern {
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'")
+	} else {
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+	}
+	w.WriteHeader(200)
+	_, _ = w.Write(body)
 }
 func (s *Server) checkToken(r *http.Request, expected string) bool {
 	value := r.Header.Get("X-API-Key")
@@ -200,6 +243,10 @@ func (s *Server) upsertDashboard(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if e := s.Store.PutDashboard(v); e != nil {
+		if errors.Is(e, store.ErrDashboardValidation) || errors.Is(e, store.ErrDashboardLimit) {
+			fail(w, 400, e)
+			return
+		}
 		fail(w, 500, e)
 		return
 	}
@@ -267,6 +314,7 @@ func (s *Server) Listen(ctx context.Context, addr string) error {
 	}
 	srv := &http.Server{Addr: addr, Handler: s.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 20 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 1 << 16}
 	go s.Poll(ctx)
+	go s.PollAPMRules(ctx)
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -275,12 +323,16 @@ func (s *Server) Listen(ctx context.Context, addr string) error {
 	}()
 	log.Printf("observa server listening on %s (HTTPS termination required for remote access)", addr)
 	var e error
- certFile,keyFile:=os.Getenv("OBSERVA_TLS_CERT_FILE"),os.Getenv("OBSERVA_TLS_KEY_FILE")
- if (certFile=="")!=(keyFile=="") {return fmt.Errorf("TLS certificate and key must both be configured")}
- if certFile!="" {
-  srv.TLSConfig=&tls.Config{MinVersion:tls.VersionTLS12}
-  e=srv.ListenAndServeTLS(certFile,keyFile)
- }else{e=srv.ListenAndServe()}
+	certFile, keyFile := os.Getenv("OBSERVA_TLS_CERT_FILE"), os.Getenv("OBSERVA_TLS_KEY_FILE")
+	if (certFile == "") != (keyFile == "") {
+		return fmt.Errorf("TLS certificate and key must both be configured")
+	}
+	if certFile != "" {
+		srv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+		e = srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		e = srv.ListenAndServe()
+	}
 	if e == http.ErrServerClosed {
 		return nil
 	}
@@ -288,17 +340,28 @@ func (s *Server) Listen(ctx context.Context, addr string) error {
 }
 func AllowPrivateFromEnv() bool { return os.Getenv("OBSERVA_ALLOW_PRIVATE_TARGETS") == "true" }
 
- func (s *Server) registerGateway(w http.ResponseWriter,r *http.Request){
-  var g model.GatewayEndpoint
-  if !decode(w,r,&g){return}
-  if err:=s.Store.UpsertGateway(g);err!=nil{fail(w,400,err);return}
-  write(w,200,map[string]bool{"saved":true})
- }
- func (s *Server) agentConnectionInfo(w http.ResponseWriter,r *http.Request){
-  zone:=r.URL.Query().Get("network_zone")
-  if len(zone)>120 {http.Error(w,"invalid network zone",400);return}
-  allowFallback:=r.URL.Query().Get("allow_default_fallback")=="true"
-  info:=s.Store.ConnectionInfo(zone,allowFallback)
-  if len(info.Endpoints)==0 {write(w,503,map[string]any{"error":"no eligible gateway endpoints","network_zone":info.NetworkZone});return}
-  write(w,200,info)
- }
+func (s *Server) registerGateway(w http.ResponseWriter, r *http.Request) {
+	var g model.GatewayEndpoint
+	if !decode(w, r, &g) {
+		return
+	}
+	if err := s.Store.UpsertGateway(g); err != nil {
+		fail(w, 400, err)
+		return
+	}
+	write(w, 200, map[string]bool{"saved": true})
+}
+func (s *Server) agentConnectionInfo(w http.ResponseWriter, r *http.Request) {
+	zone := r.URL.Query().Get("network_zone")
+	if len(zone) > 120 {
+		http.Error(w, "invalid network zone", 400)
+		return
+	}
+	allowFallback := r.URL.Query().Get("allow_default_fallback") == "true"
+	info := s.Store.ConnectionInfo(zone, allowFallback)
+	if len(info.Endpoints) == 0 {
+		write(w, 503, map[string]any{"error": "no eligible gateway endpoints", "network_zone": info.NetworkZone})
+		return
+	}
+	write(w, 200, info)
+}

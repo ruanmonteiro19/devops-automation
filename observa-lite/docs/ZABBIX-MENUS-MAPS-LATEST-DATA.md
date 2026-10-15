@@ -12,6 +12,8 @@ As relações vêm de evidências distintas:
 - Socket observado pelo agente: relação lógica com o IP de equipamento cadastrado, sem afirmar a porta física do switch.
 - OTLP: serviço ligado ao host por host.id ou host.name explícito, ou peer de span ligado ao IP exato de equipamento.
 
+Os IPs de gerenciamento dos vizinhos LLDP recebem resolução DNS reversa (PTR) pelo DNS configurado no container. O nome DNS é priorizado para vizinhos ainda não cadastrados e pode identificar hosts/equipamentos por nome exato e único; entidades já cadastradas mantêm seu nome de inventário. O nome LLDP original fica preservado. Sem PTR, mantém-se LLDP/IP. São no máximo 64 IPs únicos por coleta, 500 ms por consulta e orçamento total de 3 segundos; falhas de DNS não interrompem a coleta. DNS identifica o vizinho observado, mas não descobre sozinho sua porta física.
+
 Não criamos ligações por pertencer à mesma sub-rede. Nomes ambíguos e IPs repetidos não identificam automaticamente uma entidade. A porta LLDP local é associada ao ifIndex somente por nome/descrição exatos e únicos; seu número não é presumido igual ao índice IF-MIB. Vizinhos ainda não cadastrados aparecem como vizinhos anunciados. CDP, FDB/MAC/ARP, NetFlow e descoberta física universal não estão implementados.
 
 O servidor reserva o limite de 500 nós visíveis para entidades principais e disponibiliza interfaces em interface_inventory, além dos nós que couberem. O frontend projeta arestas de interfaces recolhidas no equipamento. Há limite de 2000 arestas e limites de coleta documentados no guia SNMP; truncamento pode limitar a topologia.

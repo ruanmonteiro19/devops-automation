@@ -185,6 +185,7 @@ func (r Runner) nativeDeviceInventory(ctx context.Context, p model.Integration) 
 	if p.NeighborDiscovery {
 		var limited bool
 		resource.Neighbors, limited = lldpNeighbors(s, resource.Interfaces)
+		resolveNeighborDNS(ctx, resource.Neighbors, net.DefaultResolver.LookupAddr)
 		truncated = truncated || limited
 	}
 	if p.TemplateID != "generic-snmp" && r.NetworkTemplate != nil {

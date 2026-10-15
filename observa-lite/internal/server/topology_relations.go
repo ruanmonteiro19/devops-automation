@@ -104,6 +104,14 @@ func (s *Server) topologyRelations(view string, from, to time.Time, snapshot mod
 						}
 					}
 				}
+				if target == "" && neighbor.DNSName != "" {
+					target = byName[normalized(neighbor.DNSName)]
+					if target == "" {
+						if h, ok := hostByName[normalized(neighbor.DNSName)]; ok && h.ID != "" {
+							target = hostNode(h)
+						}
+					}
+				}
 				if target == "" && neighbor.RemoteName != "" {
 					target = byName[normalized(neighbor.RemoteName)]
 					if target == "" {
@@ -121,7 +129,10 @@ func (s *Server) topologyRelations(view string, from, to time.Time, snapshot mod
 						identity = source + ":" + neighbor.LocalPort + ":" + neighbor.RemoteName
 					}
 					target = "lldp-neighbor:" + url.QueryEscape(identity)
-					name := neighbor.RemoteName
+					name := neighbor.DNSName
+					if name == "" {
+						name = neighbor.RemoteName
+					}
 					if name == "" {
 						name = neighbor.RemoteIP
 					}

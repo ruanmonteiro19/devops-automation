@@ -1,5 +1,5 @@
 import { MonitorManager } from "@/components/monitor-manager";
-import { downloadJSON } from "@/lib/workspace";
+import { downloadJSON, menuIconColor } from "@/lib/workspace";
 import {
   WorkspaceAccess,
   WorkspaceTools,
@@ -457,7 +457,7 @@ function SidebarNav({
   return (
     <>
       <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-4">
-        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-gradient-to-br from-primary to-chart-2 text-primary-foreground shadow-lg shadow-primary/20">
+        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-primary/15 text-primary border border-primary/30">
           <Activity className="size-5" />
         </div>
         {!collapsed && (
@@ -466,7 +466,7 @@ function SidebarNav({
               Observa<span className="text-primary">.</span>
             </div>
             <div className="text-[10px] font-medium uppercase text-muted-foreground">
-              OBSERVABILITY WORKSPACE
+              Observabilidade
             </div>
           </div>
         )}
@@ -474,7 +474,7 @@ function SidebarNav({
       {!collapsed && (
         <div className="p-3">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 size-4 menu-icon-violet" />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -601,7 +601,9 @@ function NavLink({
           collapsed && "justify-center px-0",
         )}
       >
-        <item.icon className="size-4 shrink-0" />
+        <item.icon
+          className={cn("size-4 shrink-0", menuIconColor(item.path))}
+        />
         {!collapsed && (
           <span className="truncate">{navText(item.label, language)}</span>
         )}
@@ -750,7 +752,7 @@ function Topbar({
           params={{ _splat: "problemas-apm" }}
           aria-label="Abrir problemas"
         >
-          <Bell />
+          <Bell className="menu-icon-orange" />
         </Link>
       </Button>
       <Button
@@ -764,7 +766,7 @@ function Topbar({
           params={{ _splat: "configuracoes" }}
           aria-label="Preferências do workspace"
         >
-          <Settings className="size-4" />
+          <Settings className="size-4 menu-icon-violet" />
         </Link>
       </Button>
     </header>
@@ -1407,8 +1409,8 @@ function Overview({ snapshot, demo }: { snapshot: Snapshot; demo: boolean }) {
       <WorkspaceWelcome snapshot={snapshot} demo={demo} />
       <PageHeader
         eyebrow="Visão geral"
-        title="Saúde do ambiente"
-        description="Estado consolidado da telemetria Linux, dependências e eventos recentes."
+        title="Visão geral"
+        description="Hosts, serviços, monitores e eventos do ambiente."
         actions={
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="size-2 rounded-full bg-success" />

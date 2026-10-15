@@ -58,7 +58,7 @@ afterEach(cleanup);
 describe("Integrated workspace shell", () => {
   it("keeps collapsed navigation accessible and persists favorites", async () => {
     mount();
-    await screen.findByText("Uma visão clara.");
+    await screen.findByText("Acesso rápido");
     const favorite = screen.getByRole("button", {
       name: "Adicionar aos favoritos: Hosts",
     });

@@ -94,8 +94,8 @@ export function MonitorManager({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <WorkspaceHeading
           eyebrow="Confiabilidade / Monitores"
-          title="Cada verificação, sob controle."
-          description="Configure verificações HTTP e TCP, ajuste intervalos e pause monitores quando precisar."
+          title="Monitores HTTP e TCP"
+          description="Configure destinos, intervalos, timeouts e status esperado."
         />
         <Button disabled={demo} onClick={() => edit(blank())}>
           <Plus className="size-4" />

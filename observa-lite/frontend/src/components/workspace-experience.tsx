@@ -43,6 +43,7 @@ import {
   loadAppearance,
   defaultAppearance,
   downloadJSON,
+  menuIconColor,
   quickActions,
   workspaceDestinations,
   type Appearance,
@@ -98,13 +99,13 @@ export function WorkspaceTools({
           {demo
             ? "Ambiente demonstrativo"
             : snapshot
-              ? "Workspace conectado"
+              ? "Servidor conectado"
               : "Conexão pendente"}
           <span className="mx-1 text-border">/</span>
           <span className="hidden sm:inline">
             {snapshot
               ? `${snapshot.hosts.length} hosts · ${snapshot.service_map.nodes.filter((n) => n.kind === "service").length} serviços`
-              : "Observabilidade em um só lugar"}
+              : "Servidor de observabilidade"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -144,12 +145,12 @@ export function WorkspaceTools({
               ) : (
                 <Command className="text-primary" />
               )}
-              {create ? "O que vamos criar?" : "Seu workspace, a um comando"}
+              {create ? "Criar" : "Buscar páginas e ações"}
             </DialogTitle>
             <DialogDescription>
               {create
-                ? "Escolha uma ação para abrir seu editor."
-                : "Encontre telas, configurações e ações de criação."}
+                ? "Selecione o item que deseja criar."
+                : "Busque uma página ou abra um formulário de criação."}
             </DialogDescription>
           </DialogHeader>
           {!create && (
@@ -172,7 +173,12 @@ export function WorkspaceTools({
                 onClick={close}
                 className="group flex items-center gap-4 rounded-xl px-3 py-3 transition hover:bg-accent focus-visible:outline focus-visible:outline-ring"
               >
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                <div
+                  className={cn(
+                    "grid size-9 shrink-0 place-items-center rounded border border-border bg-muted/40",
+                    menuIconColor(item.path),
+                  )}
+                >
                   {item.path.includes("novo") ? (
                     <Plus className="size-4" />
                   ) : (
@@ -199,7 +205,7 @@ export function WorkspaceTools({
       <Sheet open={help} onOpenChange={setHelp}>
         <SheetContent className="overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Como podemos ajudar?</SheetTitle>
+            <SheetTitle>Ajuda</SheetTitle>
             <SheetDescription>
               Orientação para a tarefa que você está fazendo.
             </SheetDescription>
@@ -207,7 +213,7 @@ export function WorkspaceTools({
           <div className="space-y-5 p-5">
             <div className="rounded-xl border border-primary/20 bg-primary/10 p-4">
               <BookOpen className="mb-3 text-primary" />
-              <h3 className="font-semibold">Explore com confiança</h3>
+              <h3 className="font-semibold">Ajuda da página</h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 Use Criar para abrir um editor. Nas listas, edite os itens
                 existentes e revise os dados antes de salvar. As alterações são
@@ -268,47 +274,35 @@ export function WorkspaceWelcome({
   });
   return (
     <div className="mb-6 space-y-5">
-      <section className="workspace-hero relative overflow-hidden rounded-2xl border border-primary/20 p-6 lg:p-8">
-        <div className="relative z-10 max-w-2xl">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.18em] text-primary">
-            <Sparkles className="size-4" />
-            Seu centro de observabilidade
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">
-            Uma visão clara.
-            <br />
-            <span className="text-muted-foreground">
-              Da aplicação à infraestrutura.
-            </span>
-          </h1>
-          <p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground">
-            Investigue o que importa, transforme sinais em indicadores e
-            acompanhe a confiabilidade dos seus serviços.
+      <section className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div>
+          <h2 className="text-sm font-semibold">Acesso rápido</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Serviços, dashboards e configuração do ambiente.
           </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button asChild>
-              <Link to="/$" params={{ _splat: "servicos" }}>
-                Explorar serviços
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/$" params={{ _splat: "dashboards/novo" }}>
-                Criar dashboard
-                <Plus className="size-4" />
-              </Link>
-            </Button>
-          </div>
         </div>
-        <div aria-hidden className="hero-orbit" />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/$" params={{ _splat: "servicos" }}>
+              <Activity className="size-4 menu-icon-cyan" />
+              Serviços
+            </Link>
+          </Button>
+          <Button size="sm" asChild>
+            <Link to="/$" params={{ _splat: "dashboards/novo" }}>
+              <Plus className="size-4" />
+              Criar dashboard
+            </Link>
+          </Button>
+        </div>
       </section>
       {!dismissed && (
         <section className="rounded-xl border border-border bg-surface p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="font-semibold">Seu próximo passo</h2>
+              <h2 className="font-semibold">Configuração inicial</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Prepare seu workspace para investigar dados reais.
+                Conecte os agentes e configure o envio de telemetria.
               </p>
             </div>
             <Button
@@ -380,25 +374,25 @@ export function WorkspaceWelcome({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
-            title: "Investigar problemas",
+            title: "Problemas APM",
             text: "Evidências, traces e linha do tempo",
             path: "problemas-apm",
             icon: Activity,
           },
           {
-            title: "Visualizar dependências",
-            text: "Entenda as conexões dos serviços",
+            title: "Mapa de serviços",
+            text: "Dependências entre serviços",
             path: "service-mapping",
             icon: Workflow,
           },
           {
-            title: "Personalizar workspace",
+            title: "Preferências",
             text: "Tema, cores e densidade",
             path: "configuracoes",
             icon: Palette,
           },
           {
-            title: "Aprender e conectar",
+            title: "Ajuda",
             text: "Guias e solução de problemas",
             path: "ajuda",
             icon: BookOpen,
@@ -408,10 +402,10 @@ export function WorkspaceWelcome({
             key={item.path}
             to="/$"
             params={{ _splat: item.path }}
-            className="workspace-shortcut group rounded-xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
+            className="workspace-shortcut group rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary/50"
           >
             <div className="mb-4 flex items-center justify-between">
-              <item.icon className="size-5 text-primary" />
+              <item.icon className={cn("size-5", menuIconColor(item.path))} />
               <ArrowUpRight className="size-4 text-muted-foreground group-hover:text-primary" />
             </div>
             <h3 className="text-sm font-semibold">{item.title}</h3>
@@ -431,7 +425,7 @@ export function WorkspacePreferences() {
     applyAppearance(next);
     try {
       localStorage.setItem("observa-appearance-v1", JSON.stringify(next));
-      toast.success("Preferências salvas neste navegador");
+      toast.success("Preferências salvas");
     } catch {
       toast.error("Não foi possível persistir neste navegador");
     }
@@ -439,15 +433,15 @@ export function WorkspacePreferences() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <WorkspaceHeading
-        eyebrow="Seu workspace"
-        title="Uma interface do seu jeito"
+        eyebrow="Interface"
+        title="Preferências da interface"
         description="Ajuste a aparência para trabalhar com conforto. Suas preferências ficam neste navegador."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div className="space-y-5">
           <PreferenceCard
             title="Aparência"
-            description="Escolha a iluminação do seu espaço de trabalho."
+            description="Selecione o tema da interface."
           >
             <div className="grid grid-cols-2 gap-3">
               {(["dark", "light"] as const).map((theme) => (
@@ -552,7 +546,7 @@ export function WorkspacePreferences() {
         </div>
         <aside className="h-fit rounded-xl border border-border bg-surface p-5">
           <Palette className="mb-4 text-primary" />
-          <h2 className="font-semibold">Feito para o seu dia a dia</h2>
+          <h2 className="font-semibold">Preferências salvas</h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             A aparência muda imediatamente. Use Ctrl + K para navegar e Criar
             para abrir os editores disponíveis.
@@ -613,7 +607,7 @@ export function WorkspaceHeading({
 const articles = [
   {
     id: "inicio",
-    title: "Comece por aqui",
+    title: "Primeiros passos",
     category: "Primeiros passos",
     related: [""],
     body: "Conecte seu agente para descobrir hosts e processos. Depois, configure suas aplicações ou seu OpenTelemetry Collector para enviar telemetria. Em Serviços, escolha um serviço e o período; abra um trace para investigar falhas, atributos e logs correlacionados.",
@@ -701,11 +695,11 @@ export function HelpCenter({
     <div className="mx-auto max-w-6xl space-y-6">
       <WorkspaceHeading
         eyebrow="Central de ajuda"
-        title={selected?.title || "Encontre respostas. Siga em frente."}
+        title={selected?.title || "Central de ajuda"}
         description={
           selected
             ? selected.category
-            : "Guias práticos para conectar, investigar e personalizar seu ambiente."
+            : "Configuração, operação e solução de problemas."
         }
       />
       {selected ? (

@@ -415,3 +415,101 @@ html[data-density="compact"] .workspace-main table td {
   background: color-mix(in oklch, var(--primary) 40%, var(--background));
   color: var(--foreground);
 }
+
+/* Compact observability layout: flat surfaces, square controls, colored navigation. */
+:root,
+.dark {
+  --radius: 0.25rem;
+  --background: oklch(0.155 0.006 265);
+  --surface: oklch(0.19 0.008 265);
+  --surface-raised: oklch(0.23 0.01 265);
+  --card: var(--surface);
+  --popover: oklch(0.21 0.009 265);
+  --sidebar: oklch(0.175 0.007 265);
+  --border: oklch(0.34 0.012 265 / 70%);
+  --sidebar-border: var(--border);
+  --muted: oklch(0.24 0.009 265);
+}
+html[data-theme="light"] {
+  --background: oklch(0.975 0.003 265);
+  --surface: oklch(1 0 0);
+  --surface-raised: oklch(0.95 0.005 265);
+  --sidebar: oklch(0.985 0.003 265);
+  --border: oklch(0.86 0.008 265);
+  --muted: oklch(0.94 0.005 265);
+  --popover: var(--surface);
+}
+[class*="rounded-"]:not(.rounded-full) {
+  border-radius: 4px;
+}
+.workspace-main {
+  background-image: none;
+}
+.workspace-shortcut {
+  box-shadow: none;
+}
+.workspace-main h1 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+.workspace-main h2 {
+  letter-spacing: 0;
+}
+.workspace-main .uppercase,
+aside .uppercase {
+  text-transform: none;
+  letter-spacing: 0.015em;
+}
+.workspace-main table th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.workspace-main table td {
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+aside nav a {
+  height: 36px;
+}
+.workspace-tools {
+  background: var(--background);
+}
+.menu-icon-cyan {
+  color: oklch(0.78 0.12 210);
+}
+.menu-icon-orange {
+  color: oklch(0.78 0.16 60);
+}
+.menu-icon-blue {
+  color: oklch(0.74 0.14 255);
+}
+.menu-icon-green {
+  color: oklch(0.76 0.15 155);
+}
+.menu-icon-pink {
+  color: oklch(0.76 0.16 335);
+}
+.menu-icon-violet {
+  color: oklch(0.76 0.15 290);
+}
+html[data-theme="light"] .menu-icon-cyan {
+  color: oklch(0.48 0.11 220);
+}
+html[data-theme="light"] .menu-icon-orange {
+  color: oklch(0.55 0.15 50);
+}
+html[data-theme="light"] .menu-icon-blue {
+  color: oklch(0.5 0.17 255);
+}
+html[data-theme="light"] .menu-icon-green {
+  color: oklch(0.46 0.13 155);
+}
+html[data-theme="light"] .menu-icon-pink {
+  color: oklch(0.5 0.18 335);
+}
+html[data-theme="light"] .menu-icon-violet {
+  color: oklch(0.5 0.19 290);
+}

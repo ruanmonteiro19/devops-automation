@@ -42,31 +42,31 @@ export function downloadJSON(filename: string, data: unknown) {
 export const quickActions = [
   {
     title: "Criar dashboard",
-    description: "Monte indicadores e gráficos dos seus serviços",
+    description: "Indicadores e gráficos por serviço",
     path: "dashboards/novo",
     category: "Visualização",
   },
   {
     title: "Definir objetivo SLO",
-    description: "Acompanhe disponibilidade ou latência",
+    description: "Meta de disponibilidade ou latência",
     path: "slos/novo",
     category: "Confiabilidade",
   },
   {
     title: "Criar regra de alerta",
-    description: "Detecte falhas e degradações de latência",
+    description: "Limites de falhas e latência",
     path: "correlacao/novo",
     category: "Operação",
   },
   {
     title: "Configurar monitor",
-    description: "Crie verificações HTTP e TCP",
+    description: "Verificação HTTP ou TCP",
     path: "templates/novo",
     category: "Monitoramento",
   },
   {
     title: "Conectar fonte de dados",
-    description: "Configure consultas a fontes externas",
+    description: "Conexão com Prometheus, JSON ou Loki",
     path: "data-sources/novo",
     category: "Integração",
   },
@@ -78,7 +78,7 @@ export const quickActions = [
   },
 ];
 export const workspaceDestinations = [
-  { title: "Visão geral", path: "", description: "Seu centro de operação" },
+  { title: "Visão geral", path: "", description: "Hosts, serviços e eventos" },
   {
     title: "Serviços",
     path: "servicos",
@@ -133,3 +133,55 @@ export const workspaceDestinations = [
     description: "Guias, dúvidas e diagnóstico",
   },
 ];
+
+// Shared by desktop/mobile navigation, favorites, commands and shortcuts.
+export function menuIconColor(path: string): string {
+  const area = path.split("/")[0] || "home";
+  if (
+    [
+      "servicos",
+      "aplicacoes",
+      "requisicoes",
+      "service-mapping",
+      "dependencias",
+    ].includes(area)
+  )
+    return "menu-icon-cyan";
+  if (
+    [
+      "problemas-apm",
+      "erros",
+      "incidentes",
+      "alertas",
+      "correlacao",
+      "prioridades",
+    ].includes(area)
+  )
+    return "menu-icon-orange";
+  if (
+    [
+      "hosts",
+      "processos",
+      "process-mapping",
+      "network-mapping",
+      "agentes",
+      "gateways",
+      "host-groups",
+      "network-zones",
+    ].includes(area)
+  )
+    return "menu-icon-blue";
+  if (
+    [
+      "telemetria-logs",
+      "logs",
+      "metricas",
+      "data-sources",
+      "itens-metricas",
+    ].includes(area)
+  )
+    return "menu-icon-green";
+  if (["traces", "templates", "extensoes", "minhas-extensoes"].includes(area))
+    return "menu-icon-pink";
+  return "menu-icon-violet";
+}

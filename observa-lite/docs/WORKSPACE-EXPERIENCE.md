@@ -35,3 +35,14 @@ A configuração `.env` e o volume de dados existentes são mantidos. Recarregue
 Não houve homologação visual em navegador real nesta sessão: o navegador remoto não alcança o servidor local, e o download do Chromium no executor não produziu um pacote utilizável. Os testes de interação usam jsdom. Docker não está disponível no executor; a execução Docker será verificada no ambiente de instalação. O build emite aviso pelo tamanho do bundle principal.
 
 Essas mudanças melhoram a operação das funcionalidades existentes. Não adicionam OneAgent, Grail/DQL, SSO/RBAC, RUM, profiling ou RCA causal.
+
+## Revisão visual: layout compacto
+
+Referência: organização de telas na documentação oficial do SigNoz (https://signoz.io/docs/what-is-signoz/). Não implica paridade funcional com esse produto.
+
+- Cantos de 4 px, superfícies neutras, tabelas compactas e seleção discreta.
+- Remoção do banner promocional e dos títulos de apresentação. Rótulos e instruções usam frases diretas, com inicial maiúscula; valores recebidos da telemetria mantêm sua grafia original.
+- Cores de ícones compartilhadas entre navegação desktop/mobile, favoritos, comandos e atalhos. Aplicações em ciano; infraestrutura em azul; alertas em laranja; dados em verde; traces e monitores em rosa; gestão e navegação geral em violeta.
+- Temas claro/escuro e preferência de cor permanecem disponíveis.
+
+Verificação: 56 testes de interface, TypeScript e build. A limitação de revisão visual em navegador descrita acima permanece.
